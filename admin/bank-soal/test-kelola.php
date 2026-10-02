@@ -170,21 +170,38 @@ $participantMap      = array_column($participants_raw, null, 'student_id');
                         <small class="text-muted">Mata Pelajaran: <?= $exam['nama_mapel'] ?></small>
                     </div>
                 </div>
-                <form action="" method="POST" class="d-flex align-items-center bg-light p-2 rounded border">
-                    <div class="form-check form-switch mb-0 me-3">
-                        <input class="form-check-input" type="checkbox" name="is_token_aktif" id="tokenSwitch" <?= $exam['is_token_aktif'] ? 'checked' : '' ?>>
-                        <label class="form-check-label fw-bold small" for="tokenSwitch">
-                            Token: <?= $exam['is_token_aktif'] ? '<span class="text-primary">'.$exam['token'].'</span>' : '<span class="text-danger">NONAKTIF</span>' ?>
-                        </label>
-                    </div>
-                    <button type="submit" name="update_setting" class="btn btn-sm btn-dark px-3">Update</button>
-                </form>
+                <div class="d-flex align-items-center">
+                    <button type="button" class="btn btn-outline-success btn-sm me-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalSalinTest">
+                        <i class="fas fa-copy me-1"></i> Duplikasi / Ujian Susulan
+                    </button>
+                    <form action="" method="POST" class="d-flex align-items-center bg-light p-2 rounded border">
+                        <div class="form-check form-switch mb-0 me-3">
+                            <input class="form-check-input" type="checkbox" name="is_token_aktif" id="tokenSwitch" <?= $exam['is_token_aktif'] ? 'checked' : '' ?>>
+                            <label class="form-check-label fw-bold small" for="tokenSwitch">
+                                Token: <?= $exam['is_token_aktif'] ? '<span class="text-primary">'.$exam['token'].'</span>' : '<span class="text-danger">NONAKTIF</span>' ?>
+                            </label>
+                        </div>
+                        <button type="submit" name="update_setting" class="btn btn-sm btn-dark px-3">Update</button>
+                    </form>
+                </div>
             </div>
         </nav>
 
         <div class="container-fluid px-4 pt-4 pb-5">
             <?php $flash = $_GET['msg'] ?? ''; ?>
-            <?php if($flash === 'soal_success'): ?>
+            <?php if($flash === 'test_cloned'): ?>
+                <?php 
+                    $mode_text = 'Ujian Susulan';
+                    if(($_GET['mode'] ?? '') === 'semua_siswa') $mode_text = 'Duplikasi Penuh (Semua Siswa)';
+                    if(($_GET['mode'] ?? '') === 'hanya_soal') $mode_text = 'Duplikasi Template (Hanya Soal)';
+                    $q_count = (int)($_GET['q'] ?? 0);
+                    $p_count = (int)($_GET['p'] ?? 0);
+                ?>
+                <div class="alert alert-success border-0 shadow-sm mb-4 alert-dismissible fade show">
+                    <i class="fas fa-check-double me-2"></i> <strong>Duplikasi Ujian Berhasil Dibuat!</strong> Mode: <u><?= esc($mode_text) ?></u> (<?= $q_count ?> Soal, <?= $p_count ?> Peserta Terdaftar). Silakan periksa atau sesuaikan jadwal jika diperlukan.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php elseif($flash === 'soal_success'): ?>
                 <div class="alert alert-primary border-0 shadow-sm mb-4 alert-dismissible fade show">
                     <i class="fas fa-check-circle me-2"></i> Daftar pertanyaan berhasil diperbarui!
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -835,7 +852,134 @@ $(document).ready(function() {
         $('input[name="distribusiMode"][value="total"]').prop('checked', true).trigger('change');
         $('.input-tipe, .input-kesulitan').val(0);
     });
+
+    // Helper format datetime-local
+    function formatDateTimeLocal(d) {
+        const pad = (n) => String(n).padStart(2, '0');
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+
+    const baseExamName = <?= json_encode($exam['nama_mapel_ujian']) ?>;
+    const baseDuration = <?= (int)$exam['durasi_menit'] ?>;
+
+    function initSalinModal() {
+        const now = new Date();
+        const start = new Date(now.getTime() + 10 * 60000);
+        const end = new Date(start.getTime() + (baseDuration + 60) * 60000);
+        $('#salin_mulai_kelola').val(formatDateTimeLocal(start));
+        $('#salin_selesai_kelola').val(formatDateTimeLocal(end));
+        updateSalinKelolaTitleAndHelp();
+    }
+
+    $('#salin_mode_kelola').on('change', function() {
+        updateSalinKelolaTitleAndHelp();
+    });
+
+    function updateSalinKelolaTitleAndHelp() {
+        const mode = $('#salin_mode_kelola').val();
+        let prefix = '[Susulan] ';
+        let help = 'Otomatis menyalin seluruh soal terpilih dan HANYA menyertakan siswa yang belum berstatus \'Selesai\' (absen/gagal sebelumnya).';
+        
+        if (mode === 'semua_siswa') {
+            prefix = '[Salinan] ';
+            help = 'Menyalin seluruh soal terpilih dan SELURUH siswa dengan status di-reset ke \'Ready\' (untuk sesi atau kelas baru).';
+        } else if (mode === 'hanya_soal') {
+            prefix = '[Template] ';
+            help = 'Menyalin komposisi butir soal terpilih dan konfigurasi waktu/acak saja (tanpa mendaftarkan siswa).';
+        }
+
+        let cleanName = baseExamName.replace(/^\[(Susulan|Salinan|Template)\]\s*/i, '');
+        $('#salin_nama_kelola').val(prefix + cleanName);
+        $('#salin_help_kelola').text(help);
+    }
+
+    $('#modalSalinTest').on('show.bs.modal', function() {
+        initSalinModal();
+    });
 });
 </script>
+
+<div class="modal fade" id="modalSalinTest" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="test.php?id=<?= esc($id_bank) ?>" method="POST" class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-copy me-2"></i>Salin Jadwal / Ujian Susulan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="salin_test" value="1">
+                <input type="hidden" name="source_exam_id" value="<?= esc($exam['id']) ?>">
+                
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark">Mode Duplikasi</label>
+                    <select name="mode_salin" id="salin_mode_kelola" class="form-select border-success fw-semibold">
+                        <option value="susulan" selected>🎯 Ujian Susulan (Khusus Siswa Belum Selesai / Absen)</option>
+                        <option value="semua_siswa">👥 Duplikasi Penuh (Semua Siswa & Soal Terpilih)</option>
+                        <option value="hanya_soal">📋 Duplikasi Template (Hanya Soal & Pengaturan)</option>
+                    </select>
+                    <div class="form-text small" id="salin_help_kelola">
+                        Otomatis menyalin seluruh soal terpilih dan hanya menyertakan siswa yang belum berstatus 'Selesai'.
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Nama Ujian Baru</label>
+                    <input type="text" name="nama_test" id="salin_nama_kelola" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Jenjang / Kelas</label>
+                    <select name="jenjang" class="form-select" required>
+                        <option value="10" <?= $exam['jenjang'] == '10' ? 'selected' : '' ?>>Kelas 10</option>
+                        <option value="11" <?= $exam['jenjang'] == '11' ? 'selected' : '' ?>>Kelas 11</option>
+                        <option value="12" <?= $exam['jenjang'] == '12' ? 'selected' : '' ?>>Kelas 12</option>
+                    </select>
+                </div>
+
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <label class="form-label small fw-bold">Durasi (Menit)</label>
+                        <input type="number" name="durasi" class="form-control" value="<?= (int)$exam['durasi_menit'] ?>" required>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label class="form-label small fw-bold">Status Awal</label>
+                        <select name="status" class="form-select">
+                            <option value="draft" selected>DRAFT</option>
+                            <option value="aktif">AKTIF</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Opsi Acak</label>
+                    <div class="d-flex gap-3">
+                        <div class="form-check small">
+                            <input class="form-check-input" type="checkbox" name="acak_soal" <?= $exam['acak_soal'] ? 'checked' : '' ?> id="salin_ac1">
+                            <label class="form-check-label" for="salin_ac1">Acak Soal</label>
+                        </div>
+                        <div class="form-check small">
+                            <input class="form-check-input" type="checkbox" name="acak_opsi" <?= $exam['acak_opsi'] ? 'checked' : '' ?> id="salin_ac2">
+                            <label class="form-check-label" for="salin_ac2">Acak Jawaban</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Waktu Mulai Baru</label>
+                    <input type="datetime-local" name="tgl_mulai" id="salin_mulai_kelola" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Waktu Selesai Baru (Batas Login)</label>
+                    <input type="datetime-local" name="tgl_selesai" id="salin_selesai_kelola" class="form-control" required>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-success"><i class="fas fa-copy me-1"></i> Buat Ujian Duplikasi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 </body>
 </html>
