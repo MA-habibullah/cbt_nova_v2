@@ -575,7 +575,7 @@ function gJadwalQuery(array $extra = []): string {
                                     $is_bank_locked = ($e['bank_status'] === 'nonaktif');
                                 ?>
                                 <tr class="<?= $is_live ? 'table-success bg-opacity-25' : '' ?>">
-                                    <td class="text-center fw-bold text-muted small"><?= $offset + $i + 1 ?></td>
+                                    <td class="text-center fw-bold text-secondary small"><?= $offset + $i + 1 ?></td>
                                     <td>
                                         <div class="d-flex align-items-center gap-2">
                                             <?php if ($is_live): ?>
@@ -585,31 +585,31 @@ function gJadwalQuery(array $extra = []): string {
                                             <?php endif; ?>
                                             <div class="fw-bold text-dark fs-6"><?= esc($e['nama_mapel_ujian']) ?></div>
                                         </div>
-                                        <div class="small text-secondary mt-1">
-                                            <i class="fas fa-book-open me-1"></i><?= esc($e['kode_mapel']) ?> - <?= esc($e['nama_mapel']) ?>
+                                        <div class="small text-dark fw-semibold mt-1">
+                                            <i class="fas fa-book-open text-primary me-1"></i><?= esc($e['kode_mapel']) ?> - <?= esc($e['nama_mapel']) ?>
                                         </div>
                                         <!-- Sub-label untuk Tampilan Mobile (< 768px) -->
-                                        <div class="d-md-none mt-1 small text-muted">
+                                        <div class="d-md-none mt-1 small">
                                             <span class="badge badge-soft-info me-1">Kelas <?= esc($e['jenjang']) ?></span>
-                                            <span class="badge bg-light text-dark border me-1"><i class="far fa-clock text-primary me-1"></i><?= (int)$e['durasi_menit'] ?>m</span>
-                                            <span class="badge bg-light text-secondary border"><i class="fas fa-user-graduate me-1"></i><?= (int)$e['jumlah_peserta'] ?></span>
+                                            <span class="badge badge-soft-secondary me-1"><i class="far fa-clock text-primary me-1"></i><?= (int)$e['durasi_menit'] ?>m</span>
+                                            <span class="badge badge-soft-secondary"><i class="fas fa-user-graduate me-1"></i><?= (int)$e['jumlah_peserta'] ?></span>
                                         </div>
                                     </td>
                                     <td class="d-none d-sm-table-cell">
                                         <div class="mb-1">
-                                            <span class="badge badge-soft-primary px-2 py-1 rounded-2 fw-semibold">
+                                            <span class="badge badge-soft-primary px-2.5 py-1 rounded-2 fw-bold">
                                                 <i class="fas fa-graduation-cap me-1"></i>Kelas <?= esc($e['jenjang']) ?>
                                             </span>
                                         </div>
-                                        <span class="badge bg-light text-secondary border font-monospace" style="font-size:0.75rem;" title="<?= esc($e['nama_bank_soal']) ?>">
-                                            <i class="fas fa-database me-1"></i><?= esc($e['kode_bank_soal'] ?: $e['nama_bank_soal']) ?>
+                                        <span class="badge badge-soft-secondary border font-monospace px-2 py-1" style="font-size:0.75rem;" title="<?= esc($e['nama_bank_soal']) ?>">
+                                            <i class="fas fa-database me-1 text-primary"></i><?= esc($e['kode_bank_soal'] ?: $e['nama_bank_soal']) ?>
                                         </span>
                                     </td>
                                     <td class="text-center">
                                         <div class="fw-bold text-dark small"><?= date('d M Y', $start_ts) ?></div>
-                                        <div class="small text-muted"><?= date('H:i', $start_ts) ?> &ndash; <?= date('H:i', $end_ts) ?> WIB</div>
+                                        <div class="small fw-semibold text-secondary"><?= date('H:i', $start_ts) ?> &ndash; <?= date('H:i', $end_ts) ?> WIB</div>
                                         <div class="mt-1">
-                                            <span class="badge bg-light text-dark border" style="font-size:0.72rem;">
+                                            <span class="badge badge-soft-secondary px-2 py-1" style="font-size:0.72rem;">
                                                 <i class="far fa-clock text-primary me-1"></i><?= (int)$e['durasi_menit'] ?> Menit
                                             </span>
                                         </div>
@@ -627,17 +627,21 @@ function gJadwalQuery(array $extra = []): string {
                                     <td class="text-center">
                                         <?php if ((int)$e['is_token_aktif'] === 1 && !empty($e['token'])): ?>
                                             <div class="d-flex align-items-center justify-content-center gap-1">
-                                                <code class="fw-bold fs-6 text-primary bg-light px-2 py-1 border rounded shadow-sm font-monospace"><?= esc($e['token']) ?></code>
+                                                <code class="fw-bold fs-6 text-primary bg-white px-2 py-1 border border-primary-subtle rounded shadow-sm font-monospace"><?= esc($e['token']) ?></code>
                                                 <button type="button" class="btn btn-sm btn-light border btn-copy-token p-1 px-2 shadow-none" 
                                                         data-token="<?= esc($e['token']) ?>" title="Salin Token">
                                                     <i class="far fa-copy text-secondary"></i>
                                                 </button>
                                             </div>
                                             <div class="mt-1">
-                                                <span class="badge badge-soft-success" style="font-size:0.68rem;">Rilis Aktif</span>
+                                                <span class="badge badge-soft-success px-2 py-0.5" style="font-size:0.68rem;">
+                                                    <i class="fas fa-check-circle me-1"></i>Rilis Aktif
+                                                </span>
                                             </div>
                                         <?php else: ?>
-                                            <span class="badge bg-light text-muted border px-2 py-1">Nonaktif</span>
+                                            <span class="badge badge-soft-secondary px-2 py-1">
+                                                <i class="fas fa-lock me-1 text-muted"></i>Nonaktif
+                                            </span>
                                         <?php endif; ?>
                                     </td>
                                     <td class="text-center">

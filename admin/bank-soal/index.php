@@ -461,79 +461,79 @@ function bsQuery(array $extra = []): string {
                             <?php else: ?>
                             <?php $no = $offset + 1; foreach ($bank_soal as $b): ?>
                             <tr>
-                                <td class="text-center text-muted fw-bold small"><?= $no++ ?></td>
+                                <td class="text-center text-secondary fw-bold small"><?= $no++ ?></td>
                                 <td>
                                     <div class="fw-bold text-dark fs-6"><?= esc($b['nama_bank_soal']) ?></div>
                                     <div class="d-flex flex-wrap align-items-center gap-2 mt-1 small">
-                                        <span class="badge badge-soft-primary font-monospace">
+                                        <span class="badge badge-soft-primary font-monospace px-2 py-1">
                                             <i class="fas fa-barcode me-1"></i><?= esc($b['kode_bank_soal']) ?>
                                         </span>
-                                        <span class="text-secondary">
-                                            <i class="fas fa-book-open me-1"></i><?= esc($b['kode_mapel']) ?> - <?= esc($b['nama_mapel']) ?>
+                                        <span class="text-dark fw-semibold">
+                                            <i class="fas fa-book-open text-primary me-1"></i><?= esc($b['kode_mapel']) ?> - <?= esc($b['nama_mapel']) ?>
                                         </span>
                                     </div>
                                     <!-- Sub-label untuk Tampilan Mobile (< 768px) -->
-                                    <div class="d-md-none mt-1 small text-muted">
+                                    <div class="d-md-none mt-1 small">
                                         <span class="badge badge-soft-info me-1"><i class="fas fa-tasks me-1"></i><?= (int)$b['total_soal'] ?> Soal</span>
-                                        <span class="badge bg-light text-dark border me-1"><i class="fas fa-user-friends me-1"></i><?= (int)$b['total_siswa'] ?> Siswa</span>
-                                        <span class="badge bg-light text-secondary border"><i class="fas fa-calendar-alt me-1"></i><?= (int)$b['total_jadwal'] ?> Jadwal</span>
+                                        <span class="badge badge-soft-secondary me-1"><i class="fas fa-user-friends me-1"></i><?= (int)$b['total_siswa'] ?> Siswa</span>
+                                        <span class="badge badge-soft-secondary"><i class="fas fa-calendar-alt me-1"></i><?= (int)$b['total_jadwal'] ?> Jadwal</span>
                                     </div>
                                 </td>
                                 <td>
                                     <div>
                                         <?php if (!empty($b['jenjang'])): ?>
-                                            <span class="badge badge-soft-info px-2 py-1 rounded-2 fw-semibold">
+                                            <span class="badge badge-soft-info px-2.5 py-1 rounded-2 fw-bold">
                                                 <i class="fas fa-graduation-cap me-1"></i>Kelas <?= esc($b['jenjang']) ?>
                                             </span>
                                         <?php else: ?>
-                                            <span class="badge bg-light text-muted border px-2 py-1 rounded-2">Semua Jenjang</span>
+                                            <span class="badge badge-soft-secondary px-2.5 py-1 rounded-2 fw-bold">Semua Jenjang</span>
                                         <?php endif; ?>
                                     </div>
                                     <div class="d-flex align-items-center gap-2 mt-2 small">
-                                        <div class="avatar-placeholder rounded-circle d-inline-flex align-items-center justify-content-center bg-secondary-subtle text-secondary fw-bold" style="width:24px;height:24px;font-size:10px;">
+                                        <div class="avatar-placeholder rounded-circle d-inline-flex align-items-center justify-content-center bg-primary text-white fw-bold shadow-sm" style="width:24px;height:24px;font-size:10px;">
                                             <?= strtoupper(mb_substr($b['nama_guru'], 0, 1)) ?>
                                         </div>
-                                        <span class="text-dark fw-medium"><?= esc($b['nama_guru']) ?></span>
+                                        <span class="text-dark fw-semibold"><?= esc($b['nama_guru']) ?></span>
                                     </div>
                                 </td>
                                 <td class="text-center d-none d-md-table-cell">
                                     <div class="mb-1">
-                                        <span class="badge badge-soft-primary px-2 py-1 fs-6 fw-bold">
+                                        <span class="badge badge-soft-primary px-2.5 py-1 fs-6 fw-bold">
                                             <?= (int)$b['total_soal'] ?> Soal
                                         </span>
                                     </div>
-                                    <div class="d-flex justify-content-center gap-1 small text-muted" style="font-size:0.75rem;">
-                                        <span title="Pilihan Ganda" class="badge bg-light text-dark border"><?= (int)$b['total_pg'] ?> PG</span>
-                                        <span title="Essay / Uraian" class="badge bg-light text-dark border"><?= (int)$b['total_essay'] ?> Essay</span>
+                                    <div class="d-flex justify-content-center gap-1 small" style="font-size:0.75rem;">
+                                        <span title="Pilihan Ganda" class="badge badge-soft-secondary border text-dark fw-semibold"><?= (int)$b['total_pg'] ?> PG</span>
+                                        <span title="Essay / Uraian" class="badge badge-soft-secondary border text-dark fw-semibold"><?= (int)$b['total_essay'] ?> Essay</span>
                                         <?php if ((int)$b['total_kompleks'] > 0): ?>
-                                            <span title="Tipe Lainnya" class="badge bg-light text-dark border"><?= (int)$b['total_kompleks'] ?> Lain</span>
+                                            <span title="Tipe Lainnya" class="badge badge-soft-secondary border text-dark fw-semibold"><?= (int)$b['total_kompleks'] ?> Lain</span>
                                         <?php endif; ?>
                                     </div>
                                 </td>
                                 <td class="text-center d-none d-lg-table-cell">
                                     <div class="mb-1">
-                                        <span class="badge bg-light text-dark border px-2 py-1">
+                                        <span class="badge badge-soft-secondary px-2 py-1 fw-semibold">
                                             <i class="fas fa-calendar-alt text-primary me-1"></i><?= (int)$b['total_jadwal'] ?> Jadwal
                                         </span>
                                     </div>
-                                    <span class="badge bg-light text-secondary border px-2 py-1" style="font-size:0.75rem;">
+                                    <span class="badge badge-soft-secondary px-2 py-1 fw-semibold" style="font-size:0.75rem;">
                                         <i class="fas fa-user-graduate text-secondary me-1"></i><?= (int)$b['total_siswa'] ?> Peserta
                                     </span>
                                 </td>
                                 <td class="text-center">
                                     <?php if ($b['status'] === 'aktif'): ?>
-                                        <span class="badge badge-soft-success px-2 py-1 rounded-pill">
+                                        <span class="badge badge-soft-success px-2.5 py-1 rounded-pill fw-bold">
                                             <i class="fas fa-unlock me-1"></i>Terbuka
                                         </span>
                                     <?php else: ?>
-                                        <span class="badge badge-soft-danger px-2 py-1 rounded-pill">
+                                        <span class="badge badge-soft-danger px-2.5 py-1 rounded-pill fw-bold">
                                             <i class="fas fa-lock me-1"></i>Terkunci
                                         </span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="d-none d-xl-table-cell">
-                                    <span class="text-muted small">
-                                        <i class="far fa-clock me-1"></i><?= date('d/m/Y H:i', strtotime($b['created_at'])) ?>
+                                    <span class="text-secondary small fw-medium">
+                                        <i class="far fa-clock text-secondary me-1"></i><?= date('d/m/Y H:i', strtotime($b['created_at'])) ?>
                                     </span>
                                 </td>
                                 <td class="text-center">
