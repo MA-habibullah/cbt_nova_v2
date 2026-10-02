@@ -28,19 +28,44 @@ if (!$data) {
     die("Data peserta tidak ditemukan.");
 }
 
-// Ambil SEMUA soal ujian beserta jawaban siswa (LEFT JOIN agar soal tak terjawab ikut tampil)
-$query_ans = "SELECT q.id AS question_id, q.konten_soal, q.tipe, q.bobot_skor AS bobot_asli,
-                     a.id AS id, a.jawaban_simpan, COALESCE(a.skor_didapat, 0) AS skor_didapat,
-                     COALESCE(a.is_graded, 0) AS is_graded
-              FROM cbt_exam_participants p
-              JOIN cbt_exam_questions eq ON eq.exam_id = p.exam_id
-              JOIN cbt_questions q ON eq.question_id = q.id
-              LEFT JOIN cbt_student_answers a ON a.question_id = q.id AND a.participant_id = p.id
-              WHERE p.id = ?
-              ORDER BY eq.id ASC";
-$stmt_ans = $pdo->prepare($query_ans);
-$stmt_ans->execute([$p_id]);
-$answers = $stmt_ans->fetchAll();
+// Tentukan daftar ID soal yang resmi dibagikan kepada siswa (soal_ids)
+$soal_ids_json = $data['soal_ids'] ?? null;
+$allowed_soal_ids = [];
+if (!empty($soal_ids_json)) {
+    $decoded = json_decode($soal_ids_json, true);
+    if (is_array($decoded) && !empty($decoded)) {
+        $allowed_soal_ids = array_values(array_filter(array_map('intval', $decoded), fn($id) => $id > 0));
+    }
+}
+
+// Ambil butir soal ujian siswa beserta jawabannya (LEFT JOIN agar soal tak terjawab ikut tampil)
+if (!empty($allowed_soal_ids)) {
+    $ph_soal = implode(',', array_fill(0, count($allowed_soal_ids), '?'));
+    $query_ans = "SELECT q.id AS question_id, q.konten_soal, q.tipe, q.bobot_skor AS bobot_asli,
+                         a.id AS id, a.jawaban_simpan, COALESCE(a.skor_didapat, 0) AS skor_didapat,
+                         COALESCE(a.is_graded, 0) AS is_graded
+                  FROM cbt_questions q
+                  LEFT JOIN cbt_student_answers a ON a.question_id = q.id AND a.participant_id = ?
+                  WHERE q.id IN ($ph_soal)
+                  ORDER BY FIELD(q.id, $ph_soal)";
+    $stmt_ans = $pdo->prepare($query_ans);
+    $params = array_merge([$p_id], $allowed_soal_ids, $allowed_soal_ids);
+    $stmt_ans->execute($params);
+    $answers = $stmt_ans->fetchAll();
+} else {
+    $query_ans = "SELECT q.id AS question_id, q.konten_soal, q.tipe, q.bobot_skor AS bobot_asli,
+                         a.id AS id, a.jawaban_simpan, COALESCE(a.skor_didapat, 0) AS skor_didapat,
+                         COALESCE(a.is_graded, 0) AS is_graded
+                  FROM cbt_exam_participants p
+                  JOIN cbt_exam_questions eq ON eq.exam_id = p.exam_id
+                  JOIN cbt_questions q ON eq.question_id = q.id
+                  LEFT JOIN cbt_student_answers a ON a.question_id = q.id AND a.participant_id = p.id
+                  WHERE p.id = ?
+                  ORDER BY eq.id ASC";
+    $stmt_ans = $pdo->prepare($query_ans);
+    $stmt_ans->execute([$p_id]);
+    $answers = $stmt_ans->fetchAll();
+}
 
 $total_soal     = count($answers);
 $cnt_benar      = 0; $cnt_salah = 0; $cnt_kosong = 0;

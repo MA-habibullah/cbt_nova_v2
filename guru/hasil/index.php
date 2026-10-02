@@ -8,7 +8,7 @@ if (!isset($_SESSION['teacher_id']) || ($_SESSION['role'] ?? '') !== 'guru') {
 $teacher_id = (int)$_SESSION['teacher_id'];
 
 
-$filter_exam  = $_GET['exam_id']  ?? '';
+$filter_exam  = $_GET['exam_id']  ?? ($_GET['jadwal_id'] ?? '');
 $filter_kelas = $_GET['class_id'] ?? '';
 $filter_sesi  = $_GET['sesi']     ?? '';
 
@@ -199,9 +199,14 @@ if ($filter_active) {
                                     <tr><td colspan="8" class="text-center py-5 text-muted">Tidak ada data untuk filter ini.</td></tr>
                                 <?php else: $n = 1; $exam_bobot_cache = []; foreach ($results as $r):
                                     // Total soal & jumlah benar untuk display
-                                    $stmt_q = $pdo->prepare("SELECT COUNT(*) FROM cbt_exam_questions WHERE exam_id = ?");
-                                    $stmt_q->execute([$r['exam_id']]);
-                                    $total_soal = (int)$stmt_q->fetchColumn();
+                                    $soal_ids_arr = !empty($r['soal_ids']) ? json_decode($r['soal_ids'], true) : null;
+                                    if (is_array($soal_ids_arr) && !empty($soal_ids_arr)) {
+                                        $total_soal = count($soal_ids_arr);
+                                    } else {
+                                        $stmt_q = $pdo->prepare("SELECT COUNT(*) FROM cbt_exam_questions WHERE exam_id = ?");
+                                        $stmt_q->execute([$r['exam_id']]);
+                                        $total_soal = (int)$stmt_q->fetchColumn();
+                                    }
 
                                     $stmt_ans = $pdo->prepare("SELECT COUNT(*) FROM cbt_student_answers WHERE participant_id = ? AND skor_didapat > 0");
                                     $stmt_ans->execute([$r['id']]);
@@ -211,32 +216,36 @@ if ($filter_active) {
                                     $nilai_obj_row  = (float)($r['nilai_objektif'] ?? 0);
                                     $nilai_esai_row = (float)($r['nilai_esai']     ?? 0);
 
-                                    // Cache bobot per exam_id untuk formula 50:50
-                                    if (!isset($exam_bobot_cache[$r['exam_id']])) {
-                                        $stmtEB = $pdo->prepare("
-                                            SELECT
-                                                SUM(CASE WHEN q.tipe != 'essay' THEN q.bobot_skor ELSE 0 END) AS bobot_obj,
-                                                SUM(CASE WHEN q.tipe  = 'essay' THEN q.bobot_skor ELSE 0 END) AS bobot_essay
-                                            FROM cbt_exam_questions eq
-                                            JOIN cbt_questions q ON eq.question_id = q.id
-                                            WHERE eq.exam_id = ?
-                                        ");
-                                        $stmtEB->execute([$r['exam_id']]);
-                                        $exam_bobot_cache[$r['exam_id']] = $stmtEB->fetch();
-                                    }
-                                    $eb = $exam_bobot_cache[$r['exam_id']];
-                                    $has_obj_r  = (float)($eb['bobot_obj']   ?? 0) > 0;
-                                    $has_esai_r = (float)($eb['bobot_essay'] ?? 0) > 0;
-
-                                    // Hitung nilai_akhir dengan formula 50:50
-                                    if ($has_obj_r && $has_esai_r) {
-                                        $nilai_akhir = round(($nilai_obj_row * 0.5) + ($nilai_esai_row * 0.5), 2);
-                                    } elseif ($has_obj_r) {
-                                        $nilai_akhir = $nilai_obj_row;
-                                    } elseif ($has_esai_r) {
-                                        $nilai_akhir = $nilai_esai_row;
+                                    // Prioritaskan skor_akhir dari database
+                                    if (isset($r['skor_akhir']) && $r['skor_akhir'] !== null) {
+                                        $nilai_akhir = (float)$r['skor_akhir'];
                                     } else {
-                                        $nilai_akhir = 0.0;
+                                        // Cache bobot per exam_id untuk formula 50:50 jika skor_akhir belum ada
+                                        if (!isset($exam_bobot_cache[$r['exam_id']])) {
+                                            $stmtEB = $pdo->prepare("
+                                                SELECT
+                                                    SUM(CASE WHEN q.tipe != 'essay' THEN q.bobot_skor ELSE 0 END) AS bobot_obj,
+                                                    SUM(CASE WHEN q.tipe  = 'essay' THEN q.bobot_skor ELSE 0 END) AS bobot_essay
+                                                FROM cbt_exam_questions eq
+                                                JOIN cbt_questions q ON eq.question_id = q.id
+                                                WHERE eq.exam_id = ?
+                                            ");
+                                            $stmtEB->execute([$r['exam_id']]);
+                                            $exam_bobot_cache[$r['exam_id']] = $stmtEB->fetch();
+                                        }
+                                        $eb = $exam_bobot_cache[$r['exam_id']];
+                                        $has_obj_r  = (float)($eb['bobot_obj']   ?? 0) > 0;
+                                        $has_esai_r = (float)($eb['bobot_essay'] ?? 0) > 0;
+
+                                        if ($has_obj_r && $has_esai_r) {
+                                            $nilai_akhir = round(($nilai_obj_row * 0.5) + ($nilai_esai_row * 0.5), 2);
+                                        } elseif ($has_obj_r) {
+                                            $nilai_akhir = $nilai_obj_row;
+                                        } elseif ($has_esai_r) {
+                                            $nilai_akhir = $nilai_esai_row;
+                                        } else {
+                                            $nilai_akhir = 0.0;
+                                        }
                                     }
                                 ?>
                                 <tr>

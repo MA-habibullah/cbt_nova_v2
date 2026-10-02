@@ -45,12 +45,25 @@ function inject_domain_to_html(string $html): string {
     if ($html === '') return '';
     return (string)preg_replace_callback('/src=["\']([^"\']+)["\']/i', function($matches) {
         $src = $matches[1];
-        if (preg_match('/^(?:https?:|\/\/|data:)/i', $src)) {
+        if (preg_match('/^data:/i', $src)) {
+            return 'src="' . $src . '"';
+        }
+        // Normalisasi URL absolut dari domain lama / localhost yang mengarah ke assets/uploads/ atau uploads/
+        if (preg_match('/https?:\/\/[^\/]+(?:\/[^\/]+)*?\/(assets\/uploads\/[^"\']+)/i', $src, $m)) {
+            return 'src="' . BASE_URL . $m[1] . '"';
+        }
+        if (preg_match('/https?:\/\/[^\/]+(?:\/[^\/]+)*?\/(uploads\/[^"\']+)/i', $src, $m)) {
+            return 'src="' . BASE_URL . 'assets/' . $m[1] . '"';
+        }
+        if (preg_match('/^(?:https?:|\/\/)/i', $src)) {
             return 'src="' . $src . '"';
         }
         $src_clean = ltrim($src, './');
         if (str_starts_with($src_clean, 'assets/')) {
             return 'src="' . BASE_URL . $src_clean . '"';
+        }
+        if (str_starts_with($src_clean, 'uploads/')) {
+            return 'src="' . BASE_URL . 'assets/' . $src_clean . '"';
         }
         return 'src="' . $src . '"';
     }, $html);
@@ -168,56 +181,77 @@ function hitung_dan_simpan_nilai_peserta(PDO $pdo, int $participant_id, ?string 
     $bank_soal_id = (int)$participant['bank_soal_id'];
     $final_waktu_selesai = $waktu_selesai ?: ($participant['waktu_selesai'] ?: date('Y-m-d H:i:s'));
 
-    // 2. Ambil bobot per kategori dari exam_questions (dengan fallback ke bank_soal jika exam_questions kosong)
+    // 2. Tentukan daftar ID soal yang resmi dibagikan kepada siswa (soal_ids)
+    $soal_ids_json = $participant['soal_ids'] ?? null;
+    $allowed_soal_ids = [];
+    if (!empty($soal_ids_json)) {
+        $decoded = json_decode($soal_ids_json, true);
+        if (is_array($decoded)) {
+            $allowed_soal_ids = array_values(array_filter(array_map('intval', $decoded), fn($id) => $id > 0));
+        }
+    }
+
     $tipe_objektif_list = ['pg', 'pg_kompleks', 'benar_salah', 'menjodohkan', 'isian'];
     $ph_tipe = implode(',', array_fill(0, count($tipe_objektif_list), '?'));
 
-    $stmtBobot = $pdo->prepare("
-        SELECT
-            SUM(CASE WHEN q.tipe IN ($ph_tipe) THEN q.bobot_skor ELSE 0 END) AS bobot_obj,
-            SUM(CASE WHEN q.tipe = 'essay'     THEN q.bobot_skor ELSE 0 END) AS bobot_essay,
-            COUNT(CASE WHEN q.tipe = 'essay' THEN 1 END) AS count_essay
-        FROM cbt_exam_questions eq
-        JOIN cbt_questions q ON eq.question_id = q.id
-        WHERE eq.exam_id = ?
-    ");
-    $stmtBobot->execute([...$tipe_objektif_list, $exam_id]);
-    $bobotRow = $stmtBobot->fetch(PDO::FETCH_ASSOC);
-
-    $bobot_obj   = (float)($bobotRow['bobot_obj']   ?? 0);
-    $bobot_essay = (float)($bobotRow['bobot_essay'] ?? 0);
-    $count_essay = (int)($bobotRow['count_essay']   ?? 0);
-
-    // Fallback ke cbt_questions jika cbt_exam_questions belum terisi
-    if ($bobot_obj <= 0 && $bobot_essay <= 0) {
-        $stmtBobotBank = $pdo->prepare("
+    // Jika siswa memiliki paket soal subset / acak, hitung bobot maksimal HANYA dari soal miliknya
+    if (!empty($allowed_soal_ids)) {
+        $ph_soal = implode(',', array_fill(0, count($allowed_soal_ids), '?'));
+        $stmtBobot = $pdo->prepare("
             SELECT
                 SUM(CASE WHEN q.tipe IN ($ph_tipe) THEN q.bobot_skor ELSE 0 END) AS bobot_obj,
                 SUM(CASE WHEN q.tipe = 'essay'     THEN q.bobot_skor ELSE 0 END) AS bobot_essay,
                 COUNT(CASE WHEN q.tipe = 'essay' THEN 1 END) AS count_essay
             FROM cbt_questions q
-            WHERE q.bank_soal_id = ?
+            WHERE q.id IN ($ph_soal)
         ");
-        $stmtBobotBank->execute([...$tipe_objektif_list, $bank_soal_id]);
-        $bobotRowBank = $stmtBobotBank->fetch(PDO::FETCH_ASSOC);
+        $stmtBobot->execute([...$tipe_objektif_list, ...$allowed_soal_ids]);
+        $bobotRow = $stmtBobot->fetch(PDO::FETCH_ASSOC);
 
-        $bobot_obj   = (float)($bobotRowBank['bobot_obj']   ?? 0);
-        $bobot_essay = (float)($bobotRowBank['bobot_essay'] ?? 0);
-        $count_essay = (int)($bobotRowBank['count_essay']   ?? 0);
+        $bobot_obj   = (float)($bobotRow['bobot_obj']   ?? 0);
+        $bobot_essay = (float)($bobotRow['bobot_essay'] ?? 0);
+        $count_essay = (int)($bobotRow['count_essay']   ?? 0);
+    } else {
+        // Fallback untuk ujian tanpa subset dinamis: Ambil bobot per kategori dari exam_questions
+        $stmtBobot = $pdo->prepare("
+            SELECT
+                SUM(CASE WHEN q.tipe IN ($ph_tipe) THEN q.bobot_skor ELSE 0 END) AS bobot_obj,
+                SUM(CASE WHEN q.tipe = 'essay'     THEN q.bobot_skor ELSE 0 END) AS bobot_essay,
+                COUNT(CASE WHEN q.tipe = 'essay' THEN 1 END) AS count_essay
+            FROM cbt_exam_questions eq
+            JOIN cbt_questions q ON eq.question_id = q.id
+            WHERE eq.exam_id = ?
+        ");
+        $stmtBobot->execute([...$tipe_objektif_list, $exam_id]);
+        $bobotRow = $stmtBobot->fetch(PDO::FETCH_ASSOC);
+
+        $bobot_obj   = (float)($bobotRow['bobot_obj']   ?? 0);
+        $bobot_essay = (float)($bobotRow['bobot_essay'] ?? 0);
+        $count_essay = (int)($bobotRow['count_essay']   ?? 0);
+
+        // Fallback ke cbt_questions jika cbt_exam_questions belum terisi
+        if ($bobot_obj <= 0 && $bobot_essay <= 0) {
+            $stmtBobotBank = $pdo->prepare("
+                SELECT
+                    SUM(CASE WHEN q.tipe IN ($ph_tipe) THEN q.bobot_skor ELSE 0 END) AS bobot_obj,
+                    SUM(CASE WHEN q.tipe = 'essay'     THEN q.bobot_skor ELSE 0 END) AS bobot_essay,
+                    COUNT(CASE WHEN q.tipe = 'essay' THEN 1 END) AS count_essay
+                FROM cbt_questions q
+                WHERE q.bank_soal_id = ?
+            ");
+            $stmtBobotBank->execute([...$tipe_objektif_list, $bank_soal_id]);
+            $bobotRowBank = $stmtBobotBank->fetch(PDO::FETCH_ASSOC);
+
+            $bobot_obj   = (float)($bobotRowBank['bobot_obj']   ?? 0);
+            $bobot_essay = (float)($bobotRowBank['bobot_essay'] ?? 0);
+            $count_essay = (int)($bobotRowBank['count_essay']   ?? 0);
+        }
     }
 
     $has_obj   = $bobot_obj   > 0;
     $has_essay = $bobot_essay > 0;
 
     // 3. Ambil jawaban siswa
-    $soal_ids_json = $participant['soal_ids'] ?? null;
-    $allowed_soal_ids = [];
-    if (!empty($soal_ids_json)) {
-        $decoded = json_decode($soal_ids_json, true);
-        if (is_array($decoded)) {
-            $allowed_soal_ids = array_map('intval', $decoded);
-        }
-    }
 
     $stmtAns = $pdo->prepare("SELECT id, question_id, jawaban_simpan, skor_didapat, is_graded FROM cbt_student_answers WHERE participant_id = ?");
     $stmtAns->execute([$participant_id]);
@@ -473,8 +507,11 @@ function hitung_dan_simpan_nilai_peserta(PDO $pdo, int $participant_id, ?string 
         $skor_status = 'final';
     }
 
-    // Eksekusi Update ke Database dalam Transaction
-    $pdo->beginTransaction();
+    // Eksekusi Update ke Database dalam Transaction (support nested transaction)
+    $is_nested_trans = $pdo->inTransaction();
+    if (!$is_nested_trans) {
+        $pdo->beginTransaction();
+    }
     try {
         if (!empty($score_updates)) {
             $updAns = $pdo->prepare("UPDATE cbt_student_answers SET skor_didapat = ? WHERE id = ?");
@@ -496,9 +533,13 @@ function hitung_dan_simpan_nilai_peserta(PDO $pdo, int $participant_id, ?string 
         ");
         $stmtFinish->execute([$final_waktu_selesai, $nilai_akhir, $nilai_objektif, $nilai_esai, $skor_status, $participant_id]);
 
-        $pdo->commit();
+        if (!$is_nested_trans) {
+            $pdo->commit();
+        }
     } catch (Exception $e) {
-        $pdo->rollBack();
+        if (!$is_nested_trans && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         return ['success' => false, 'error' => $e->getMessage()];
     }
 
