@@ -272,13 +272,14 @@ try {
                                         </div>
                                         <div class='matching-options-dropdown border rounded-3 shadow-sm bg-white'
                                              style='display:none; position:absolute; z-index:9999; max-height:240px; overflow-y:auto; min-width:200px;'>
-                                            <div class='matching-option px-3 py-2 border-bottom' data-idx='-1'>
+                                            <div class='matching-option px-3 py-2 border-bottom' data-idx='-1' data-val=''>
                                                 <span class='text-muted'>-- Pilih Jawaban --</span>
                                             </div>";
 
                 foreach ($choices_display as $cidx => $choice) {
                     $is_sel = ($cidx === $selected_idx) ? 'bg-primary-subtle fw-semibold' : '';
-                    $html .= "<div class='matching-option px-3 py-2 border-bottom {$is_sel}' data-idx='{$cidx}'>
+                    $choice_val_escaped = htmlspecialchars($choice['value_target'], ENT_QUOTES, 'UTF-8');
+                    $html .= "<div class='matching-option px-3 py-2 border-bottom {$is_sel}' data-idx='{$cidx}' data-val='{$choice_val_escaped}'>
                                   {$choice['value_target']}
                               </div>";
                 }

@@ -245,13 +245,14 @@ if (!empty($all_question_ids)) {
                                             </div>
                                             <div class='matching-options-dropdown border rounded-3 shadow-sm bg-white'
                                                  style='display:none; position:absolute; z-index:9999; max-height:240px; overflow-y:auto; min-width:200px;'>
-                                                <div class='matching-option px-3 py-2 border-bottom' data-idx='-1'>
+                                                <div class='matching-option px-3 py-2 border-bottom' data-idx='-1' data-val=''>
                                                     <span class='text-muted'>-- Pilih Jawaban --</span>
                                                 </div>";
 
                     foreach ($choices_display as $cidx => $choice) {
                         $is_sel = ($cidx === $selected_idx) ? 'bg-primary-subtle fw-semibold' : '';
-                        $html .= "<div class='matching-option px-3 py-2 border-bottom {$is_sel}' data-idx='{$cidx}'>
+                        $choice_val_escaped = htmlspecialchars($choice['value_target'], ENT_QUOTES, 'UTF-8');
+                        $html .= "<div class='matching-option px-3 py-2 border-bottom {$is_sel}' data-idx='{$cidx}' data-val='{$choice_val_escaped}'>
                                       {$choice['value_target']}
                                   </div>";
                     }
@@ -547,7 +548,7 @@ $exam_package_json = json_encode([
 
     var _saveTimers = {};
     function saveJawabanToServer(qId, val, isAnswered) {
-        // 1. Instant DOM Update
+        // 1. Instant DOM & In-Memory State Update
         var $targetBox = $('#nav-numbers .no-box[data-no="' + currentNumber + '"]');
         if (isAnswered) {
             $targetBox.addClass('answered');
@@ -557,9 +558,12 @@ $exam_package_json = json_encode([
         if (_pkg.nav_items && _pkg.nav_items[currentNumber]) {
             _pkg.nav_items[currentNumber].is_answered = isAnswered;
         }
+        if (_questionsMap[currentNumber]) {
+            _questionsMap[currentNumber].is_answered = isAnswered;
+        }
         refreshNavSummary();
 
-        // 2. Buffer LocalStorage untuk redundansi koneksi offline
+        // 2. Buffer LocalStorage untuk redundansi koneksi offline & rehidrasi instan
         try {
             var storageKey = 'cbt_ans_' + examId;
             var stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
@@ -607,18 +611,51 @@ $exam_package_json = json_encode([
             var qId = qData.id;
             if (stored && stored[qId] && stored[qId].jawaban !== undefined) {
                 var ans = stored[qId].jawaban;
+
+                // A. Pilihan Ganda Tunggal / Benar Salah / Textarea (Isian/Essay)
                 if (typeof ans === 'string' || typeof ans === 'number') {
-                    var $radio = $('.answer-input[type="radio"][value="' + ans + '"]');
+                    var $radio = $('#soal-container .answer-input[type="radio"][value="' + ans + '"]');
                     if ($radio.length) {
-                        $('.answer-input[type="radio"]').prop('checked', false).closest('.option-item').removeClass('selected');
+                        $('#soal-container .answer-input[type="radio"]').prop('checked', false).closest('.option-item').removeClass('selected');
                         $radio.prop('checked', true).closest('.option-item').addClass('selected');
                     } else {
-                        $('textarea.answer-input').val(ans);
+                        $('#soal-container textarea.answer-input').val(ans);
                     }
-                } else if (Array.isArray(ans)) {
-                    $('.answer-input[type="checkbox"]').each(function() {
-                        var checked = ans.includes($(this).val()) || ans.includes(String($(this).val())) || ans.includes(parseInt($(this).val()));
+                }
+                // B. Pilihan Ganda Kompleks (Multi-Jawaban / Checkbox)
+                else if (Array.isArray(ans)) {
+                    $('#soal-container .answer-input[type="checkbox"]').each(function() {
+                        var valStr = String($(this).val());
+                        var checked = ans.some(function(item) { return String(item) === valStr; });
                         $(this).prop('checked', checked).closest('.option-item').toggleClass('selected', checked);
+                    });
+                }
+                // C. Menjodohkan (Matching Pairs - Rehidrasi Pasangan Jawaban)
+                else if (typeof ans === 'object' && ans !== null) {
+                    $.each(ans, function(rowId, matchVal) {
+                        var $select = $('#soal-container .matching-custom-select[data-row-id="' + rowId + '"]');
+                        if ($select.length) {
+                            $select.find('.matching-input').val(matchVal);
+                            var $matchedOpt = null;
+                            $select.find('.matching-option').each(function() {
+                                if ($(this).data('idx') >= 0 && $(this).attr('data-val') === matchVal) {
+                                    $matchedOpt = $(this);
+                                    return false;
+                                }
+                            });
+
+                            if ($matchedOpt && $matchedOpt.length) {
+                                $select.find('.selected-content').html($matchedOpt.html());
+                                $select.find('.matching-option').removeClass('bg-primary-subtle fw-semibold');
+                                $matchedOpt.addClass('bg-primary-subtle fw-semibold');
+                            } else if (matchVal !== '') {
+                                $select.find('.selected-content').text(matchVal);
+                            } else {
+                                $select.find('.selected-content').html('<span class="text-muted">-- Pilih Jawaban --</span>');
+                                $select.find('.matching-option').removeClass('bg-primary-subtle fw-semibold');
+                            }
+                            renderMath($select.find('.selected-content')[0]);
+                        }
                     });
                 }
             }
@@ -641,24 +678,38 @@ $exam_package_json = json_encode([
         $('#btnRagu').toggleClass('is-active', isRagu == 1).attr('aria-pressed', isRagu == 1 ? 'true' : 'false');
     };
 
-    // Event Handler Input Jawaban
+    // Event Handler Input Jawaban (Radio & Checkbox)
     $(document).off('change.ujian').on('change.ujian', '.answer-input', function() {
         var input = $(this);
+        if (input.is('textarea')) return; // Ditangani oleh debounced input.ujian-textarea
         var val   = input.val();
         var hasAnswer = false;
         if (input.attr('type') === 'checkbox') {
-            val = $('.answer-input:checked').map(function() { return $(this).val(); }).get();
+            val = $('#soal-container .answer-input[type="checkbox"]:checked').map(function() { return $(this).val(); }).get();
             hasAnswer = (val.length > 0);
-        } else {
+            input.closest('.option-item').toggleClass('selected', input.is(':checked'));
+        } else if (input.attr('type') === 'radio') {
             hasAnswer = true;
-        }
-        if (input.attr('type') === 'radio') {
-            $('.option-item').removeClass('selected');
+            $('#soal-container .option-item').removeClass('selected');
             input.closest('.option-item').addClass('selected');
         } else {
-            input.closest('.option-item').toggleClass('selected', input.is(':checked'));
+            hasAnswer = ($.trim(val) !== '');
         }
         saveJawabanToServer($('#q_id').val(), val, hasAnswer);
+    });
+
+    // Event Handler Input Textarea (Isian Singkat & Essay - Debounced Autosave)
+    var _textareaTimer = null;
+    $(document).off('input.ujian-textarea').on('input.ujian-textarea', 'textarea.answer-input', function() {
+        var $ta = $(this);
+        var val = $ta.val();
+        var qId = $('#q_id').val();
+        var hasAnswer = ($.trim(val) !== '');
+
+        if (_textareaTimer) clearTimeout(_textareaTimer);
+        _textareaTimer = setTimeout(function() {
+            saveJawabanToServer(qId, val, hasAnswer);
+        }, 400);
     });
 
     // Toggle dropdown menjodohkan
@@ -677,19 +728,19 @@ $exam_package_json = json_encode([
     // Pilih opsi menjodohkan
     $(document).off('click.ujian-match-pick').on('click.ujian-match-pick', '.matching-option', function(e) {
         e.stopPropagation();
-        var $wrapper = $(this).closest('.matching-custom-select');
-        var idx = parseInt($(this).data('idx'));
-        var val = (idx >= 0 && window._matchChoicesData && window._matchChoicesData[idx] !== undefined)
-                    ? window._matchChoicesData[idx] : '';
+        var $opt = $(this);
+        var $wrapper = $opt.closest('.matching-custom-select');
+        var idx = parseInt($opt.data('idx'));
+        var val = ($opt.attr('data-val') !== undefined) ? $opt.attr('data-val') : (idx >= 0 ? $opt.text().trim() : '');
         var displayHtml = (idx >= 0)
-                    ? $(this).html()
+                    ? $opt.html()
                     : '<span class="text-muted">-- Pilih Jawaban --</span>';
 
         $wrapper.find('.selected-content').html(displayHtml);
         $wrapper.find('.matching-input').val(val);
         $wrapper.find('.matching-options-dropdown').hide();
         $wrapper.find('.matching-option').removeClass('bg-primary-subtle fw-semibold');
-        if (idx >= 0) $(this).addClass('bg-primary-subtle fw-semibold');
+        if (idx >= 0) $opt.addClass('bg-primary-subtle fw-semibold');
 
         renderMath($wrapper.find('.selected-content')[0]);
 
@@ -698,7 +749,7 @@ $exam_package_json = json_encode([
         $('#soal-container .matching-input').each(function() {
             var rowId = $(this).data('row-id');
             var v     = $(this).val();
-            if (v !== '') {
+            if (v !== '' && v !== null && v !== undefined) {
                 mapping[rowId] = v;
                 hasAnswer = true;
             }

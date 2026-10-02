@@ -86,9 +86,19 @@ try {
     // 4. Formatting Jawaban
     $jawaban_final = "";
     if (is_array($jawaban) || is_object($jawaban)) {
-        $jawaban_final = json_encode($jawaban);
+        $jawaban_final = json_encode($jawaban, JSON_UNESCAPED_UNICODE);
     } else {
-        $jawaban_final = trim((string)$jawaban);
+        $j_str = trim((string)$jawaban);
+        if (str_starts_with($j_str, '{') || str_starts_with($j_str, '[')) {
+            $test_json = json_decode($j_str, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($test_json)) {
+                $jawaban_final = json_encode($test_json, JSON_UNESCAPED_UNICODE);
+            } else {
+                $jawaban_final = $j_str;
+            }
+        } else {
+            $jawaban_final = $j_str;
+        }
     }
 
     // 5. ULTRA HIGH-THROUGHPUT ATOMIC UPSERT (Single Roundtrip)
