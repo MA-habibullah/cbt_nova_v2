@@ -581,12 +581,33 @@ function build_pagination_url($targetPage) {
                                                title="Pantau Peserta Ujian Live">
                                                 <i class="fas fa-desktop me-1"></i> Proktor
                                             </a>
+                                            <a href="<?= esc(BASE_URL) ?>admin/hasil/index.php?id=<?= (int)$e['bank_soal_id'] ?>&exam_id=<?= (int)$e['id'] ?>" 
+                                               class="btn btn-sm btn-outline-success fw-semibold px-2" 
+                                               title="Lihat Rekap Hasil & Unduh Nilai">
+                                                <i class="fas fa-chart-bar me-1"></i> Hasil
+                                            </a>
                                             
                                             <div class="dropdown">
                                                 <button class="btn btn-sm btn-light border dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                                     <i class="fas fa-ellipsis-v"></i>
                                                 </button>
                                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                                    <li>
+                                                        <a href="<?= esc(BASE_URL) ?>admin/hasil/index.php?id=<?= (int)$e['bank_soal_id'] ?>&exam_id=<?= (int)$e['id'] ?>" class="dropdown-item fw-semibold text-success">
+                                                            <i class="fas fa-poll me-2"></i> Rekap Nilai Siswa
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="<?= esc(BASE_URL) ?>admin/hasil/cetak/export-excel.php?id=<?= (int)$e['bank_soal_id'] ?>&exam_id=<?= (int)$e['id'] ?>" class="dropdown-item">
+                                                            <i class="fas fa-file-excel text-success me-2"></i> Unduh Rekap (Excel)
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="<?= esc(BASE_URL) ?>admin/hasil/cetak/export-pdf.php?id=<?= (int)$e['bank_soal_id'] ?>&exam_id=<?= (int)$e['id'] ?>" class="dropdown-item">
+                                                            <i class="fas fa-file-pdf text-danger me-2"></i> Unduh Rekap (PDF)
+                                                        </a>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
                                                     <li>
                                                         <a href="<?= esc(BASE_URL) ?>admin/bank-soal/test.php?id=<?= (int)$e['bank_soal_id'] ?>" class="dropdown-item">
                                                             <i class="fas fa-cog text-primary me-2"></i> Konfigurasi Sesi & Soal

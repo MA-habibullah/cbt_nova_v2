@@ -666,6 +666,11 @@ function gJadwalQuery(array $extra = []): string {
                                                title="Monitoring Peserta Ujian">
                                                 <i class="fas fa-desktop me-1"></i> Proktor
                                             </a>
+                                            <a href="<?= esc(BASE_URL) ?>guru/hasil/index.php?exam_id=<?= (int)$e['id'] ?>" 
+                                               class="btn btn-sm btn-outline-success fw-semibold px-2" 
+                                               title="Lihat Rekap Hasil & Unduh Nilai">
+                                                <i class="fas fa-chart-bar me-1"></i> Hasil
+                                            </a>
                                             
                                             <?php if (!$is_bank_locked): ?>
                                             <div class="dropdown">
@@ -673,6 +678,22 @@ function gJadwalQuery(array $extra = []): string {
                                                     <i class="fas fa-ellipsis-v"></i>
                                                 </button>
                                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                                    <li>
+                                                        <a href="<?= esc(BASE_URL) ?>guru/hasil/index.php?exam_id=<?= (int)$e['id'] ?>" class="dropdown-item fw-semibold text-success">
+                                                            <i class="fas fa-poll me-2"></i> Rekap Nilai Siswa
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="<?= esc(BASE_URL) ?>guru/hasil/cetak/export-excel.php?exam_id=<?= (int)$e['id'] ?>" class="dropdown-item">
+                                                            <i class="fas fa-file-excel text-success me-2"></i> Unduh Rekap (Excel)
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="<?= esc(BASE_URL) ?>guru/hasil/cetak/export-pdf.php?exam_id=<?= (int)$e['id'] ?>" class="dropdown-item">
+                                                            <i class="fas fa-file-pdf text-danger me-2"></i> Unduh Rekap (PDF)
+                                                        </a>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
                                                     <li>
                                                         <button type="button" class="dropdown-item btn-edit-test"
                                                                 data-id="<?= (int)$e['id'] ?>"
