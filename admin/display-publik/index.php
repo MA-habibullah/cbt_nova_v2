@@ -1,5 +1,5 @@
 <?php
-require_once '../../config/database.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 // Proteksi Admin
 if (!isset($_SESSION['admin_id'])) {
@@ -13,11 +13,11 @@ log_activity('Akses halaman Pengaturan Layar Display Publik', null, null, null, 
 <!DOCTYPE html>
 <html lang="id">
 
-    <?php include '../../includes/header.php'; ?>
+    <?php include dirname(__DIR__, 2) . '/includes/header.php'; ?>
 
 <body class="bg-gray-50 font-sans">
     <div class="flex min-h-screen flex-col md:flex-row">
-        <?php include '../../includes/sidebar.php'; ?>
+        <?php include dirname(__DIR__, 2) . '/includes/sidebar.php'; ?>
 
         <main class="flex-1 w-full overflow-x-hidden p-4 md:p-8 main-content">
 

@@ -1,6 +1,8 @@
 <?php
 session_start();
-require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
+if (file_exists(dirname(__DIR__, 2) . '/vendor/autoload.php')) {
+    require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
+}
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once dirname(__DIR__, 2) . '/includes/helpers.php';
 

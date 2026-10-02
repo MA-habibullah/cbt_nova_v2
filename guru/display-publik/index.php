@@ -1,6 +1,5 @@
 <?php
-session_start();
-require_once '../../config/database.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 if (!isset($_SESSION['teacher_id']) || ($_SESSION['role'] ?? '') !== 'guru') {
     header("Location: " . BASE_URL . "index.php"); exit;
@@ -8,7 +7,7 @@ if (!isset($_SESSION['teacher_id']) || ($_SESSION['role'] ?? '') !== 'guru') {
 ?>
 <!DOCTYPE html>
 <html lang="id">
-<?php include '../../includes/header.php'; ?>
+<?php include dirname(__DIR__, 2) . '/includes/header.php'; ?>
 <style>
     .navbar { z-index: 1030; }
     .card-config { transition: box-shadow .2s; }
@@ -19,7 +18,7 @@ if (!isset($_SESSION['teacher_id']) || ($_SESSION['role'] ?? '') !== 'guru') {
 </style>
 <body class="bg-light">
 <div class="d-flex" id="wrapper">
-    <?php include '../includes/sidebar.php'; ?>
+    <?php include dirname(__DIR__) . '/includes/sidebar.php'; ?>
 
     <div id="content" class="w-100">
         <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm justify-content-between">

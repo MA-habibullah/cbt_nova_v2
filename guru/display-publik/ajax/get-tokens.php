@@ -1,5 +1,5 @@
 <?php
-require_once '../../../config/database.php';
+require_once dirname(__DIR__, 3) . '/config/database.php';
 if (!isset($_SESSION['teacher_id'])) {
     http_response_code(403);
     echo json_encode(['status' => 'error']);

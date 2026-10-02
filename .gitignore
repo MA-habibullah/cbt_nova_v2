@@ -23,6 +23,7 @@ config/database.php
 !/backups/.gitkeep
 !/sql/cbt_nova_schema_10k.sql
 !/sql/migrate_*.sql
+!/sql/sync_*.sql
 !/sql/add_*.sql
 !/sql/scoring_*.sql
 !/sql/performance_*.sql
