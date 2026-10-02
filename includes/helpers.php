@@ -50,7 +50,7 @@ function strip_domain_from_html(string $html): string {
 }
 
 function inject_domain_to_html(string $html): string {
-    if ($html === '') return '';
+    if ($html === '' || stripos($html, 'src=') === false) return $html;
     return (string)preg_replace_callback('/src=["\']([^"\']+)["\']/i', function($matches) {
         $src = $matches[1];
         if (preg_match('/^data:/i', $src)) {

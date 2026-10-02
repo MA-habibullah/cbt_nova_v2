@@ -332,34 +332,89 @@ $sisa_detik = $waktu['sisa_detik'];
         }, delay);
     }
 
+    var _soalCache = {};
+    var _prefetchQueue = {};
+
+    function prefetchSoal(num) {
+        if (num < 1 || (totalSoal > 0 && num > totalSoal) || _soalCache[num] || _prefetchQueue[num]) return;
+        _prefetchQueue[num] = true;
+        $.get('ajax_get_soal.php', { exam_id: examId, no: num }, function(res) {
+            delete _prefetchQueue[num];
+            if (res && res.html) {
+                _soalCache[num] = res;
+            }
+        }, 'json').fail(function() {
+            delete _prefetchQueue[num];
+        });
+    }
+
+    function renderSoalData(num, res) {
+        $('#soal-container').html(res.html);
+        renderMath(document.getElementById('soal-container'));
+
+        // Sinkronisasi jawaban terkini dari buffer klien jika sudah pernah dijawab
+        try {
+            var storageKey = 'cbt_ans_' + examId;
+            var stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
+            var qId = $('#q_id').val();
+            if (stored && stored[qId] && stored[qId].jawaban !== undefined) {
+                var ans = stored[qId].jawaban;
+                if (typeof ans === 'string' || typeof ans === 'number') {
+                    var $radio = $('.answer-input[type="radio"][value="' + ans + '"]');
+                    if ($radio.length) {
+                        $('.answer-input[type="radio"]').prop('checked', false).closest('.option-item').removeClass('selected');
+                        $radio.prop('checked', true).closest('.option-item').addClass('selected');
+                    } else {
+                        $('textarea.answer-input').val(ans);
+                    }
+                } else if (Array.isArray(ans)) {
+                    $('.answer-input[type="checkbox"]').each(function() {
+                        var checked = ans.includes($(this).val()) || ans.includes(String($(this).val())) || ans.includes(parseInt($(this).val()));
+                        $(this).prop('checked', checked).closest('.option-item').toggleClass('selected', checked);
+                    });
+                }
+            }
+        } catch(e) {}
+
+        if ($('#nav-numbers').children().length === 0) {
+            updateNav();
+        } else {
+            $('#nav-numbers .no-box').removeClass('active');
+            $('#nav-numbers .no-box[data-no="' + num + '"]').addClass('active');
+            updateProgress();
+        }
+
+        $('#btn-prev').prop('disabled', num === 1);
+        $('#btn-next').prop('disabled', false);
+        if (num === totalSoal && sisaWaktu <= 300) {
+            $('#btn-next').html('SELESAI UJIAN').addClass('btn-success is-finish').removeClass('btn-primary');
+        } else {
+            $('#btn-next').html('<i class="fas fa-arrow-right"></i>').addClass('btn-primary').removeClass('btn-success is-finish');
+        }
+        $('#btnRagu').toggleClass('is-active', res.is_ragu == 1).attr('aria-pressed', res.is_ragu == 1 ? 'true' : 'false');
+
+        // Prefetch soal berikutnya dan sebelumnya di latar belakang (0 ms saat diklik)
+        prefetchSoal(num + 1);
+        prefetchSoal(num + 2);
+        prefetchSoal(num - 1);
+    }
+
     window.loadSoal = function loadSoal(num) {
         currentNumber = num;
         $('#btn-prev, #btn-next').prop('disabled', true);
-        $('#soal-container').fadeOut(100, function() {
-            $(this).html(skeletonHtml()).fadeIn(100);
-            $.get('ajax_get_soal.php', { exam_id: examId, no: num }, function(res) {
-                $('#soal-container').html(res.html);
-                renderMath(document.getElementById('soal-container'));
-                
-                // Jika grid nomor belum dimuat, panggil updateNav sekali, selain itu update via DOM lokal
-                if ($('#nav-numbers').children().length === 0) {
-                    updateNav();
-                } else {
-                    $('#nav-numbers .no-box').removeClass('active');
-                    $('#nav-numbers .no-box[data-no="' + num + '"]').addClass('active');
-                    updateProgress();
-                }
 
-                $('#btn-prev').prop('disabled', num === 1);
-                $('#btn-next').prop('disabled', false);
-                if (num === totalSoal && sisaWaktu <= 300) {
-                    $('#btn-next').html('SELESAI UJIAN').addClass('btn-success is-finish').removeClass('btn-primary');
-                } else {
-                    $('#btn-next').html('<i class="fas fa-arrow-right"></i>').addClass('btn-primary').removeClass('btn-success is-finish');
-                }
-                $('#btnRagu').toggleClass('is-active', res.is_ragu == 1).attr('aria-pressed', res.is_ragu == 1 ? 'true' : 'false');
-            }, 'json');
-        });
+        // Jika sudah ada di cache memori, render INSTAN (0 ms)
+        if (_soalCache[num]) {
+            renderSoalData(num, _soalCache[num]);
+            return;
+        }
+
+        // Tampilkan skeleton loader hanya jika pertama kali dimuat dan belum di-cache
+        $('#soal-container').html(skeletonHtml());
+        $.get('ajax_get_soal.php', { exam_id: examId, no: num }, function(res) {
+            _soalCache[num] = res;
+            renderSoalData(num, res);
+        }, 'json');
     }
 
     function updateNav() {

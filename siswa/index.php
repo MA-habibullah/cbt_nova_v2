@@ -16,7 +16,10 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'siswa') {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8f9fc; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 
@@ -252,16 +255,11 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'siswa') {
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-var _katexLoaded = false;
-var _katexQueue  = [];
-
 function renderMath(el) {
-    if (!el) return;
-    // Check if element actually contains math delimiters before loading KaTeX
+    if (!el || typeof renderMathInElement === 'undefined') return;
     var content = el.textContent || el.innerText || '';
     if (content.indexOf('$') === -1) return;
-
-    if (_katexLoaded) {
+    try {
         renderMathInElement(el, {
             delimiters: [
                 { left: '$$', right: '$$', display: true  },
@@ -269,37 +267,7 @@ function renderMath(el) {
             ],
             throwOnError: false
         });
-        return;
-    }
-
-    _katexQueue.push(el);
-    if (_katexQueue.length > 1) return; // Already loading
-
-    var link = document.createElement('link');
-    link.rel  = 'stylesheet';
-    link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css';
-    document.head.appendChild(link);
-
-    var s1 = document.createElement('script');
-    s1.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js';
-    s1.onload = function() {
-        var s2 = document.createElement('script');
-        s2.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js';
-        s2.onload = function() {
-            _katexLoaded = true;
-            var opts = {
-                delimiters: [
-                    { left: '$$', right: '$$', display: true  },
-                    { left: '$',  right: '$',  display: false }
-                ],
-                throwOnError: false
-            };
-            _katexQueue.forEach(function(e) { renderMathInElement(e, opts); });
-            _katexQueue = [];
-        };
-        document.head.appendChild(s2);
-    };
-    document.head.appendChild(s1);
+    } catch(e) {}
 }
 </script>
 <script>

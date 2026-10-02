@@ -19,48 +19,36 @@ $exam_id = isset($_GET['exam_id']) ? (int)$_GET['exam_id'] : 0;
 $no = isset($_GET['no']) ? (int)$_GET['no'] : 1;
 if ($no < 1) $no = 1;
 $student_id = (int)$_SESSION['student_id'];
-session_write_close();
 
-try {
-    // 1. Ambil Data Partisipasi & Cek Status + soal_ids (untuk distribusi per-siswa)
+// High-Performance Session Cache Plan: Hindari 3 query overhead pada setiap klik nomor soal
+$cache_key = "exam_plan_{$exam_id}_{$student_id}";
+if (isset($_SESSION[$cache_key])) {
+    $participant_id   = $_SESSION[$cache_key]['participant_id'];
+    $acak_soal        = $_SESSION[$cache_key]['acak_soal'];
+    $acak_opsi_global = $_SESSION[$cache_key]['acak_opsi_global'];
+    $all_question_ids = $_SESSION[$cache_key]['all_question_ids'];
+    session_write_close();
+} else {
+    // 1. Ambil Data Partisipasi & Cek Status + soal_ids
     $stmtPart = $pdo->prepare("SELECT id, status, soal_ids FROM cbt_exam_participants WHERE exam_id = ? AND student_id = ?");
     $stmtPart->execute([$exam_id, $student_id]);
     $participant = $stmtPart->fetch();
 
     if (!$participant) {
+        session_write_close();
         if (ob_get_length()) ob_clean();
         echo json_encode(['html' => 'Sesi ujian tidak ditemukan.']);
         exit;
     }
 
-    // --- LOGIKA REKOMENDASI: CEK BLOCKED ---
     if ($participant['status'] === 'blocked') {
-        $stmtCheat = $pdo->prepare("SELECT COUNT(*) FROM cbt_cheat_logs WHERE exam_id = ? AND student_id = ?");
-        $stmtCheat->execute([$exam_id, $student_id]);
-        $jumlah_pelanggaran = $stmtCheat->fetchColumn();
-
-        $html_blocked = "
-        <div class='text-center py-5'>
-            <i class='fas fa-user-lock fa-5x text-danger mb-4 opacity-50'></i>
-            <h3 class='fw-bold text-danger'>AKUN ANDA TERKUNCI</h3>
-            <div class='alert alert-danger d-inline-block px-4 mt-3 rounded-4 shadow-sm'>
-                <p class='mb-1'>Anda telah melakukan pelanggaran sebanyak <b>$jumlah_pelanggaran kali</b>.</p>
-                <p class='mb-0 fw-bold'>Sistem memblokir akses Anda secara otomatis.</p>
-            </div>
-            <p class='text-muted mt-3'>Silakan hubungi <b>Pengawas Kelas</b> atau <b>Operator</b> untuk membuka blokir.</p>
-
-            <a href='proses_selesai_ujian.php?id=$exam_id&reason=blocked' class='btn btn-danger fw-bold rounded-pill mt-2 px-4 shadow-sm'>
-                <i class='fas fa-check-circle me-2'></i> SELESAI
-            </a>
-        </div>";
-
+        session_write_close();
         if (ob_get_length()) ob_clean();
-        echo json_encode(['html' => $html_blocked, 'is_blocked' => true]);
+        echo json_encode(['html' => 'Akun Anda terkunci.', 'is_blocked' => true]);
         exit;
     }
-    // --- END LOGIKA BLOCKED ---
 
-    $participant_id = $participant['id'];
+    $participant_id = (int)$participant['id'];
 
     // 2. Ambil Pengaturan Acak dari Ujian
     $stmtExam = $pdo->prepare("SELECT acak_soal, acak_opsi FROM cbt_exams WHERE id = ?");
@@ -69,8 +57,7 @@ try {
     $acak_soal = (int)($exam['acak_soal'] ?? 0);
     $acak_opsi_global = (int)($exam['acak_opsi'] ?? 0);
 
-    // 3. Ambil Semua ID Soal dalam Ujian (urutan dasar)
-    // Jika soal_ids terisi (distribusi per-siswa aktif), gunakan itu; jika tidak, ambil dari cbt_exam_questions
+    // 3. Ambil Semua ID Soal dalam Ujian
     $soal_ids_json = $participant['soal_ids'] ?? null;
     if ($soal_ids_json) {
         $all_question_ids = json_decode($soal_ids_json, true) ?: [];
@@ -80,12 +67,23 @@ try {
         $all_question_ids = $stmtAllQ->fetchAll(PDO::FETCH_COLUMN);
     }
 
-    // 4. Acak Urutan Soal jika Diaktifkan (deterministik per siswa per ujian)
+    // 4. Acak Urutan Soal jika Diaktifkan
     if ($acak_soal && count($all_question_ids) > 1) {
         $seed_soal = crc32($student_id . '_exam_' . $exam_id);
         seeded_shuffle($all_question_ids, $seed_soal);
     }
 
+    // Simpan ke Session Cache agar navigasi soal berikutnya 0 ms
+    $_SESSION[$cache_key] = [
+        'participant_id'   => $participant_id,
+        'acak_soal'        => $acak_soal,
+        'acak_opsi_global' => $acak_opsi_global,
+        'all_question_ids' => $all_question_ids
+    ];
+    session_write_close();
+}
+
+try {
     // 5. Tentukan ID Soal yang Diminta Berdasarkan Nomor
     if (!isset($all_question_ids[$no - 1])) {
         if (ob_get_length()) ob_clean();
@@ -131,7 +129,7 @@ try {
     // Label urut untuk opsi jawaban
     $option_labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
-    // 7. Render Jawaban Berdasarkan Tipe (Strict Column Projection: Hindari pengambilan kolom is_correct)
+    // 7. Render Jawaban Berdasarkan Tipe
     switch ($q['tipe']) {
         case 'pg': // Pilihan Ganda
             $opts = $pdo->prepare("SELECT id, question_id, label, value_target FROM cbt_question_options WHERE question_id = ? ORDER BY label ASC");
@@ -192,7 +190,6 @@ try {
             break;
 
         case 'benar_salah':
-            // Benar/Salah tidak diacak karena hanya 2 opsi tetap
             $opts = $pdo->prepare("SELECT id, question_id, label, value_target FROM cbt_question_options WHERE question_id = ? ORDER BY label ASC");
             $opts->execute([$q['id']]);
             foreach ($opts->fetchAll() as $idx => $o) {
@@ -217,26 +214,21 @@ try {
             $rows_display    = $all_options;
             $choices_display = $all_options;
 
-            // Menjodohkan selalu diacak deterministik per siswa
             $seed_rows    = crc32($student_id . '_exam_' . $exam_id . '_q_' . $q['id'] . '_rows');
             $seed_choices = crc32($student_id . '_exam_' . $exam_id . '_q_' . $q['id'] . '_choices');
             seeded_shuffle($rows_display,    $seed_rows);
             seeded_shuffle($choices_display, $seed_choices);
 
-            // Jaminan derangement: jawaban di posisi i tidak boleh menjadi jawaban benar
-            // untuk pernyataan di posisi i yang sama (hindari pasangan lurus yang mudah ditebak)
             $n = count($rows_display);
             if ($n >= 2) {
                 for ($i = 0; $i < $n; $i++) {
                     if ($choices_display[$i]['value_target'] === $rows_display[$i]['value_target']) {
-                        // Tukar dengan posisi berikutnya (circular)
                         $j = ($i + 1) % $n;
                         [$choices_display[$i], $choices_display[$j]] = [$choices_display[$j], $choices_display[$i]];
                     }
                 }
             }
 
-            // Siapkan array nilai pilihan untuk diakses via JS (menghindari HTML di data-attribute)
             $choices_values = array_values(array_map(fn($c) => inject_domain_to_html($c['value_target']), $choices_display));
 
             $html .= "<div class='matching-header d-none d-md-flex mb-2 px-1'>
@@ -249,7 +241,6 @@ try {
                 $row_id         = $o['id'];
                 $current_choice = $jawaban_user[$row_id] ?? '';
 
-                // Cari index pilihan yang sudah dipilih
                 $selected_idx = -1;
                 foreach ($choices_display as $cidx => $ch) {
                     if ($ch['value_target'] === $current_choice) {
@@ -301,19 +292,19 @@ try {
             }
 
             $html .= "</div>";
-
-            // Injek array nilai pilihan ke JS agar click handler bisa mengambil nilai asli (termasuk HTML)
             $html .= "<script>window._matchChoicesData = " . json_encode($choices_values) . ";</script>";
             break;
     }
 
-    $html .= "</div>"; // End options-container
+    $html .= "</div>";
 
     // Bersihkan buffer dan kirim JSON
     if (ob_get_length()) ob_clean();
     echo json_encode([
-        'html' => inject_domain_to_html($html),
-        'is_ragu' => $q['is_ragu']
+        'html'    => inject_domain_to_html($html),
+        'is_ragu' => (int)($q['is_ragu'] ?? 0),
+        'q_id'    => (int)$q['id'],
+        'no'      => $no
     ]);
 
 } catch (PDOException $e) {
