@@ -364,19 +364,39 @@ $(document).ready(function() {
         if (!examId && !bankId) return;
 
         Swal.fire({
-            title: 'Hitung Ulang Semua Nilai?',
-            text: 'Sistem akan mengoreksi dan menghitung ulang nilai seluruh siswa pada jadwal ujian ini sesuai kunci jawaban & bobot saat ini.',
+            title: '<span class="text-primary fw-bold fs-4"><i class="fas fa-info-circle me-2"></i>Informasi Hitung Ulang Nilai</span>',
+            html: `
+                <div class="text-start small text-secondary mt-2">
+                    <div class="alert alert-warning border-0 py-2 px-3 mb-3 d-flex align-items-center gap-2">
+                        <i class="fas fa-lightbulb text-warning fs-5 flex-shrink-0"></i>
+                        <div><strong>Kapan fitur ini digunakan?</strong> Gunakan jika Anda baru saja <u>mengubah kunci jawaban</u> di bank soal, <u>mengubah bobot nilai</u>, atau <u>selesai mengoreksi soal esai</u>.</div>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-2"><i class="fas fa-cog me-1 text-primary"></i>Apa yang akan dilakukan sistem?</h6>
+                    <ul class="ps-3 mb-3">
+                        <li class="mb-1">Sistem membaca kunci jawaban dan bobot soal terkini dari database.</li>
+                        <li class="mb-1">Mencocokkan ulang seluruh jawaban siswa yang sudah menyelesaikan ujian (<span class="badge bg-success-subtle text-success">SELESAI</span>).</li>
+                        <li class="mb-1">Menghitung ulang persentase nilai objektif, esai, dan skor akhir secara otomatis.</li>
+                    </ul>
+                    <div class="bg-light p-2 rounded border small mb-3 text-dark">
+                        <i class="fas fa-shield-alt text-success me-1"></i><strong>Proteksi Siswa Aktif:</strong> Siswa yang berstatus <span class="badge bg-secondary-subtle text-secondary">BELUM UJIAN</span> atau <span class="badge bg-warning-subtle text-warning-emphasis">MENGERJAKAN</span> <u>tidak akan terganggu</u> dan tidak akan dikunci.
+                    </div>
+                    <p class="mb-0 text-center text-muted fst-italic">Apakah Anda yakin ingin melanjutkan proses hitung ulang nilai?</p>
+                </div>
+            `,
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#f59e0b',
             cancelButtonColor: '#64748b',
-            confirmButtonText: '<i class="fas fa-sync-alt me-1"></i> Ya, Hitung Ulang',
-            cancelButtonText: 'Batal'
+            confirmButtonText: '<i class="fas fa-sync-alt me-1"></i> Ya, Lanjutkan Hitung Ulang',
+            cancelButtonText: 'Batal',
+            customClass: {
+                popup: 'rounded-4 shadow'
+            }
         }).then((result) => {
             if (result.isConfirmed) {
                 Swal.fire({
                     title: 'Memproses Penilaian...',
-                    text: 'Sedang menghitung ulang nilai seluruh siswa.',
+                    text: 'Sedang menghitung ulang nilai seluruh siswa yang sudah selesai.',
                     allowOutsideClick: false,
                     didOpen: () => { Swal.showLoading(); }
                 });
@@ -415,18 +435,29 @@ $(document).ready(function() {
         if (!pId) return;
 
         Swal.fire({
-            title: 'Hitung Ulang Siswa Ini?',
-            text: 'Hitung ulang nilai untuk ' + name + '?',
+            title: '<span class="text-primary fw-bold fs-5"><i class="fas fa-user-edit me-2"></i>Hitung Ulang Nilai Siswa</span>',
+            html: `
+                <div class="text-start small text-secondary mt-2">
+                    <p class="mb-2">Hitung ulang penilaian untuk siswa: <strong class="text-dark">${name}</strong>?</p>
+                    <div class="alert alert-info border-0 py-2 px-3 mb-2 small">
+                        <i class="fas fa-info-circle me-1"></i>Sistem akan mencocokkan ulang jawaban siswa ini dengan kunci jawaban dan bobot soal terbaru saat ini.
+                    </div>
+                </div>
+            `,
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#f59e0b',
             cancelButtonColor: '#64748b',
-            confirmButtonText: 'Ya, Hitung',
-            cancelButtonText: 'Batal'
+            confirmButtonText: '<i class="fas fa-sync-alt me-1"></i> Ya, Hitung Ulang',
+            cancelButtonText: 'Batal',
+            customClass: {
+                popup: 'rounded-4 shadow'
+            }
         }).then((result) => {
             if (result.isConfirmed) {
                 Swal.fire({
-                    title: 'Memproses...',
+                    title: 'Memproses Penilaian...',
+                    text: 'Sedang menghitung ulang nilai siswa...',
                     allowOutsideClick: false,
                     didOpen: () => { Swal.showLoading(); }
                 });
