@@ -661,6 +661,11 @@ function gJadwalQuery(array $extra = []): string {
                                     </td>
                                     <td class="text-center">
                                         <div class="d-flex align-items-center justify-content-center gap-1">
+                                            <a href="<?= esc(BASE_URL) ?>guru/bank-soal/test-kelola.php?exam_id=<?= (int)$e['id'] ?>&id=<?= (int)$e['bank_soal_id'] ?>" 
+                                               class="btn btn-sm btn-info text-white fw-semibold px-2" 
+                                               title="Atur Konfigurasi Soal & Peserta Siswa (Sesi)">
+                                                <i class="fas fa-users-cog me-1"></i> Kelola
+                                            </a>
                                             <a href="<?= esc(BASE_URL) ?>guru/monitoring/index.php" 
                                                class="btn btn-sm btn-primary fw-semibold px-2" 
                                                title="Monitoring Peserta Ujian">
@@ -678,6 +683,12 @@ function gJadwalQuery(array $extra = []): string {
                                                     <i class="fas fa-ellipsis-v"></i>
                                                 </button>
                                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                                    <li>
+                                                        <a href="<?= esc(BASE_URL) ?>guru/bank-soal/test-kelola.php?exam_id=<?= (int)$e['id'] ?>&id=<?= (int)$e['bank_soal_id'] ?>" class="dropdown-item fw-semibold text-primary">
+                                                            <i class="fas fa-users-cog me-2 text-primary"></i> Atur Soal &amp; Siswa (Sesi)
+                                                        </a>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
                                                     <li>
                                                         <a href="<?= esc(BASE_URL) ?>guru/hasil/index.php?exam_id=<?= (int)$e['id'] ?>" class="dropdown-item fw-semibold text-success">
                                                             <i class="fas fa-poll me-2"></i> Rekap Nilai Siswa

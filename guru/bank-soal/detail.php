@@ -138,14 +138,14 @@ $total_ujian = $jml_ujian_stmt->fetchColumn();
                     </a>
                 </div>
 
-                <!-- Jadwal Ujian -->
+                <!-- Jadwal Ujian / Buat Ujian -->
                 <div class="col-xl-3 col-md-6">
-                    <a href="<?= esc(BASE_URL) ?>guru/jadwal/index.php?bank_soal_id=<?= esc($id_bank) ?>" class="text-decoration-none">
+                    <a href="test.php?id=<?= esc($id_bank) ?>" class="text-decoration-none">
                         <div class="card h-100 menu-card shadow-sm border-start border-danger border-4">
                             <div class="card-body p-4">
                                 <div class="icon-box bg-danger-subtle text-danger"><i class="fas fa-calendar-plus fa-2x"></i></div>
-                                <h5 class="fw-bold text-dark">Jadwal Ujian</h5>
-                                <p class="text-muted small mb-0">Buat dan kelola jadwal ujian dari bank soal ini</p>
+                                <h5 class="fw-bold text-dark">Buat Ujian / Test</h5>
+                                <p class="text-muted small mb-0">Atur durasi, konfigurasi soal, dan peserta siswa</p>
                                 <div class="mt-3 badge bg-danger"><?= $total_ujian ?> Ujian</div>
                             </div>
                         </div>

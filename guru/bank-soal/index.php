@@ -532,6 +532,11 @@ function gbsQ(array $extra = []): string {
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                                                 <li>
+                                                    <a href="test.php?id=<?= esc($b['id']) ?>" class="dropdown-item fw-semibold text-primary">
+                                                        <i class="fas fa-calendar-plus me-2 text-primary"></i> Buat / Kelola Jadwal Ujian
+                                                    </a>
+                                                </li>
+                                                <li>
                                                     <button type="button" class="dropdown-item btn-edit" 
                                                             data-bs-toggle="modal" data-bs-target="#modalEdit"
                                                             data-id="<?= esc($b['id']) ?>" 
@@ -539,7 +544,7 @@ function gbsQ(array $extra = []): string {
                                                             data-nama="<?= esc($b['nama_bank_soal']) ?>" 
                                                             data-subject="<?= esc($b['subject_id']) ?>"
                                                             data-jenjang="<?= esc($b['jenjang']) ?>">
-                                                        <i class="fas fa-edit text-primary me-2"></i> Edit Informasi
+                                                        <i class="fas fa-edit text-warning me-2"></i> Edit Informasi
                                                     </button>
                                                 </li>
                                                 <li><hr class="dropdown-divider"></li>
