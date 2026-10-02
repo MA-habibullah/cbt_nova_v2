@@ -71,11 +71,8 @@ try {
     }
 
     if ($waktu_sekarang > $final_deadline) {
-        $pdo->prepare("
-            UPDATE cbt_exam_participants
-            SET status = 'finished', waktu_selesai = NOW(), tambahan_waktu = 0
-            WHERE id = ? AND status = 'working'
-        ")->execute([$row['participant_id']]);
+        // Hitung dan simpan nilai otomatis saat waktu habis
+        hitung_dan_simpan_nilai_peserta($pdo, (int)$row['participant_id']);
 
         if (ob_get_length()) ob_clean();
         echo json_encode([
