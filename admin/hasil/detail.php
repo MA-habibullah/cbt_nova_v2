@@ -74,10 +74,32 @@ $skor_essay_tot = 0.0;
 $bobot_objektif = 0.0;
 $bobot_essay    = 0.0;
 $tipe_objektif  = ['pg', 'pg_kompleks', 'benar_salah', 'menjodohkan', 'isian'];
+$tipe_counts = [
+    'all'            => count($answers),
+    'essay'          => 0,
+    'essay_ungraded' => 0,
+    'pg'             => 0,
+    'pg_kompleks'    => 0,
+    'benar_salah'    => 0,
+    'menjodohkan'    => 0,
+    'isian'          => 0,
+    'objektif'       => 0,
+];
 
 foreach ($answers as $_a) {
     $_t = normalize_tipe_soal($_a['tipe'] ?? 'pg');
     $_j = $_a['jawaban_simpan'];
+
+    if (isset($tipe_counts[$_t])) {
+        $tipe_counts[$_t]++;
+    }
+    if (in_array($_t, $tipe_objektif, true)) {
+        $tipe_counts['objektif']++;
+    }
+    if ($_t === 'essay' && !(bool)$_a['is_graded'] && !empty($_a['jawaban_simpan'])) {
+        $tipe_counts['essay_ungraded']++;
+    }
+
     if ($_j === null || $_j === '' || $_j === '[]' || $_j === '{}') {
         $cnt_kosong++;
     } elseif ($_t === 'essay') {
@@ -261,13 +283,87 @@ if (!empty($answers)) {
                 <div class="col-lg-8">
                     <?php if (empty($answers)): ?>
                         <div class="alert alert-warning">Siswa belum mengerjakan ujian ini.</div>
+                    <?php else: ?>
+                        <!-- Filter Jenis Soal -->
+                        <div class="card border-0 shadow-sm mb-3">
+                            <div class="card-body p-3">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="fas fa-filter text-primary"></i>
+                                        <span class="fw-bold small text-dark">Filter Soal:</span>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-1 align-items-center" id="filterPillGroup">
+                                        <button type="button" class="btn btn-sm btn-primary filter-btn active" data-filter="all">
+                                            Semua <span class="badge bg-white text-dark ms-1"><?= $tipe_counts['all'] ?></span>
+                                        </button>
+                                        <?php if ($tipe_counts['essay'] > 0): ?>
+                                            <button type="button" class="btn btn-sm btn-outline-warning filter-btn text-dark fw-bold" data-filter="essay">
+                                                <i class="fas fa-pen-nib me-1 text-warning"></i>Esai / Uraian
+                                                <span class="badge bg-warning text-dark ms-1"><?= $tipe_counts['essay'] ?></span>
+                                                <?php if ($tipe_counts['essay_ungraded'] > 0): ?>
+                                                    <span class="badge bg-danger text-white ms-1" title="Belum Dinilai"><?= $tipe_counts['essay_ungraded'] ?> Belum Dinilai</span>
+                                                <?php endif; ?>
+                                            </button>
+                                        <?php endif; ?>
+                                        <?php if ($tipe_counts['pg'] > 0): ?>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary filter-btn" data-filter="pg">
+                                                PG <span class="badge bg-secondary ms-1"><?= $tipe_counts['pg'] ?></span>
+                                            </button>
+                                        <?php endif; ?>
+                                        <?php if ($tipe_counts['pg_kompleks'] > 0): ?>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary filter-btn" data-filter="pg_kompleks">
+                                                PG Kompleks <span class="badge bg-secondary ms-1"><?= $tipe_counts['pg_kompleks'] ?></span>
+                                            </button>
+                                        <?php endif; ?>
+                                        <?php if ($tipe_counts['benar_salah'] > 0): ?>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary filter-btn" data-filter="benar_salah">
+                                                Benar/Salah <span class="badge bg-secondary ms-1"><?= $tipe_counts['benar_salah'] ?></span>
+                                            </button>
+                                        <?php endif; ?>
+                                        <?php if ($tipe_counts['menjodohkan'] > 0): ?>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary filter-btn" data-filter="menjodohkan">
+                                                Menjodohkan <span class="badge bg-secondary ms-1"><?= $tipe_counts['menjodohkan'] ?></span>
+                                            </button>
+                                        <?php endif; ?>
+                                        <?php if ($tipe_counts['isian'] > 0): ?>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary filter-btn" data-filter="isian">
+                                                Isian Singkat <span class="badge bg-secondary ms-1"><?= $tipe_counts['isian'] ?></span>
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="d-none d-sm-block">
+                                        <select class="form-select form-select-sm" id="selectFilterTipe" style="min-width: 160px;">
+                                            <option value="all">Semua Tipe (<?= $tipe_counts['all'] ?>)</option>
+                                            <?php if ($tipe_counts['essay'] > 0): ?>
+                                                <option value="essay">⭐ Khusus Esai (<?= $tipe_counts['essay'] ?>)</option>
+                                            <?php endif; ?>
+                                            <?php if ($tipe_counts['objektif'] > 0): ?>
+                                                <option value="objektif">Semua Objektif (<?= $tipe_counts['objektif'] ?>)</option>
+                                            <?php endif; ?>
+                                            <?php if ($tipe_counts['pg'] > 0): ?><option value="pg">Pilihan Ganda (<?= $tipe_counts['pg'] ?>)</option><?php endif; ?>
+                                            <?php if ($tipe_counts['pg_kompleks'] > 0): ?><option value="pg_kompleks">PG Kompleks (<?= $tipe_counts['pg_kompleks'] ?>)</option><?php endif; ?>
+                                            <?php if ($tipe_counts['benar_salah'] > 0): ?><option value="benar_salah">Benar/Salah (<?= $tipe_counts['benar_salah'] ?>)</option><?php endif; ?>
+                                            <?php if ($tipe_counts['menjodohkan'] > 0): ?><option value="menjodohkan">Menjodohkan (<?= $tipe_counts['menjodohkan'] ?>)</option><?php endif; ?>
+                                            <?php if ($tipe_counts['isian'] > 0): ?><option value="isian">Isian Singkat (<?= $tipe_counts['isian'] ?>)</option><?php endif; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Alert jika filter tidak menemukan soal -->
+                        <div id="emptyFilterAlert" class="alert alert-info d-none text-center py-4">
+                            <i class="fas fa-info-circle fa-2x mb-2 d-block text-info"></i>
+                            Tidak ada butir soal yang sesuai dengan filter yang dipilih.
+                        </div>
                     <?php endif; ?>
 
                     <?php foreach ($answers as $idx => $ans):
+                        $_norm_tipe = normalize_tipe_soal($ans['tipe'] ?? 'pg');
                         $_j = $ans['jawaban_simpan'];
                         $jawaban_kosong = ($_j === null || $_j === '' || $_j === '[]' || $_j === '{}');
                         $is_correct   = ($ans['skor_didapat'] > 0);
-                        if ($ans['tipe'] === 'essay') {
+                        if ($_norm_tipe === 'essay') {
                             $border_class = 'essay';
                         } elseif ($jawaban_kosong) {
                             $border_class = 'kosong';
@@ -277,7 +373,10 @@ if (!empty($answers)) {
                             $border_class = 'salah';
                         }
                     ?>
-                    <div class="card border-0 shadow-sm mb-4 card-soal <?= $border_class ?>">
+                    <div class="card border-0 shadow-sm mb-4 card-soal <?= $border_class ?>" 
+                         data-tipe="<?= esc($_norm_tipe) ?>" 
+                         data-is-objektif="<?= in_array($_norm_tipe, $tipe_objektif, true) ? '1' : '0' ?>"
+                         data-is-graded="<?= (int)$ans['is_graded'] ?>">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-3">
                                 <div>
@@ -509,6 +608,72 @@ function koreksiSkor(answerId, bobotMaks, skorSekarang) {
     });
 }
 
+function applyFilterTipe(tipe) {
+    $('#filterPillGroup .filter-btn').each(function() {
+        const btnFilter = $(this).data('filter');
+        if (btnFilter === 'essay') {
+            $(this).removeClass('btn-warning btn-primary active').addClass('btn-outline-warning text-dark');
+        } else {
+            $(this).removeClass('btn-warning btn-primary active').addClass('btn-outline-secondary');
+        }
+    });
+
+    const $activeBtn = $(`#filterPillGroup .filter-btn[data-filter="${tipe}"]`);
+    if ($activeBtn.length) {
+        if (tipe === 'essay') {
+            $activeBtn.removeClass('btn-outline-warning').addClass('btn-warning text-dark active fw-bold');
+        } else {
+            $activeBtn.removeClass('btn-outline-secondary').addClass('btn-primary active text-white');
+        }
+    }
+    $('#selectFilterTipe').val(tipe);
+
+    let visibleCount = 0;
+    $('.card-soal').each(function() {
+        const itemTipe   = $(this).data('tipe');
+        const isObjektif = $(this).data('is-objektif') == 1;
+
+        let match = false;
+        if (tipe === 'all' || !tipe) {
+            match = true;
+        } else if (tipe === 'objektif') {
+            match = isObjektif;
+        } else if (itemTipe === tipe) {
+            match = true;
+        }
+
+        if (match) {
+            $(this).show();
+            visibleCount++;
+        } else {
+            $(this).hide();
+        }
+    });
+
+    if (visibleCount === 0) {
+        $('#emptyFilterAlert').removeClass('d-none');
+    } else {
+        $('#emptyFilterAlert').addClass('d-none');
+    }
+}
+
+$(document).on('click', '.filter-btn', function() {
+    const tipe = $(this).data('filter');
+    applyFilterTipe(tipe);
+});
+
+$('#selectFilterTipe').on('change', function() {
+    applyFilterTipe($(this).val());
+});
+
+// Auto activate filter if specified in URL param (?tipe=essay) or hash (#essay)
+$(document).ready(function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const filterParam = urlParams.get('tipe') || urlParams.get('filter') || window.location.hash.replace('#', '');
+    if (filterParam) {
+        applyFilterTipe(filterParam);
+    }
+});
 </script>
 </body>
 </html>
