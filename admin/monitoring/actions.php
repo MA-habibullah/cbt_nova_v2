@@ -136,13 +136,11 @@ try {
 
     elseif ($action === 'finish_exam') {
         /**
-         * SELESAIKAN UJIAN SECARA PAKSA
-         * 1. Set status ke 'finished'
-         * 2. Set waktu_selesai ke jam sekarang
-         * 3. (Opsional) Nilai tetap akan dikalkulasi nanti oleh guru/sistem
+         * SELESAIKAN UJIAN SECARA PAKSA & HITUNG NILAI OTOMATIS
          */
-        $sql = "UPDATE cbt_exam_participants SET status = 'finished', waktu_selesai = NOW(), tambahan_waktu = 0 WHERE id IN ($placeholders) AND status != 'finished'";
-        query($sql, $ids);
+        foreach ($ids as $pid) {
+            hitung_dan_simpan_nilai_peserta($pdo, (int)$pid);
+        }
         
         // Hapus juga lock perangkatnya agar siswa bisa ikut ujian lain di masa depan tanpa hambatan
         $sqlDeleteLock = "DELETE FROM cbt_device_locks WHERE student_id IN (SELECT student_id FROM cbt_exam_participants WHERE id IN ($placeholders))";

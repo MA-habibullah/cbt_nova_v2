@@ -66,7 +66,9 @@ try {
         query("UPDATE cbt_exam_participants SET status = 'blocked' WHERE id IN ($placeholders)", $ids);
 
     } elseif ($action === 'finish_exam') {
-        query("UPDATE cbt_exam_participants SET status = 'finished', waktu_selesai = NOW() WHERE id IN ($placeholders) AND status != 'finished'", $ids);
+        foreach ($ids as $pid) {
+            hitung_dan_simpan_nilai_peserta($pdo, (int)$pid);
+        }
         query("DELETE FROM cbt_device_locks WHERE student_id IN (SELECT student_id FROM cbt_exam_participants WHERE id IN ($placeholders))", $ids);
 
     } else {
