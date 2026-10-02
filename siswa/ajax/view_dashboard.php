@@ -27,7 +27,7 @@ $today_start = date('Y-m-d') . ' 00:00:00';
 $today_end   = date('Y-m-d') . ' 23:59:59';
 require_once '../../includes/helpers.php';
 
-$sqlExams = "SELECT e.*, s.nama_mapel, p.status as status_ujian
+$sqlExams = "SELECT e.*, s.nama_mapel, p.id as participant_id, p.status as status_ujian
              FROM cbt_exams e
              JOIN cbt_subjects s ON e.subject_id = s.id
              JOIN cbt_exam_participants p ON p.exam_id = e.id AND p.student_id = ?
@@ -38,6 +38,17 @@ $sqlExams = "SELECT e.*, s.nama_mapel, p.status as status_ujian
 $stmtExams = $pdo->prepare($sqlExams);
 $stmtExams->execute([$student_id, $today_start, $today_end]);
 $exams = $stmtExams->fetchAll();
+
+// Auto-finalize & kalkulasi skor jika siswa sebelumnya sedang mengerjakan namun waktu jadwal habis
+foreach ($exams as &$e) {
+    if (($e['status_ujian'] ?? '') === 'working' && $sekarang > $e['selesai_pada']) {
+        if (!empty($e['participant_id'])) {
+            hitung_dan_simpan_nilai_peserta($pdo, (int)$e['participant_id']);
+            $e['status_ujian'] = 'finished';
+        }
+    }
+}
+unset($e);
 
 $msg = $_GET['msg'] ?? '';
 ?>
