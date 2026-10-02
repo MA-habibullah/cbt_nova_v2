@@ -1,4 +1,13 @@
 <?php
+ob_start();
+session_start();
+require_once dirname(__DIR__, 3) . '/config/database.php';
+
+if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['superadmin', 'admin', 'proktor', 'guru'])) {
+    if (ob_get_length()) ob_end_clean();
+    header("Location: " . BASE_URL . "index.php"); exit;
+}
+
 require_once dirname(__DIR__, 3) . '/vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -145,9 +154,11 @@ $sheet->getStyle('A1:Q100')->getBorders()->getAllBorders()->setBorderStyle(Borde
 
 // 5. OUTPUT
 $filename = "Template_Soal_Lengkap_" . date('Ymd') . ".xlsx";
+if (ob_get_length()) ob_end_clean();
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 header('Content-Disposition: attachment;filename="' . $filename . '"');
 header('Cache-Control: max-age=0');
+header('Pragma: public');
 
 $writer = new Xlsx($spreadsheet);
 $writer->save('php://output');

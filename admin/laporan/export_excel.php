@@ -1,22 +1,28 @@
 <?php
+ob_start();
 session_start();
 require_once '../../config/database.php';
 
-// Proteksi Admin
-if (!isset($_SESSION['admin_id'])) {
+// Proteksi Admin / Proktor / Superadmin
+if (!isset($_SESSION['admin_id']) && !in_array($_SESSION['role'] ?? '', ['admin', 'superadmin', 'proktor'])) {
+    if (ob_get_length()) ob_end_clean();
     exit("Unauthorized");
 }
 
 $exam_id = isset($_GET['exam_id']) ? (int)$_GET['exam_id'] : 0;
 $class_id = isset($_GET['class_id']) ? (int)$_GET['class_id'] : '';
 
-if (!$exam_id) exit("Pilih Ujian Terlebih Dahulu");
+if (!$exam_id) {
+    if (ob_get_length()) ob_end_clean();
+    exit("Pilih Ujian Terlebih Dahulu");
+}
 
 // 1. Ambil Info Ujian untuk Nama File
 $stmtExam = $pdo->prepare("SELECT nama_mapel_ujian FROM cbt_exams WHERE id = ?");
 $stmtExam->execute([$exam_id]);
 $exam_info = $stmtExam->fetch();
-$nama_file = "Nilai_" . str_replace(' ', '_', $exam_info['nama_mapel_ujian']) . "_" . date('Ymd_His') . ".xls";
+$safe_mapel = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $exam_info['nama_mapel_ujian'] ?? 'Ujian');
+$nama_file = "Nilai_" . $safe_mapel . "_" . date('Ymd_His') . ".xls";
 
 // 2. Query Data Nilai
 $query = "
@@ -29,7 +35,7 @@ $query = "
     FROM cbt_exam_participants p
     JOIN cbt_students s ON p.student_id = s.id
     JOIN cbt_classes c ON s.class_id = c.id
-    WHERE p.exam_id = ? AND p.status = 'finished'
+    WHERE p.exam_id = ? AND p.status IN ('finished', 'working')
 ";
 
 $params = [$exam_id];
@@ -44,10 +50,12 @@ $stmt->execute($params);
 $data = $stmt->fetchAll();
 
 // 3. Header untuk Download Excel
-header("Content-Type: application/vnd.ms-excel");
+if (ob_get_length()) ob_end_clean();
+header("Content-Type: application/vnd.ms-excel; charset=utf-8");
 header("Content-Disposition: attachment; filename=$nama_file");
 header("Pragma: no-cache");
 header("Expires: 0");
+header("Cache-Control: max-age=0");
 ?>
 
 <table border="1">

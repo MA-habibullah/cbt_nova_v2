@@ -1,7 +1,13 @@
 <?php
+ob_start();
 session_start();
-// Pastikan path config benar sesuai struktur folder baru
 require_once dirname(__DIR__, 3) . '/config/database.php';
+
+// Proteksi Autentikasi
+if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['superadmin', 'admin', 'proktor', 'guru'])) {
+    if (ob_get_length()) ob_end_clean();
+    header("Location: " . BASE_URL . "index.php"); exit;
+}
 
 $id_bank = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -13,7 +19,10 @@ $stmt = $pdo->prepare("SELECT b.*, s.nama_mapel
 $stmt->execute([$id_bank]);
 $bank = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$bank) die("Bank soal tidak ditemukan.");
+if (!$bank) {
+    if (ob_get_length()) ob_end_clean();
+    die("Bank soal tidak ditemukan.");
+}
 
 // 2. Ambil semua soal
 $stmt_q = $pdo->prepare("SELECT * FROM cbt_questions WHERE bank_soal_id = ?");

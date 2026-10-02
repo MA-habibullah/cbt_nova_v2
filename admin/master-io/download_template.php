@@ -1,7 +1,9 @@
 <?php
+ob_start();
 require_once dirname(__DIR__, 2) . '/config/database.php';
 
 if (!isset($_SESSION['admin_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
+    if (ob_get_length()) ob_end_clean();
     header("Location: " . BASE_URL . "index.php"); exit;
 }
 
@@ -110,8 +112,10 @@ foreach (['A', 'B', 'C', 'D'] as $col) {
 $spreadsheet->setActiveSheetIndex(0);
 
 $writer = new Xlsx($spreadsheet);
+if (ob_get_length()) ob_end_clean();
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 header('Content-Disposition: attachment;filename="Template_Import_Siswa.xlsx"');
 header('Cache-Control: max-age=0');
+header('Pragma: public');
 $writer->save('php://output');
 exit;

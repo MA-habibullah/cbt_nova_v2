@@ -18,26 +18,30 @@ if (isset($_POST['import'])) {
     }
 
     $file = $_FILES['file_excel']['tmp_name'];
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mime = finfo_file($finfo, $file);
-    finfo_close($finfo);
-
     $ext = strtolower(pathinfo($_FILES['file_excel']['name'] ?? '', PATHINFO_EXTENSION));
+    
+    $mime = '';
+    if (function_exists('finfo_open')) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_file($finfo, $file);
+        finfo_close($finfo);
+    }
+
     $allowed_mimes = [
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'application/octet-stream',
-        'application/zip'
+        'application/zip',
+        'text/plain',
+        ''
     ];
-    if (!in_array($ext, ['xlsx', 'xls']) || !in_array($mime, $allowed_mimes)) {
+    if (!in_array($ext, ['xlsx', 'xls', 'csv']) || ($mime !== '' && !in_array($mime, $allowed_mimes))) {
         header("Location: ../master/siswa.php?msg=invalid_format");
         exit;
     }
     
     try {
-        $reader = IOFactory::createReader('Xlsx');
-        $reader->setReadDataOnly(true);
-        $spreadsheet = $reader->load($file);
+        $spreadsheet = IOFactory::load($file);
 
         // Baca sheet "Data Siswa" by name; fallback ke sheet pertama jika tidak ada
         $sheet = $spreadsheet->getSheetByName('Data Siswa') ?? $spreadsheet->getSheet(0);

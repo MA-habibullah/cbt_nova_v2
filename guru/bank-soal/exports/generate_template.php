@@ -168,9 +168,11 @@ foreach ($templates as $t) {
 }
 
 $filename = "template_soal_cbt_" . date('Ymd_His') . ".docx";
+if (ob_get_length()) ob_end_clean();
 header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 header('Content-Disposition: attachment;filename="' . $filename . '"');
 header('Cache-Control: max-age=0');
+header('Pragma: public');
 
 $objWriter = IOFactory::createWriter($phpWord, 'Word2007');
 $objWriter->save('php://output');

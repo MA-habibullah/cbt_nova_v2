@@ -27,8 +27,10 @@ while ($row = $query->fetch(PDO::FETCH_ASSOC)) {
 }
 
 $writer = new Xlsx($spreadsheet);
-ob_end_clean();
+if (ob_get_length()) ob_end_clean();
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 header('Content-Disposition: attachment;filename="Data_Guru.xlsx"');
+header('Cache-Control: max-age=0');
+header('Pragma: public');
 $writer->save('php://output');
 exit;
