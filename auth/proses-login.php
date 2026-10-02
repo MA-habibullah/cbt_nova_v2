@@ -1,13 +1,20 @@
 <?php
 require_once '../config/database.php';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $role     = $_GET['role'] ?? '';
-    $username = trim($_POST['username']);
-    $password = $_POST['password'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $role     = $_GET['role'] ?? 'siswa';
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
 
-    // CSRF
-    csrf_verify();
+    // Verifikasi CSRF Token dengan Graceful Redirect
+    $token  = $_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+    $stored = $_SESSION['csrf_token'] ?? '';
+    if (empty($stored) || empty($token) || !hash_equals($stored, $token)) {
+        // Generate token baru agar form siap digunakan kembali
+        csrf_token();
+        header("Location: " . BASE_URL . "index.php?pesan=csrf_expired&tab=" . urlencode($role));
+        exit;
+    }
 
     // 1. Tentukan tabel dan folder tujuan (needed before captcha redirect uses $role)
     switch ($role) {

@@ -13,22 +13,78 @@ if (!isset($_SESSION['admin_id']) && ($_SESSION['role'] ?? '') !== 'admin') {
 
 $IS_WINDOWS = PHP_OS_FAMILY === 'Windows';
 
+// ── Maintenance Actions (POST) ──────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    $token  = $_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+    $stored = $_SESSION['csrf_token'] ?? '';
+
+    if (empty($stored) || empty($token) || !hash_equals($stored, $token)) {
+        echo json_encode(['status' => 'error', 'message' => 'CSRF Token tidak valid.']);
+        exit;
+    }
+
+    if ($action === 'clear_opcache') {
+        if (function_exists('opcache_reset')) {
+            $reset = @opcache_reset();
+            if ($reset) {
+                echo json_encode(['status' => 'success', 'message' => 'OPcache berhasil dibersihkan.']);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => 'Gagal me-reset OPcache atau OPcache dinonaktifkan di konfigurasi web server.']);
+            }
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Fungsi opcache_reset tidak tersedia pada server ini.']);
+        }
+        exit;
+    }
+
+    if ($action === 'clean_sessions') {
+        try {
+            $deleted = $pdo->exec("DELETE FROM cbt_online_sessions WHERE last_seen < DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+            echo json_encode(['status' => 'success', 'message' => "Berhasil membersihkan {$deleted} sesi kedaluwarsa (> 24 jam)."]);
+        } catch (\Throwable $e) {
+            echo json_encode(['status' => 'error', 'message' => 'Gagal membersihkan sesi: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+
+    if ($action === 'db_check') {
+        try {
+            $criticalTables = [
+                'cbt_admins', 'cbt_teachers', 'cbt_students', 'cbt_classes', 'cbt_subjects',
+                'cbt_bank_soal', 'cbt_questions', 'cbt_options', 'cbt_exams', 'cbt_exam_questions',
+                'cbt_exam_participants', 'cbt_student_answers', 'cbt_online_sessions',
+                'cbt_device_locks', 'cbt_cheat_logs', 'cbt_activity_logs'
+            ];
+            $tableResults = [];
+            foreach ($criticalTables as $tbl) {
+                $check = $pdo->query("CHECK TABLE `$tbl`")->fetch(PDO::FETCH_ASSOC);
+                $status = $check['Msg_text'] ?? 'OK';
+                $tableResults[$tbl] = ($status === 'OK' || str_contains(strtolower($status), 'already up to date')) ? 'OK' : $status;
+            }
+            echo json_encode(['status' => 'success', 'message' => 'Pemeriksaan integritas tabel selesai.', 'data' => $tableResults]);
+        } catch (\Throwable $e) {
+            echo json_encode(['status' => 'error', 'message' => 'Gagal memeriksa database: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+
+    echo json_encode(['status' => 'error', 'message' => 'Aksi tidak dikenali.']);
+    exit;
+}
+
 // ── CPU Usage ─────────────────────────────────────────────────────────────
 function getCpuPercent(bool $isWindows): float {
     if ($isWindows) {
-        // wmic cpu get loadpercentage — tersedia di Windows XP+
         $out = @shell_exec('wmic cpu get loadpercentage /value 2>nul');
         if ($out && preg_match('/LoadPercentage=(\d+)/i', $out, $m)) {
             return (float)$m[1];
         }
-        // Fallback: PowerShell (Windows 7+)
         $out = @shell_exec('powershell -NoProfile -Command "Get-WmiObject Win32_Processor | Measure-Object -Property LoadPercentage -Average | Select -ExpandProperty Average" 2>nul');
         return $out ? round((float)trim($out), 1) : 0.0;
     }
 
-    // Linux / macOS
     if (!is_readable('/proc/stat')) {
-        // macOS: gunakan vm_stat + sysctl
         $load = @sys_getloadavg();
         if ($load) {
             $cores = (int)(@shell_exec('nproc 2>/dev/null') ?: @shell_exec('sysctl -n hw.ncpu 2>/dev/null') ?: 1);
@@ -49,7 +105,7 @@ function getCpuPercent(bool $isWindows): float {
     };
 
     $a = $read();
-    usleep(200000);
+    usleep(150000);
     $b = $read();
 
     $dt = $b['total'] - $a['total'];
@@ -74,7 +130,6 @@ function getMemory(bool $isWindows): array {
         return ['used' => 0, 'total' => 0, 'percent' => 0.0];
     }
 
-    // Linux
     if (is_readable('/proc/meminfo')) {
         $m = [];
         foreach (file('/proc/meminfo', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
@@ -90,29 +145,12 @@ function getMemory(bool $isWindows): array {
         return ['used' => $usedMB, 'total' => $totalMB, 'percent' => $pct];
     }
 
-    // macOS
-    $out = @shell_exec('vm_stat 2>/dev/null');
-    $sysctl = @shell_exec('sysctl -n hw.memsize 2>/dev/null');
-    if ($out && $sysctl) {
-        preg_match('/page size of (\d+)/', $out, $ps);
-        $pageSize = isset($ps[1]) ? (int)$ps[1] : 4096;
-        preg_match('/Pages free:\s+(\d+)/i', $out, $pf);
-        preg_match('/Pages inactive:\s+(\d+)/i', $out, $pi);
-        $freeBytes  = ((int)($pf[1] ?? 0) + (int)($pi[1] ?? 0)) * $pageSize;
-        $totalBytes = (int)trim($sysctl);
-        $usedBytes  = $totalBytes - $freeBytes;
-        $totalMB = round($totalBytes / (1024 * 1024));
-        $usedMB  = round($usedBytes  / (1024 * 1024));
-        $pct = $totalMB > 0 ? round($usedMB / $totalMB * 100, 1) : 0.0;
-        return ['used' => $usedMB, 'total' => $totalMB, 'percent' => $pct];
-    }
-
     return ['used' => 0, 'total' => 0, 'percent' => 0.0];
 }
 
-// ── Storage Usage (cross-platform) ────────────────────────────────────────
+// ── Storage Usage ─────────────────────────────────────────────────────────
 function getStorage(): array {
-    $path  = __DIR__;
+    $path  = dirname(__DIR__, 2);
     $free  = @disk_free_space($path)  ?: 0;
     $total = @disk_total_space($path) ?: 0;
     $used  = $total - $free;
@@ -125,10 +163,9 @@ function getStorage(): array {
     ];
 }
 
-// ── Active Users (via cbt_online_sessions) ───────────────────────────────
+// ── Active Users ──────────────────────────────────────────────────────────
 function getActiveUsers(PDO $pdo): array {
     $windowSec = 900;
-
     $stmt = $pdo->prepare("
         SELECT role, COUNT(DISTINCT user_id) AS cnt
         FROM cbt_online_sessions
@@ -178,30 +215,157 @@ function getCpuCores(bool $isWindows): int {
         $out = @shell_exec('powershell -NoProfile -Command "(Get-WmiObject Win32_Processor | Measure-Object -Property NumberOfLogicalProcessors -Sum).Sum" 2>nul');
         return $out ? (int)trim($out) : 1;
     }
-    // Linux
     $out = @shell_exec('nproc 2>/dev/null');
     if ($out && (int)trim($out) > 0) return (int)trim($out);
-    // macOS
-    $out = @shell_exec('sysctl -n hw.logicalcpu 2>/dev/null');
-    if ($out && (int)trim($out) > 0) return (int)trim($out);
-    // Fallback: count /proc/cpuinfo
-    if (is_readable('/proc/cpuinfo')) {
-        $count = substr_count(file_get_contents('/proc/cpuinfo'), 'processor');
-        if ($count > 0) return $count;
-    }
     return 1;
+}
+
+// ── Database Health Metrics ───────────────────────────────────────────────
+function getDatabaseHealth(PDO $pdo): array {
+    $t0 = microtime(true);
+    $ver = $pdo->query("SELECT VERSION()")->fetchColumn();
+    $latencyMs = round((microtime(true) - $t0) * 1000, 2);
+
+    $dbName = DB_NAME;
+    $stmtSize = $pdo->prepare("
+        SELECT 
+            COUNT(table_name) AS table_count,
+            ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size_mb
+        FROM information_schema.tables 
+        WHERE table_schema = ?
+    ");
+    $stmtSize->execute([$dbName]);
+    $sizeData = $stmtSize->fetch(PDO::FETCH_ASSOC) ?: ['table_count' => 0, 'size_mb' => 0];
+
+    // Status variables
+    $statusVars = [];
+    try {
+        $stmtStatus = $pdo->query("SHOW GLOBAL STATUS WHERE Variable_name IN ('Threads_connected', 'Max_used_connections', 'Uptime', 'Questions')");
+        while ($r = $stmtStatus->fetch(PDO::FETCH_ASSOC)) {
+            $statusVars[$r['Variable_name']] = $r['Value'];
+        }
+    } catch (\Throwable $e) { /* ignore */ }
+
+    // Max connections
+    $maxConn = 151;
+    try {
+        $stmtMax = $pdo->query("SHOW VARIABLES LIKE 'max_connections'");
+        $rMax = $stmtMax->fetch(PDO::FETCH_ASSOC);
+        if ($rMax) $maxConn = (int)$rMax['Value'];
+    } catch (\Throwable $e) { /* ignore */ }
+
+    return [
+        'version'           => $ver,
+        'latency_ms'        => $latencyMs,
+        'table_count'       => (int)($sizeData['table_count'] ?? 0),
+        'size_mb'           => (float)($sizeData['size_mb'] ?? 0),
+        'threads_connected' => (int)($statusVars['Threads_connected'] ?? 0),
+        'max_connections'   => $maxConn,
+        'uptime_sec'        => (int)($statusVars['Uptime'] ?? 0),
+    ];
+}
+
+// ── Directory Permissions Checklist ───────────────────────────────────────
+function getDirectoriesHealth(): array {
+    $base = dirname(__DIR__, 2);
+    $checkDirs = [
+        'assets/uploads'            => 'Penyimpanan Utama Upload',
+        'assets/uploads/foto_siswa' => 'Folder Foto Profil Siswa',
+        'assets/uploads/bank_soal'  => 'Folder Media Gambar Soal',
+        'assets/uploads/logo'       => 'Folder Logo Sekolah',
+        'backups'                   => 'Folder Berkas Backup Database',
+        'logs'                      => 'Folder Catatan Log Aktivitas'
+    ];
+
+    $results = [];
+    foreach ($checkDirs as $relPath => $label) {
+        $fullPath = $base . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relPath);
+        $exists   = is_dir($fullPath);
+        $writable = $exists && is_writable($fullPath);
+        
+        $perms = '-';
+        if ($exists) {
+            $perms = substr(sprintf('%o', fileperms($fullPath)), -4);
+        }
+
+        $results[] = [
+            'path'      => $relPath,
+            'label'     => $label,
+            'exists'    => $exists,
+            'writable'  => $writable,
+            'perms'     => $perms
+        ];
+    }
+    return $results;
+}
+
+// ── PHP Environment & Extensions ──────────────────────────────────────────
+function getPhpEnvironment(): array {
+    $requiredExts = [
+        'pdo'        => 'PDO Database Core',
+        'pdo_mysql'  => 'Driver MySQL/MariaDB',
+        'mbstring'   => 'Multibyte String Engine',
+        'openssl'    => 'Kriptografi & Keamanan',
+        'gd'         => 'Pengolahan Gambar & QR',
+        'zip'        => 'Ekspor Excel & Kompresi',
+        'curl'       => 'Klien HTTP & Integrasi',
+        'json'       => 'Parser Data JSON',
+        'fileinfo'   => 'Deteksi Tipe File Upload'
+    ];
+
+    $extensions = [];
+    foreach ($requiredExts as $ext => $desc) {
+        $loaded = extension_loaded($ext);
+        $extensions[] = [
+            'ext'         => $ext,
+            'description' => $desc,
+            'status'      => $loaded
+        ];
+    }
+
+    $opcacheStatus = false;
+    $opcacheHitRate = 0.0;
+    $opcacheMemoryMB = 0;
+    if (function_exists('opcache_get_status')) {
+        $st = @opcache_get_status(false);
+        if (is_array($st) && !empty($st['opcache_enabled'])) {
+            $opcacheStatus = true;
+            $opcacheHitRate = round($st['opcache_statistics']['opcache_hit_rate'] ?? 0, 1);
+            $opcacheMemoryMB = round(($st['memory_usage']['used_memory'] ?? 0) / 1024 / 1024, 1);
+        }
+    }
+
+    return [
+        'php_version'          => PHP_VERSION,
+        'php_sapi'             => php_sapi_name(),
+        'os_name'              => PHP_OS . ' (' . php_uname('m') . ')',
+        'server_software'      => $_SERVER['SERVER_SOFTWARE'] ?? 'Web Server',
+        'memory_limit'         => ini_get('memory_limit'),
+        'max_execution_time'   => ini_get('max_execution_time') . 's',
+        'upload_max_filesize'  => ini_get('upload_max_filesize'),
+        'post_max_size'        => ini_get('post_max_size'),
+        'max_input_vars'       => ini_get('max_input_vars'),
+        'opcache_enabled'      => $opcacheStatus,
+        'opcache_hit_rate'     => $opcacheHitRate,
+        'opcache_used_mb'      => $opcacheMemoryMB,
+        'extensions'           => $extensions
+    ];
 }
 
 try {
     echo json_encode([
-        'cpu'          => getCpuPercent($IS_WINDOWS),
-        'cpu_cores'    => getCpuCores($IS_WINDOWS),
-        'memory'       => getMemory($IS_WINDOWS),
-        'storage'      => getStorage(),
-        'active_users' => getActiveUsers($pdo),
-        'os'           => PHP_OS_FAMILY,
-        'timestamp'    => date('H:i:s'),
+        'cpu'             => getCpuPercent($IS_WINDOWS),
+        'cpu_cores'       => getCpuCores($IS_WINDOWS),
+        'memory'          => getMemory($IS_WINDOWS),
+        'storage'         => getStorage(),
+        'active_users'    => getActiveUsers($pdo),
+        'database'        => getDatabaseHealth($pdo),
+        'directories'     => getDirectoriesHealth(),
+        'environment'     => getPhpEnvironment(),
+        'os'              => PHP_OS_FAMILY,
+        'timestamp'       => date('H:i:s'),
     ], JSON_NUMERIC_CHECK);
 } catch (Throwable $e) {
     echo json_encode(['error' => $e->getMessage()]);
 }
+

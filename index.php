@@ -176,6 +176,24 @@ if (empty($_SESSION['captcha_code'])) {
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
 
+            <?php elseif($_GET['pesan'] == 'csrf_expired'): ?>
+                <div class="alert alert-warning alert-dismissible fade show border-0 shadow-sm mb-4" role="alert" style="border-radius: 10px;">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-shield-alt me-2 text-warning fs-5"></i>
+                        <div><strong>Sesi Halaman Kedaluwarsa!</strong> Token keamanan telah diperbarui otomatis. Silakan masukkan kembali data login Anda.</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+            <?php elseif($_GET['pesan'] == 'role_tidak_valid'): ?>
+                <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert" style="border-radius: 10px;">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle me-2 text-danger"></i>
+                        <div><strong>Akses Ditolak!</strong> Peran (role) login tidak dikenali.</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
             <?php endif; ?>
 
         <?php endif; ?>
