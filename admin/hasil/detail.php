@@ -280,7 +280,7 @@ if (!empty($answers)) {
                                 </div>
                             </div>
 
-                            <div class="mb-3"><?= $ans['konten_soal'] ?></div>
+                            <div class="mb-3 soal-konten"><?= inject_domain_to_html($ans['konten_soal']) ?></div>
 
                             <div class="jawaban-box shadow-sm">
                                 <small class="text-muted fw-bold d-block mb-2">JAWABAN SISWA:</small>
@@ -294,7 +294,7 @@ if (!empty($answers)) {
                                     } elseif (in_array($ans['tipe'], ['pg', 'benar_salah'])) {
                                         $opt = $options_by_id[(int)$ans['jawaban_simpan']] ?? null;
                                         if ($opt) {
-                                            echo "<strong>".htmlspecialchars((string)$opt['label'])."</strong>. ".(string)$opt['value_target'];
+                                            echo "<strong>".htmlspecialchars((string)$opt['label'])."</strong>. ".inject_domain_to_html((string)$opt['value_target']);
                                         } else {
                                             echo htmlspecialchars($ans['jawaban_simpan']);
                                         }
@@ -317,7 +317,7 @@ if (!empty($answers)) {
                                             foreach ($ids as $idOpt) {
                                                 $opt = $options_by_id[$idOpt] ?? null;
                                                 $output[] = $opt
-                                                    ? "<strong>".htmlspecialchars((string)$opt['label'])."</strong>. ".(string)$opt['value_target']
+                                                    ? "<strong>".htmlspecialchars((string)$opt['label'])."</strong>. ".inject_domain_to_html((string)$opt['value_target'])
                                                     : htmlspecialchars((string)$idOpt);
                                             }
                                             echo "<ul class='mb-0'><li>".implode("</li><li>", $output)."</li></ul>";
@@ -331,7 +331,9 @@ if (!empty($answers)) {
                                         echo "<table class='table table-sm table-bordered mb-0'>";
                                         foreach ($pairs as $k => $v) {
                                             $leftShow = $mapIdToLabel[(string)$k] ?? htmlspecialchars((string)$k);
-                                            echo "<tr><td class='bg-light'>{$leftShow}</td><td><i class='fas fa-arrow-right mx-2 text-muted'></i>{$v}</td></tr>";
+                                            $leftShow = inject_domain_to_html($leftShow);
+                                            $rightShow = inject_domain_to_html((string)$v);
+                                            echo "<tr><td class='bg-light'>{$leftShow}</td><td><i class='fas fa-arrow-right mx-2 text-muted'></i>{$rightShow}</td></tr>";
                                         }
                                         echo "</table>";
                                     } else {
@@ -345,7 +347,7 @@ if (!empty($answers)) {
                                 <div class="kunci-box manual mt-3">
                                     <div class="d-flex justify-content-between align-items-center mb-1">
                                         <strong class="text-secondary small">
-                                            <i class="fas fa-pen-to-square me-1"></i> Koreksi Esai
+                                             Koreksi Esai
                                         </strong>
                                         <span class="small text-muted">
                                             Skor saat ini: <strong><?= $ans['skor_didapat'] ?></strong> / <?= $ans['bobot_asli'] ?>
@@ -385,9 +387,9 @@ if (!empty($answers)) {
                                     $output_kunci = [];
                                     foreach ($q_opts as $k) {
                                         if ($ans['tipe'] == 'menjodohkan') {
-                                            $output_kunci[] = (string)$k['label']." <i class='fas fa-link mx-1 text-muted'></i> ".(string)$k['value_target'];
+                                            $output_kunci[] = inject_domain_to_html((string)$k['label'])." <i class='fas fa-link mx-1 text-muted'></i> ".inject_domain_to_html((string)$k['value_target']);
                                         } elseif ($k['is_correct']) {
-                                            $output_kunci[] = "<strong>".htmlspecialchars((string)$k['label'])."</strong> ".(string)$k['value_target'];
+                                            $output_kunci[] = "<strong>".htmlspecialchars((string)$k['label'])."</strong> ".inject_domain_to_html((string)$k['value_target']);
                                         }
                                     }
                                     echo !empty($output_kunci) ? implode(", ", $output_kunci) : "<span class='text-muted small fst-italic'>Belum diset / Manual</span>";

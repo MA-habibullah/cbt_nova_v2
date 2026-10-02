@@ -281,7 +281,7 @@ $back_url = $bank_id
                                 </div>
                             </div>
 
-                            <div class="mb-3"><?= $ans['konten_soal'] ?></div>
+                            <div class="mb-3 soal-konten"><?= inject_domain_to_html($ans['konten_soal']) ?></div>
 
                             <div class="jawaban-box shadow-sm">
                                 <small class="text-muted fw-bold d-block mb-2">JAWABAN SISWA:</small>
@@ -295,7 +295,7 @@ $back_url = $bank_id
                                     } elseif (in_array($ans['tipe'], ['pg', 'benar_salah'])) {
                                         $opt = $options_by_id[(int)$ans['jawaban_simpan']] ?? null;
                                         if ($opt) {
-                                            echo "<strong>".htmlspecialchars((string)$opt['label'])."</strong>. ".(string)$opt['value_target'];
+                                            echo "<strong>".htmlspecialchars((string)$opt['label'])."</strong>. ".inject_domain_to_html((string)$opt['value_target']);
                                         } else {
                                             echo htmlspecialchars($ans['jawaban_simpan']);
                                         }
@@ -318,7 +318,7 @@ $back_url = $bank_id
                                             foreach ($ids as $idOpt) {
                                                 $opt = $options_by_id[$idOpt] ?? null;
                                                 $output[] = $opt
-                                                    ? "<strong>".htmlspecialchars((string)$opt['label'])."</strong>. ".(string)$opt['value_target']
+                                                    ? "<strong>".htmlspecialchars((string)$opt['label'])."</strong>. ".inject_domain_to_html((string)$opt['value_target'])
                                                     : htmlspecialchars((string)$idOpt);
                                             }
                                             echo "<ul class='mb-0'><li>".implode("</li><li>", $output)."</li></ul>";
@@ -332,7 +332,9 @@ $back_url = $bank_id
                                         echo "<table class='table table-sm table-bordered mb-0'>";
                                         foreach ($pairs as $k => $v) {
                                             $leftShow = $mapIdToLabel[(string)$k] ?? htmlspecialchars((string)$k);
-                                            echo "<tr><td class='bg-light'>{$leftShow}</td><td><i class='fas fa-arrow-right mx-2 text-muted'></i>{$v}</td></tr>";
+                                            $leftShow = inject_domain_to_html($leftShow);
+                                            $rightShow = inject_domain_to_html((string)$v);
+                                            echo "<tr><td class='bg-light'>{$leftShow}</td><td><i class='fas fa-arrow-right mx-2 text-muted'></i>{$rightShow}</td></tr>";
                                         }
                                         echo "</table>";
                                     } else {
@@ -386,9 +388,9 @@ $back_url = $bank_id
                                     $output_kunci = [];
                                     foreach ($q_opts as $k) {
                                         if ($ans['tipe'] == 'menjodohkan') {
-                                            $output_kunci[] = (string)$k['label']." <i class='fas fa-link mx-1 text-muted'></i> ".(string)$k['value_target'];
+                                            $output_kunci[] = inject_domain_to_html((string)$k['label'])." <i class='fas fa-link mx-1 text-muted'></i> ".inject_domain_to_html((string)$k['value_target']);
                                         } elseif ($k['is_correct']) {
-                                            $output_kunci[] = "<strong>".htmlspecialchars((string)$k['label'])."</strong> ".(string)$k['value_target'];
+                                            $output_kunci[] = "<strong>".htmlspecialchars((string)$k['label'])."</strong> ".inject_domain_to_html((string)$k['value_target']);
                                         }
                                     }
                                     echo !empty($output_kunci) ? implode(", ", $output_kunci) : "<span class='text-muted small fst-italic'>Belum diset / Manual</span>";
