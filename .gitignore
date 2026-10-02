@@ -22,7 +22,6 @@
 # 5. Berkas Temporary, Cache, Log, & Scratch Area
 /scratch/
 writable/
-node_modules/
 *.log
 *.bak
 *.tmp
