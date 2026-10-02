@@ -91,7 +91,7 @@ if ($class_id) {
 
 // 3. Query Data Peserta
 $query = "SELECT
-            p.id as p_id, p.exam_id, s.nama_lengkap, s.nisn, s.sesi, k.nama_kelas,
+            p.id as p_id, p.exam_id, p.soal_ids, s.nama_lengkap, s.nisn, s.sesi, k.nama_kelas,
             COALESCE(sub.nama_mapel, ?) as nama_mapel,
             (SELECT COUNT(*) FROM cbt_exam_questions eq3
              JOIN cbt_questions q3 ON eq3.question_id = q3.id
@@ -158,6 +158,29 @@ $query .= " ORDER BY k.nama_kelas ASC, s.nama_lengkap ASC";
 $stmt = $pdo->prepare($query);
 $stmt->execute($params);
 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Pre-fetch question types if any participants have custom soal_ids
+$all_q_ids = [];
+foreach ($results as $d) {
+    if (!empty($d['soal_ids'])) {
+        $decoded = json_decode($d['soal_ids'], true);
+        if (is_array($decoded)) {
+            foreach ($decoded as $qid) {
+                $all_q_ids[(int)$qid] = true;
+            }
+        }
+    }
+}
+$q_types_map = [];
+if (!empty($all_q_ids)) {
+    $q_id_keys = array_keys($all_q_ids);
+    $ph_q = implode(',', array_fill(0, count($q_id_keys), '?'));
+    $stmtQTypes = $pdo->prepare("SELECT id, tipe FROM cbt_questions WHERE id IN ($ph_q)");
+    $stmtQTypes->execute($q_id_keys);
+    foreach ($stmtQTypes->fetchAll(PDO::FETCH_ASSOC) as $qr) {
+        $q_types_map[(int)$qr['id']] = $qr['tipe'];
+    }
+}
 
 // 4. Susun Dokumen HTML
 $html = '<!DOCTYPE html>
@@ -287,7 +310,25 @@ if (empty($results)) {
         $jml_benar_obj    = (int)$r['jml_benar_obj'];
         $total_soal_esai  = (int)$r['total_soal_esai'];
         $jml_benar_esai   = (int)$r['jml_benar_esai'];
-        $benar_obj_str    = $jml_benar_obj . '/' . $total_soal_obj;
+
+        // Jika peserta memiliki subset soal_ids, hitung total soal per tipe dari subsetnya
+        if (!empty($r['soal_ids'])) {
+            $decoded_sids = json_decode($r['soal_ids'], true);
+            if (is_array($decoded_sids) && !empty($decoded_sids)) {
+                $total_soal_obj  = 0;
+                $total_soal_esai = 0;
+                foreach ($decoded_sids as $sid) {
+                    $t = $q_types_map[(int)$sid] ?? 'pg';
+                    if ($t === 'essay') {
+                        $total_soal_esai++;
+                    } else {
+                        $total_soal_obj++;
+                    }
+                }
+            }
+        }
+
+        $benar_obj_str    = ($total_soal_obj > 0) ? ($jml_benar_obj . '/' . $total_soal_obj) : '-';
         $benar_esai_str   = $total_soal_esai > 0 ? ($jml_benar_esai . '/' . $total_soal_esai) : '-';
 
         $bobot_obj_e  = (float)($r['bobot_obj_exam']  ?? 0);

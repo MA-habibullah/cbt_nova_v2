@@ -83,6 +83,11 @@ $query = "SELECT
             (SELECT COUNT(*) FROM cbt_student_answers sa6
              JOIN cbt_questions q6 ON sa6.question_id = q6.id
              WHERE sa6.participant_id = p.id AND q6.tipe = 'essay' AND sa6.skor_didapat > 0) AS jml_benar_esai,
+            p.id AS participant_id,
+            p.soal_ids,
+            p.skor_akhir,
+            p.nilai_objektif,
+            p.nilai_esai,
             p.skor_status
           FROM cbt_exam_participants p
           JOIN cbt_students s ON p.student_id = s.id
@@ -110,21 +115,66 @@ $stmt = $pdo->prepare($query);
 $stmt->execute($params);
 $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Pre-fetch question types if any participants have custom soal_ids
+$all_q_ids = [];
+foreach ($data as $d) {
+    if (!empty($d['soal_ids'])) {
+        $decoded = json_decode($d['soal_ids'], true);
+        if (is_array($decoded)) {
+            foreach ($decoded as $qid) {
+                $all_q_ids[(int)$qid] = true;
+            }
+        }
+    }
+}
+$q_types_map = [];
+if (!empty($all_q_ids)) {
+    $q_id_keys = array_keys($all_q_ids);
+    $ph_q = implode(',', array_fill(0, count($q_id_keys), '?'));
+    $stmtQTypes = $pdo->prepare("SELECT id, tipe FROM cbt_questions WHERE id IN ($ph_q)");
+    $stmtQTypes->execute($q_id_keys);
+    foreach ($stmtQTypes->fetchAll(PDO::FETCH_ASSOC) as $qr) {
+        $q_types_map[(int)$qr['id']] = $qr['tipe'];
+    }
+}
+
 // 3. SUSUN ARRAY DATA BERSIH
 $export_rows = [];
 foreach ($data as $i => $d) {
+    $tot_obj_row  = (int)($d['total_soal_obj']  ?? 0);
+    $tot_esai_row = (int)($d['total_soal_esai'] ?? 0);
+
+    // Jika peserta memiliki subset soal_ids, hitung total soal per tipe dari subsetnya
+    if (!empty($d['soal_ids'])) {
+        $decoded_sids = json_decode($d['soal_ids'], true);
+        if (is_array($decoded_sids) && !empty($decoded_sids)) {
+            $tot_obj_row  = 0;
+            $tot_esai_row = 0;
+            foreach ($decoded_sids as $sid) {
+                $t = $q_types_map[(int)$sid] ?? 'pg';
+                if ($t === 'essay') {
+                    $tot_esai_row++;
+                } else {
+                    $tot_obj_row++;
+                }
+            }
+        }
+    }
+
     $bobot_obj_e  = (float)($d['bobot_obj_exam']  ?? 0);
     $bobot_ess_e  = (float)($d['bobot_essay_exam'] ?? 0);
     $skor_obj_v   = (float)($d['skor_objektif']   ?? 0);
     $skor_ess_v   = (float)($d['skor_essay']      ?? 0);
 
-    $nilai_obj_x  = ($bobot_obj_e > 0) ? round($skor_obj_v / $bobot_obj_e * 100, 2) : 0.0;
-    $nilai_esai_x = ($bobot_ess_e > 0) ? round($skor_ess_v / $bobot_ess_e * 100, 2) : 0.0;
+    $nilai_obj_x  = isset($d['nilai_objektif']) ? (float)$d['nilai_objektif'] : (($bobot_obj_e > 0) ? round($skor_obj_v / $bobot_obj_e * 100, 2) : 0.0);
+    $nilai_esai_x = isset($d['nilai_esai']) ? (float)$d['nilai_esai'] : (($bobot_ess_e > 0) ? round($skor_ess_v / $bobot_ess_e * 100, 2) : 0.0);
 
     $has_obj_x = $bobot_obj_e > 0;
     $has_ess_x = $bobot_ess_e > 0;
 
-    if ($has_obj_x && $has_ess_x) {
+    if (isset($d['skor_akhir']) && $d['skor_akhir'] !== null) {
+        $nilai_akhir_x = (float)$d['skor_akhir'];
+    } elseif ($has_obj_x && $has_ess_x) {
         $nilai_akhir_x = round(($nilai_obj_x * 0.5) + ($nilai_esai_x * 0.5), 2);
     } elseif ($has_obj_x) {
         $nilai_akhir_x = $nilai_obj_x;
@@ -135,8 +185,8 @@ foreach ($data as $i => $d) {
     }
 
     $status_koreksi = ($d['skor_status'] ?? 'final') === 'pending' ? 'Belum Final' : 'Final';
-    $benar_obj_str  = ($d['total_soal_obj'] > 0) ? ($d['jml_benar_obj'] . '/' . $d['total_soal_obj']) : '-';
-    $benar_esai_str = ($d['total_soal_esai'] > 0) ? ($d['jml_benar_esai'] . '/' . $d['total_soal_esai']) : '-';
+    $benar_obj_str  = ($tot_obj_row > 0) ? ($d['jml_benar_obj'] . '/' . $tot_obj_row) : '-';
+    $benar_esai_str = ($tot_esai_row > 0) ? ($d['jml_benar_esai'] . '/' . $tot_esai_row) : '-';
 
     $export_rows[] = [
         'nisn'           => (string)($d['nisn'] ?? ''),
