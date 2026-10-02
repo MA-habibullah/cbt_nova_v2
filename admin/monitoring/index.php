@@ -1,5 +1,5 @@
 <?php
-require_once '../../config/database.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 // Proteksi Admin
 if (!isset($_SESSION['admin_id'])) {
@@ -17,7 +17,7 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
 <!DOCTYPE html>
 <html lang="id">
 
-    <?php include '../../includes/header.php'; ?>
+    <?php include dirname(__DIR__, 2) . '/includes/header.php'; ?>
     <style>
         .loading-overlay { display: none; position: absolute; inset: 0; background: rgba(255,255,255,0.7); z-index: 50; }
         .custom-scroll::-webkit-scrollbar { height: 5px; }
@@ -27,7 +27,7 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
 
 <body class="bg-gray-50 font-sans">
     <div class="flex min-h-screen flex-col md:flex-row">
-        <?php include '../../includes/sidebar.php'; ?>
+        <?php include dirname(__DIR__, 2) . '/includes/sidebar.php'; ?>
 
         <main class="flex-1 w-full overflow-x-hidden p-4 md:p-8 main-content">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">

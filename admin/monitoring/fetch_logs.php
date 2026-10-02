@@ -1,6 +1,6 @@
 <?php
 ob_start();
-require_once '../../config/database.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 if (ob_get_length()) ob_clean();
 
 if (!isset($_SESSION['admin_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
@@ -34,9 +34,9 @@ if (!$logs) {
         echo "  </div>";
         echo "  <div class='text-sm font-bold text-gray-800'>" . htmlspecialchars($l['tipe_pelanggaran']) . "</div>";
         
-        // FITUR SCREENSHOT: Jika ada kolom 'screenshot' di database
+        // FITUR SCREENSHOT: Jika ada file screenshot
         if (!empty($l['screenshot'])) {
-            $ss_path = BASE_URL . "assets/img/screenshots/" . $l['screenshot'];
+            $ss_path = BASE_URL . "assets/img/screenshots/" . htmlspecialchars($l['screenshot']);
             echo "<div class='mt-2'><a href='$ss_path' target='_blank'><img src='$ss_path' class='rounded-lg border shadow-sm max-h-32 hover:opacity-75 transition'></a></div>";
         }
         

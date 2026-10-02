@@ -1,6 +1,6 @@
 <?php
 ob_start();
-require_once '../../config/database.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 if (ob_get_length()) ob_clean();
 
 if (!isset($_SESSION['teacher_id']) || ($_SESSION['role'] ?? '') !== 'guru') {

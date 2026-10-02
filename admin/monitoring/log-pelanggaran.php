@@ -1,5 +1,5 @@
 <?php
-require_once '../../config/database.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 // Proteksi Admin
 if (!isset($_SESSION['admin_id'])) {
@@ -29,7 +29,7 @@ $classes = query("SELECT id, nama_kelas FROM cbt_classes WHERE is_aktif = 1 ORDE
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <?php include '../../includes/header.php'; ?>
+    <?php include dirname(__DIR__, 2) . '/includes/header.php'; ?>
     <style>
         .form-label-sm { font-size: 11px; font-weight: 700; color: #6c757d; text-transform: uppercase; margin-bottom: 4px; display: block; }
         .font-mono-sm { font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 11px; }
@@ -44,7 +44,7 @@ $classes = query("SELECT id, nama_kelas FROM cbt_classes WHERE is_aktif = 1 ORDE
 
 <body class="bg-light">
 <div class="d-flex" id="wrapper">
-    <?php include '../../includes/sidebar.php'; ?>
+    <?php include dirname(__DIR__, 2) . '/includes/sidebar.php'; ?>
 
     <div id="content" class="w-100">
         <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm justify-content-between">

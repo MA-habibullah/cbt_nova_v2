@@ -1,10 +1,10 @@
 <?php
 ob_start();
-require_once '../../config/database.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 if (ob_get_length()) ob_clean();
 
 if (!isset($_SESSION['admin_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
-    echo "<div class='p-5 text-center text-danger'>Sesi berakhir.</div>"; exit;
+    echo "<div class='p-5 text-center text-danger'>Sesi berakhir. Silakan login ulang.</div>"; exit;
 }
 
 $tanggal  = $_GET['tanggal'] ?? date('Y-m-d');
@@ -15,7 +15,7 @@ $params = [$tanggal];
 $sql = "SELECT l.*, s.nama_lengkap, s.username, c.nama_kelas, e.nama_mapel_ujian 
         FROM cbt_cheat_logs l
         JOIN cbt_students s ON l.student_id = s.id
-        JOIN cbt_classes c ON s.class_id = c.id
+        LEFT JOIN cbt_classes c ON s.class_id = c.id
         JOIN cbt_exams e ON l.exam_id = e.id
         WHERE DATE(l.waktu_kejadian) = ?";
 

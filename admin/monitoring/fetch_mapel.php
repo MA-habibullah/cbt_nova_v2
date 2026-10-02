@@ -1,5 +1,5 @@
 <?php
-require_once '../../config/database.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 if (!isset($_SESSION['admin_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
     echo '<option value="">Sesi berakhir</option>'; exit;

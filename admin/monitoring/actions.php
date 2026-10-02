@@ -7,7 +7,7 @@
 // 1. Mulai buffering untuk membungkus semua output yang bocor
 ob_start();
 
-require_once '../../config/database.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 // 2. Buang semua output yang tertangkap (seperti Sidebar/Header yang tidak sengaja ter-include)
 if (ob_get_length()) {
@@ -16,6 +16,11 @@ if (ob_get_length()) {
 
 // 3. Set header JSON murni
 header('Content-Type: application/json');
+
+if (!isset($_SESSION['admin_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
+    echo json_encode(['status' => 'error', 'message' => 'Sesi berakhir, silakan login ulang.']);
+    exit;
+}
 
 csrf_verify();
 
@@ -29,9 +34,15 @@ if (empty($ids)) {
     exit;
 }
 
-// Pastikan IDS adalah array
+// Pastikan IDS adalah array bilangan bulat
 if (!is_array($ids)) {
     $ids = [$ids];
+}
+$ids = array_map('intval', $ids);
+$ids = array_filter($ids, function($v) { return $v > 0; });
+if (empty($ids)) {
+    echo json_encode(['status' => 'error', 'message' => 'Data ID peserta tidak valid']);
+    exit;
 }
 
 // Buat placeholders (?,?,?) sesuai jumlah ID

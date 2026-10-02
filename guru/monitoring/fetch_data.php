@@ -1,10 +1,10 @@
 <?php
 ob_start();
-require_once '../../config/database.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 if (ob_get_length()) ob_clean();
 
 if (!isset($_SESSION['teacher_id']) || ($_SESSION['role'] ?? '') !== 'guru') {
-    echo "<tr><td colspan='8' class='p-10 text-center text-gray-400'>Sesi berakhir, silakan login ulang.</td></tr>";
+    echo "<tr><td colspan='7' class='p-10 text-center text-gray-400'>Sesi berakhir, silakan login ulang.</td></tr>";
     exit;
 }
 $teacher_id = (int)$_SESSION['teacher_id'];
@@ -14,17 +14,23 @@ $exam_id  = $_GET['exam_id'] ?? '';
 $class_id = $_GET['class_id'] ?? '';
 $sesi     = $_GET['sesi'] ?? '';
 
-$params = [$tanggal . ' 00:00:00', $tanggal . ' 23:59:59', $teacher_id];
+$params = [];
 $sql = "SELECT p.id as p_id, s.id as s_id, s.nama_lengkap, s.username, s.sesi, c.nama_kelas,
         e.id as e_id, e.nama_mapel_ujian, e.durasi_menit, p.status, p.tambahan_waktu, p.waktu_mulai,
         dl.ip_address, dl.user_agent
         FROM cbt_exam_participants p
         JOIN cbt_students s ON p.student_id = s.id
-        JOIN cbt_classes c ON s.class_id = c.id
+        LEFT JOIN cbt_classes c ON s.class_id = c.id
         JOIN cbt_exams e ON p.exam_id = e.id
         LEFT JOIN cbt_device_locks dl ON s.id = dl.student_id
-        WHERE e.mulai_pada BETWEEN ? AND ? AND e.teacher_id = ?";
+        WHERE e.teacher_id = ?";
+$params[] = $teacher_id;
 
+if ($tanggal) {
+    $sql .= " AND e.mulai_pada BETWEEN ? AND ?";
+    $params[] = $tanggal . ' 00:00:00';
+    $params[] = $tanggal . ' 23:59:59';
+}
 if ($exam_id) { $sql .= " AND e.id = ?"; $params[] = $exam_id; }
 if ($class_id) { $sql .= " AND c.id = ?"; $params[] = $class_id; }
 if ($sesi) { $sql .= " AND s.sesi = ?"; $params[] = $sesi; }
@@ -34,7 +40,7 @@ $sql .= " ORDER BY p.status DESC, s.nama_lengkap ASC";
 $data = query($sql, $params)->fetchAll();
 
 if (!$data) {
-    echo "<tr><td colspan='8' class='p-10 text-center text-gray-400'>Tidak ada peserta ujian Anda.</td></tr>";
+    echo "<tr><td colspan='7' class='p-10 text-center text-gray-400'>Tidak ada peserta ujian Anda pada filter ini.</td></tr>";
     exit;
 }
 

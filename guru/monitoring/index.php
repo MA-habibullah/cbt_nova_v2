@@ -1,19 +1,17 @@
 <?php
-session_start();
-require_once '../../config/database.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 if (!isset($_SESSION['teacher_id']) || ($_SESSION['role'] ?? '') !== 'guru') {
     header("Location: " . BASE_URL . "index.php"); exit;
 }
 $teacher_id = (int)$_SESSION['teacher_id'];
 
-
 $classes  = query("SELECT id, nama_kelas FROM cbt_classes WHERE is_aktif = 1 ORDER BY jenjang, nama_kelas")->fetchAll();
 $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER BY id")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="id">
-<?php include '../../includes/header.php'; ?>
+<?php include dirname(__DIR__, 2) . '/includes/header.php'; ?>
 <style>
     .loading-overlay { display: none; position: absolute; inset: 0; background: rgba(255,255,255,0.7); z-index: 50; }
     .custom-scroll::-webkit-scrollbar { height: 5px; }
@@ -21,7 +19,7 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
 </style>
 <body class="bg-gray-50 font-sans">
 <div class="flex min-h-screen flex-col md:flex-row">
-    <?php include '../includes/sidebar.php'; ?>
+    <?php include dirname(__DIR__) . '/includes/sidebar.php'; ?>
 
     <main class="flex-1 w-full overflow-x-hidden p-4 md:p-8">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">

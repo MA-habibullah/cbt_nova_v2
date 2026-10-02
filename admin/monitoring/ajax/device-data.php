@@ -1,7 +1,12 @@
 <?php
 ob_start();
-require_once '../../../config/database.php';
+require_once dirname(__DIR__, 3) . '/config/database.php';
 if (ob_get_length()) ob_clean(); 
+
+if (!isset($_SESSION['admin_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
+    echo "<div class='p-4 text-center text-danger'>Sesi berakhir. Silakan login ulang.</div>";
+    exit;
+}
 
 $tanggal   = $_GET['tanggal'] ?? date('Y-m-d');
 $search    = $_GET['search'] ?? '';
@@ -15,7 +20,7 @@ $params = [];
 $sql = "SELECT dl.*, s.nama_lengkap, s.username, c.nama_kelas 
         FROM cbt_device_locks dl
         JOIN cbt_students s ON dl.student_id = s.id
-        JOIN cbt_classes c ON s.class_id = c.id
+        LEFT JOIN cbt_classes c ON s.class_id = c.id
         WHERE 1=1";
 
 // 3. Tambahkan Filter Tanggal (Berdasarkan kolom created_at di cbt_device_locks)

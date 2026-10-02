@@ -1,5 +1,5 @@
 <?php
-require_once '../../config/database.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 // Proteksi Admin
 if (!isset($_SESSION['admin_id'])) {
@@ -9,14 +9,13 @@ if (!isset($_SESSION['admin_id'])) {
 
 // Ambil data filter
 $classes = query("SELECT id, nama_kelas FROM cbt_classes WHERE is_aktif = 1 ORDER BY jenjang, nama_kelas")->fetchAll();
-// Sesuaikan nama tabel sesi Anda, di sini saya gunakan cbt_sesi sesuai snipet Anda
 $sessions = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER BY nama_sesi")->fetchAll();
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <?php include '../../includes/header.php'; ?>
+    <?php include dirname(__DIR__, 2) . '/includes/header.php'; ?>
     <style>
         .form-label-sm { font-size: 0.7rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; display: block; }
         #deviceContent { min-height: 400px; position: relative; }
@@ -26,7 +25,7 @@ $sessions = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
 
 <body class="bg-light">
 <div class="d-flex" id="wrapper">
-    <?php include '../../includes/sidebar.php'; ?>
+    <?php include dirname(__DIR__, 2) . '/includes/sidebar.php'; ?>
     
     <div id="content" class="w-100">
         <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm justify-content-between">
