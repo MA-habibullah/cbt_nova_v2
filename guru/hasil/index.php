@@ -162,21 +162,16 @@ if ($filter_active) {
                             <?php endif; ?>
                         </div>
                         <div class="d-flex gap-2">
-                            <!-- <?php if ($filter_exam): ?>
-                                <div class="btn-group">
-                                    <a href="<?= esc(BASE_URL) ?>admin/hasil/analisis-soal.php?exam_id=<?= esc($filter_exam) ?>" class="btn btn-primary btn-sm px-3">
-                                        <i class="fas fa-chart-line me-2"></i> Analisis Soal
-                                    </a>
-                                    <a href="<?= esc(BASE_URL) ?>admin/hasil/analisis-jawaban.php?exam_id=<?= esc($filter_exam) ?>" class="btn btn-info btn-sm px-3 text-white">
-                                        <i class="fas fa-chart-pie me-2"></i> Analisis Jawaban
-                                    </a>
-                                </div>
-                            <?php endif; ?> -->
+                            <?php if ($filter_exam): ?>
+                            <button type="button" class="btn btn-warning btn-sm px-3 fw-bold shadow-sm" id="btnRecalculateBatch" data-exam-id="<?= esc($filter_exam) ?>" data-bank-id="<?= esc($filter_bank_id) ?>">
+                                <i class="fas fa-sync-alt me-1"></i> Hitung Ulang Nilai
+                            </button>
+                            <?php endif; ?>
                             <div class="btn-group">
                                 <a href="<?= esc(BASE_URL) ?>guru/hasil/cetak/export-excel.php?exam_id=<?= esc($filter_exam) ?>&class_id=<?= esc($filter_kelas) ?>&sesi=<?= esc($filter_sesi) ?>" class="btn btn-success btn-sm px-3">
                                     <i class="fas fa-file-excel me-2"></i> Excel
                                 </a>
-                                <a href="<?= esc(BASE_URL) ?>guru/hasil/cetak/export-pdf.php?exam_id=<?= esc($filter_exam) ?>&class_id=<?= esc($filter_kelas) ?>" class="btn btn-danger btn-sm px-3">
+                                <a href="<?= esc(BASE_URL) ?>guru/hasil/cetak/export-pdf.php?exam_id=<?= esc($filter_exam) ?>&class_id=<?= esc($filter_kelas) ?>&sesi=<?= esc($filter_sesi) ?>" class="btn btn-danger btn-sm px-3">
                                     <i class="fas fa-file-pdf me-2"></i> PDF
                                 </a>
                             </div>
@@ -287,9 +282,14 @@ if ($filter_active) {
                                         </h5>
                                     </td>
                                     <td class="text-center">
-                                        <a href="detail.php?p_id=<?= esc($r['id']) ?>" class="btn btn-info btn-sm text-white px-3 shadow-sm">
-                                            <i class="fas fa-eye me-1"></i> Detail
-                                        </a>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="detail.php?p_id=<?= esc($r['id']) ?>" class="btn btn-info text-white px-2 shadow-sm" title="Lihat Detail">
+                                                <i class="fas fa-eye"></i> Detail
+                                            </a>
+                                            <button type="button" class="btn btn-outline-warning btn-recalc-single px-2 shadow-sm" data-id="<?= esc($r['id']) ?>" data-name="<?= esc($r['nama_lengkap']) ?>" title="Hitung Ulang Nilai Siswa Ini">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 <?php endforeach; endif; ?>
@@ -304,8 +304,113 @@ if ($filter_active) {
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+$(document).ready(function() {
     $("#menu-toggle").click(function(e){ e.preventDefault(); $("#wrapper").toggleClass("toggled"); });
+
+    // Hitung Ulang Massal
+    $('#btnRecalculateBatch').on('click', function() {
+        const examId = $(this).data('exam-id');
+        const bankId = $(this).data('bank-id');
+        if (!examId && !bankId) return;
+
+        Swal.fire({
+            title: 'Hitung Ulang Semua Nilai?',
+            text: 'Sistem akan mengoreksi dan menghitung ulang nilai seluruh siswa pada jadwal ujian ini sesuai kunci jawaban & bobot saat ini.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#f59e0b',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: '<i class="fas fa-sync-alt me-1"></i> Ya, Hitung Ulang',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Memproses Penilaian...',
+                    text: 'Sedang menghitung ulang nilai seluruh siswa.',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                $.ajax({
+                    url: '<?= esc(BASE_URL) ?>guru/hasil/ajax/recalculate.php',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { exam_id: examId, bank_soal_id: bankId, include_working: false },
+                    success: function(res) {
+                        if (res.status === 'success') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: res.message,
+                                confirmButtonColor: '#3b82f6'
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire('Gagal', res.message || 'Terjadi kesalahan saat menghitung ulang.', 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Error', 'Gagal terhubung ke server: ' + xhr.statusText, 'error');
+                    }
+                });
+            }
+        });
+    });
+
+    // Hitung Ulang Individual (Per-Siswa)
+    $('.btn-recalc-single').on('click', function() {
+        const pId = $(this).data('id');
+        const name = $(this).data('name');
+        if (!pId) return;
+
+        Swal.fire({
+            title: 'Hitung Ulang Siswa Ini?',
+            text: 'Hitung ulang nilai untuk ' + name + '?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#f59e0b',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hitung',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Memproses...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                $.ajax({
+                    url: '<?= esc(BASE_URL) ?>guru/hasil/ajax/recalculate.php',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { participant_id: pId },
+                    success: function(res) {
+                        if (res.status === 'success') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: 'Nilai akhir baru: ' + res.data.nilai_akhir,
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire('Gagal', res.message || 'Terjadi kesalahan.', 'error');
+                        }
+                    },
+                    error: function() {
+                        Swal.fire('Error', 'Gagal terhubung ke server.', 'error');
+                    }
+                });
+            }
+        });
+    });
+});
 </script>
 </body>
 </html>
