@@ -22,7 +22,7 @@ $listExams = $pdo->prepare("SELECT id, nama_mapel_ujian FROM cbt_exams WHERE ban
 $listExams->execute([$id_bank, $teacher_id]);
 $listExams = $listExams->fetchAll();
 
-$classes  = $pdo->query("SELECT id, nama_kelas FROM cbt_classes ORDER BY nama_kelas ASC")->fetchAll();
+$classes  = $pdo->query("SELECT id, jenjang, nama_kelas FROM cbt_classes WHERE is_aktif = 1 ORDER BY jenjang ASC, nama_kelas ASC")->fetchAll();
 $listSesi = $pdo->query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER BY id")->fetchAll();
 
 // Hanya query data jika ada filter aktif
@@ -30,7 +30,7 @@ $results       = [];
 $filter_active = $filter_exam || $filter_kelas || $filter_sesi;
 
 if ($filter_active) {
-    $query  = "SELECT p.*, s.nama_lengkap, s.nisn, s.sesi, k.nama_kelas, e.nama_mapel_ujian, e.id as exam_id
+    $query  = "SELECT p.*, s.nama_lengkap, s.nisn, s.sesi, k.jenjang, k.nama_kelas, e.nama_mapel_ujian, e.id as exam_id
                FROM cbt_exam_participants p
                JOIN cbt_students s ON p.student_id = s.id
                JOIN cbt_exams e ON p.exam_id = e.id
@@ -42,7 +42,7 @@ if ($filter_active) {
     if ($filter_kelas) { $query .= " AND COALESCE(p.class_id, s.class_id) = ?"; $params[] = $filter_kelas; }
     if ($filter_sesi)  { $query .= " AND s.sesi = ?";     $params[] = $filter_sesi; }
 
-    $query .= " ORDER BY k.nama_kelas ASC, s.nama_lengkap ASC";
+    $query .= " ORDER BY k.jenjang ASC, k.nama_kelas ASC, s.nama_lengkap ASC";
     $stmt = $pdo->prepare($query);
     $stmt->execute($params);
     $results = $stmt->fetchAll();
@@ -81,11 +81,11 @@ if ($filter_active) {
             <!-- Filter -->
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body">
-                    <form method="GET" class="row g-3">
+                    <form method="GET" id="filterForm" class="row g-3">
                         <input type="hidden" name="id" value="<?= esc($id_bank) ?>">
-                        <div class="col-md-4">
+                        <div class="col-md-5">
                             <label class="small fw-bold">Pilih Jadwal Ujian</label>
-                            <select name="exam_id" class="form-select">
+                            <select name="exam_id" id="filterExam" class="form-select" onchange="$('select[name=class_id]').val(''); $('select[name=sesi]').val(''); this.form.submit()">
                                 <option value="">-- Semua Ujian di Bank Soal Ini --</option>
                                 <?php foreach ($listExams as $ex): ?>
                                     <option value="<?= esc($ex['id']) ?>" <?= esc($filter_exam == $ex['id'] ? 'selected' : '') ?>>
@@ -96,27 +96,28 @@ if ($filter_active) {
                         </div>
                         <div class="col-md-3">
                             <label class="small fw-bold">Kelas</label>
-                            <select name="class_id" class="form-select">
+                            <select name="class_id" id="filterClass" class="form-select" onchange="this.form.submit()">
                                 <option value="">-- Semua Kelas --</option>
                                 <?php foreach ($classes as $cl): ?>
-                                    <option value="<?= esc($cl['id']) ?>" <?= esc($filter_kelas == $cl['id'] ? 'selected' : '') ?>><?= htmlspecialchars($cl['nama_kelas']) ?></option>
+                                    <option value="<?= esc($cl['id']) ?>" <?= esc($filter_kelas == $cl['id'] ? 'selected' : '') ?>>
+                                        Kelas <?= esc($cl['jenjang']) ?> - <?= htmlspecialchars($cl['nama_kelas']) ?>
+                                    </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="col-md-2">
                             <label class="small fw-bold">Sesi</label>
-                            <select name="sesi" class="form-select">
+                            <select name="sesi" id="filterSesi" class="form-select" onchange="this.form.submit()">
                                 <option value="">-- Semua --</option>
                                 <?php foreach ($listSesi as $s): ?>
                                     <option value="<?= esc($s['id']) ?>" <?= esc($filter_sesi == $s['id'] ? 'selected' : '') ?>><?= htmlspecialchars($s['nama_sesi']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-3 d-flex align-items-end gap-2">
-                            <button type="submit" class="btn btn-primary w-100 fw-bold">
-                                <i class="fas fa-filter me-2"></i>Filter
-                            </button>
-                            <a href="hasil.php?id=<?= esc($id_bank) ?>" class="btn btn-outline-secondary">Reset</a>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <a href="hasil.php?id=<?= esc($id_bank) ?>" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-undo me-1"></i> Reset
+                            </a>
                         </div>
                     </form>
                 </div>
@@ -203,7 +204,7 @@ if ($filter_active) {
                                     <div class="fw-bold"><?= htmlspecialchars($r['nama_lengkap']) ?></div>
                                     <small class="text-muted"><?= htmlspecialchars($r['nisn']) ?></small>
                                 </td>
-                                <td><span class="badge bg-secondary-subtle text-secondary"><?= htmlspecialchars($r['nama_kelas'] ?? '-') ?></span></td>
+                                <td><span class="badge bg-secondary-subtle text-secondary"><?= !empty($r['jenjang']) ? 'Kelas ' . htmlspecialchars($r['jenjang']) . ' - ' : '' ?><?= htmlspecialchars($r['nama_kelas'] ?? '-') ?></span></td>
                                 <td class="text-center">
                                     <span class="badge <?= $r['status'] == 'finished' ? 'bg-success' : 'bg-warning text-dark' ?>">
                                         <?= strtoupper($r['status']) ?>

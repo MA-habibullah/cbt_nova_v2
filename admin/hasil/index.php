@@ -121,11 +121,11 @@ $results = $stmt->fetchAll();
         <div class="container-fluid px-4 pt-4 pb-5">
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body">
-                    <form method="GET" class="row g-3">
+                    <form method="GET" id="filterForm" class="row g-3">
                         <input type="hidden" name="id" value="<?= esc($id_bank) ?>">
-                        <div class="col-md-4">
+                        <div class="col-md-5">
                             <label class="small fw-bold">Pilih Jadwal Ujian</label>
-                            <select name="exam_id" class="form-select" onchange="this.form.submit()">
+                            <select name="exam_id" id="filterExam" class="form-select" onchange="$('select[name=class_id]').val(''); $('select[name=sesi]').val(''); this.form.submit()">
                                 <option value="">-- Semua Ujian di Bank Soal Ini --</option>
                                 <?php foreach($listExams as $ex): ?>
                                     <option value="<?= esc($ex['id']) ?>" <?= esc($filter_exam == $ex['id'] ? 'selected' : '') ?>><?= esc($ex['nama_mapel_ujian']) ?></option>
@@ -134,7 +134,7 @@ $results = $stmt->fetchAll();
                         </div>
                         <div class="col-md-3">
                             <label class="small fw-bold">Kelas</label>
-                            <select name="class_id" class="form-select" onchange="this.form.submit()" <?= esc(!$filter_exam ? 'disabled' : '') ?>>
+                            <select name="class_id" id="filterClass" class="form-select" onchange="this.form.submit()" <?= esc(!$filter_exam ? 'disabled' : '') ?>>
                                 <option value=""><?= esc(!$filter_exam ? '-- Pilih jadwal dulu --' : '-- Semua Kelas --') ?></option>
                                 <?php foreach($classes as $cl): ?>
                                     <option value="<?= esc($cl['id']) ?>" <?= esc($filter_kelas == $cl['id'] ? 'selected' : '') ?>>Kelas <?= esc($cl['jenjang']) ?> - <?= esc($cl['nama_kelas']) ?></option>
@@ -143,18 +143,17 @@ $results = $stmt->fetchAll();
                         </div>
                         <div class="col-md-2">
                             <label class="small fw-bold">Sesi</label>
-                            <select name="sesi" class="form-select" onchange="this.form.submit()" <?= esc(!$filter_exam ? 'disabled' : '') ?>>
+                            <select name="sesi" id="filterSesi" class="form-select" onchange="this.form.submit()" <?= esc(!$filter_exam ? 'disabled' : '') ?>>
                                 <option value=""><?= esc(!$filter_exam ? '-- Pilih jadwal dulu --' : '-- Semua --') ?></option>
                                 <?php foreach ($listSesi as $s): ?>
                                     <option value="<?= esc($s['id']) ?>" <?= esc($filter_sesi == $s['id'] ? 'selected' : '') ?>><?= htmlspecialchars($s['nama_sesi']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-3 d-flex align-items-end gap-2">
-                            <button type="submit" class="btn btn-primary w-100 fw-bold">
-                                <i class="fas fa-filter me-2"></i>Filter
-                            </button>
-                            <a href="index.php?id=<?= esc($id_bank) ?>" class="btn btn-outline-secondary">Reset</a>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <a href="index.php?id=<?= esc($id_bank) ?>" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-undo me-1"></i> Reset
+                            </a>
                         </div>
                     </form>
                 </div>
@@ -269,7 +268,7 @@ $results = $stmt->fetchAll();
                                     <div class="fw-bold"><?= $r['nama_lengkap'] ?></div>
                                     <small class="text-muted"><?= $r['nisn'] ?></small>
                                 </td>
-                                <td><span class="badge bg-secondary-subtle text-secondary"><?= $r['jenjang'] ?> - <?= $r['nama_kelas'] ?></span></td>
+                                <td><span class="badge bg-secondary-subtle text-secondary"><?= !empty($r['jenjang']) ? 'Kelas ' . htmlspecialchars($r['jenjang']) . ' - ' : '' ?><?= htmlspecialchars($r['nama_kelas'] ?? '-') ?></span></td>
                                 <td class="text-center">
                                     <span class="badge <?= $r['status'] == 'finished' ? 'bg-success' : 'bg-warning text-dark' ?>">
                                         <?= strtoupper($r['status']) ?>

@@ -224,11 +224,11 @@ if (!empty($answers)) {
                             <div class="text-center p-3 bg-primary-subtle rounded border border-primary-subtle">
                                 <small class="text-primary fw-bold d-block mb-1">NILAI AKHIR</small>
                                 <?php if ($data['skor_akhir'] === null): ?>
-                                    <h1 class="display-5 fw-bold text-primary mb-0">
+                                    <h1 id="displayNilaiAkhir" class="display-5 fw-bold text-primary mb-0">
                                         <span class="text-muted fs-5">Belum Mengerjakan</span>
                                     </h1>
                                 <?php else: ?>
-                                    <h1 class="display-5 fw-bold text-primary mb-0">
+                                    <h1 id="displayNilaiAkhir" class="display-5 fw-bold text-primary mb-0">
                                         <?= number_format($nilai_akhir, 2) ?>
                                     </h1>
                                     <small class="text-muted">Nilai Akhir (Skala 100)</small>
@@ -238,7 +238,7 @@ if (!empty($answers)) {
                                         <?php if ($has_obj_d): ?>
                                         <div class="col-6">
                                             <div class="bg-light rounded p-2 text-center">
-                                                <div class="fw-bold text-success"><?= number_format($nilai_obj_display, 2) ?></div>
+                                                <div id="displayNilaiObj" class="fw-bold text-success"><?= number_format($nilai_obj_display, 2) ?></div>
                                                 <small class="text-muted">Nilai Objektif</small>
                                                 <div class="text-muted" style="font-size:0.75rem">
                                                     <?= number_format($skor_objektif, 2) ?> / <?= number_format($bobot_objektif, 2) ?> poin
@@ -249,7 +249,7 @@ if (!empty($answers)) {
                                         <?php if ($has_esai_d): ?>
                                         <div class="col-6">
                                             <div class="bg-light rounded p-2 text-center">
-                                                <div class="fw-bold <?= $skor_status === 'pending' ? 'text-warning' : 'text-info' ?>">
+                                                <div id="displayNilaiEsai" class="fw-bold <?= $skor_status === 'pending' ? 'text-warning' : 'text-info' ?>">
                                                     <?= number_format($nilai_esai_display, 2) ?>
                                                 </div>
                                                 <small class="text-muted">Nilai Esai</small>
@@ -265,11 +265,11 @@ if (!empty($answers)) {
                                 <?php endif; ?>
                                 <div class="mt-2">
                                     <?php if ($skor_status === 'pending'): ?>
-                                        <span class="badge bg-warning text-dark">
+                                        <span id="badgeSkorStatus" class="badge bg-warning text-dark">
                                             <i class="fas fa-clock me-1"></i>Koreksi Esai Belum Final
                                         </span>
                                     <?php else: ?>
-                                        <span class="badge bg-success">
+                                        <span id="badgeSkorStatus" class="badge bg-success">
                                             <i class="fas fa-check-circle me-1"></i>Nilai Final
                                         </span>
                                     <?php endif; ?>
@@ -373,7 +373,11 @@ if (!empty($answers)) {
                             $border_class = 'salah';
                         }
                     ?>
+                    <?php 
+                        $ans_db_id = (int)($ans['id'] ?? 0);
+                    ?>
                     <div class="card border-0 shadow-sm mb-4 card-soal <?= $border_class ?>" 
+                         id="card-answer-<?= $ans_db_id ?>"
                          data-tipe="<?= esc($_norm_tipe) ?>" 
                          data-is-objektif="<?= in_array($_norm_tipe, $tipe_objektif, true) ? '1' : '0' ?>"
                          data-is-graded="<?= (int)$ans['is_graded'] ?>">
@@ -383,14 +387,14 @@ if (!empty($answers)) {
                                     <span class="badge bg-dark">SOAL <?= $idx + 1 ?></span>
                                     <span class="badge bg-info"><?= strtoupper(str_replace('_', ' ', $ans['tipe'])) ?></span>
                                     <?php if ($ans['tipe'] === 'essay' && !(bool)$ans['is_graded'] && !empty($ans['jawaban_simpan'])): ?>
-                                        <span class="badge bg-warning text-dark ms-2">
+                                        <span class="badge bg-warning text-dark ms-2 badge-belum-dinilai">
                                             <i class="fas fa-exclamation-triangle me-1"></i>Belum Dinilai
                                         </span>
                                     <?php endif; ?>
                                 </div>
                                 <div class="text-end">
                                     <?php if ($ans['tipe'] === 'essay'): ?>
-                                        <span class="fw-bold <?= (float)$ans['skor_didapat'] > 0 ? 'text-success' : 'text-muted' ?>">
+                                        <span class="fw-bold skor-header-display <?= (float)$ans['skor_didapat'] > 0 ? 'text-success' : 'text-muted' ?>">
                                             <?= $ans['skor_didapat'] ?> / <?= $ans['bobot_asli'] ?>
                                         </span>
                                     <?php elseif ($ans['tipe'] === 'isian'): ?>
@@ -475,12 +479,14 @@ if (!empty($answers)) {
                                              Koreksi Esai
                                         </strong>
                                         <span class="small text-muted">
-                                            Skor saat ini: <strong><?= $ans['skor_didapat'] ?></strong> / <?= $ans['bobot_asli'] ?>
+                                            Skor saat ini: <strong class="skor-saat-ini-text"><?= (float)$ans['skor_didapat'] ?></strong> / <?= (float)$ans['bobot_asli'] ?>
+                                            <span class="status-graded-container">
                                             <?php if ((bool)$ans['is_graded']): ?>
-                                                <span class="badge bg-success ms-1">Sudah Dinilai</span>
+                                                <span class="badge bg-success ms-1 status-graded-badge">Sudah Dinilai</span>
                                             <?php else: ?>
-                                                <span class="badge bg-warning text-dark ms-1">Belum Dinilai</span>
+                                                <span class="badge bg-warning text-dark ms-1 status-graded-badge">Belum Dinilai</span>
                                             <?php endif; ?>
+                                            </span>
                                         </span>
                                     </div>
                                     <?php if (!empty($ans['id'])): ?>
@@ -568,41 +574,99 @@ function koreksiSkor(answerId, bobotMaks, skorSekarang) {
             step: 0.01
         },
         showCancelButton: true,
-        confirmButtonText: 'Simpan Skor',
+        confirmButtonText: '<i class="fas fa-save me-1"></i> Simpan Skor',
         cancelButtonText: 'Batal',
         confirmButtonColor: '#4e73df',
+        showLoaderOnConfirm: true,
         preConfirm: (value) => {
             if (value === '' || value === null || parseFloat(value) < 0 || parseFloat(value) > bobotMaks) {
                 Swal.showValidationMessage(`Skor harus antara 0 sampai ${bobotMaks}`);
+                return false;
             }
-            return value;
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            $.ajax({
+            return $.ajax({
                 url: 'update_skor_manual.php',
                 type: 'POST',
-                dataType: 'json',
                 data: {
                     id: answerId,
-                    skor: result.value
+                    skor: value
                 },
-                success: function(response) {
-                    if (response.status === 'success') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil',
-                            text: 'Skor akhir peserta diperbarui menjadi: ' + response.total_akhir,
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => location.reload());
-                    } else {
-                        Swal.fire('Gagal', response.message || 'Terjadi kesalahan', 'error');
-                    }
-                },
-                error: function(xhr) {
-                    Swal.fire('Error', 'Request gagal: ' + xhr.status + ' ' + xhr.statusText, 'error');
+                dataType: 'json'
+            }).then(response => {
+                if (response.status !== 'success') {
+                    throw new Error(response.message || 'Gagal menyimpan skor');
                 }
+                return { response: response, newScore: parseFloat(value) };
+            }).catch(error => {
+                Swal.showValidationMessage(error.message || 'Terjadi kesalahan jaringan/server');
+            });
+        },
+        allowOutsideClick: () => !Swal.isLoading()
+    }).then((result) => {
+        if (result.isConfirmed && result.value && result.value.response) {
+            const data = result.value.response;
+            const newScore = result.value.newScore;
+
+            // 1. Update Top Overall Score Display Cards secara live
+            if (document.getElementById('displayNilaiAkhir')) {
+                document.getElementById('displayNilaiAkhir').textContent = parseFloat(data.total_akhir).toFixed(2);
+            }
+            if (document.getElementById('displayNilaiObj') && data.nilai_objektif !== undefined) {
+                document.getElementById('displayNilaiObj').textContent = parseFloat(data.nilai_objektif).toFixed(2);
+            }
+            if (document.getElementById('displayNilaiEsai') && data.nilai_esai !== undefined) {
+                document.getElementById('displayNilaiEsai').textContent = parseFloat(data.nilai_esai).toFixed(2);
+            }
+            if (document.getElementById('badgeSkorStatus')) {
+                const badge = document.getElementById('badgeSkorStatus');
+                if (data.skor_status === 'final') {
+                    badge.className = 'badge bg-success';
+                    badge.innerHTML = '<i class="fas fa-check-circle me-1"></i>Nilai Final';
+                } else {
+                    badge.className = 'badge bg-warning text-dark';
+                    badge.innerHTML = '<i class="fas fa-clock me-1"></i>Koreksi Esai Belum Final';
+                }
+            }
+
+            // 2. Update Question Card Element
+            const $card = $(`#card-answer-${answerId}`);
+            if ($card.length) {
+                $card.find('.skor-header-display').text(`${newScore} / ${bobotMaks}`)
+                    .removeClass('text-muted').addClass(newScore > 0 ? 'text-success' : 'text-muted');
+                $card.find('.skor-saat-ini-text').text(newScore);
+
+                const wasUngraded = $card.data('is-graded') == 0;
+                $card.data('is-graded', 1);
+
+                $card.find('.status-graded-container').html('<span class="badge bg-success ms-1 status-graded-badge">Sudah Dinilai</span>');
+                $card.find('.koreksi-btn').html('<i class="fas fa-pen me-1"></i>Ubah Nilai')
+                    .attr('onclick', `koreksiSkor(${answerId}, ${bobotMaks}, ${newScore})`);
+
+                $card.find('.badge-belum-dinilai').remove();
+
+                if (wasUngraded) {
+                    const $pendingBadge = $('#filterPillGroup [data-filter="essay"] .badge.bg-danger');
+                    if ($pendingBadge.length) {
+                        let curCount = parseInt($pendingBadge.text()) || 0;
+                        curCount = Math.max(0, curCount - 1);
+                        if (curCount > 0) {
+                            $pendingBadge.text(`${curCount} pending`);
+                        } else {
+                            $pendingBadge.remove();
+                        }
+                    }
+                }
+            }
+
+            // 3. Notifikasi Toast Berhasil tanpa reload
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'Skor disimpan!',
+                text: `Nilai akhir: ${parseFloat(data.total_akhir).toFixed(2)}`,
+                showConfirmButton: false,
+                timer: 2500,
+                timerProgressBar: true
             });
         }
     });
