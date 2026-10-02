@@ -59,6 +59,11 @@ if (isset($_SESSION[$cache_key])) {
     session_write_close();
 }
 
+if (empty($all_question_ids)) {
+    echo json_encode(['html' => '', 'total' => 0]);
+    exit;
+}
+
 // 5. Ambil Status Jawaban (selalu fresh — berubah tiap simpan jawaban)
 $stmtNav = $pdo->prepare("
     SELECT q.id, sa.jawaban_simpan, sa.is_ragu

@@ -115,7 +115,15 @@ try {
     $html .= "<input type='hidden' id='q_id' value='{$q['id']}'>";
     $html .= "<div class='mb-3'><span class='badge bg-primary px-3 py-2 rounded-pill shadow-sm'>SOAL NOMOR $no</span></div>";
 
-    // Render Konten Soal (Mendukung Gambar/HTML)
+    // Render Konten Soal (Mendukung Gambar/HTML & media_files)
+    $media_html = '';
+    if (!empty($q['media_files'])) {
+        $mf = trim((string)$q['media_files']);
+        if ($mf !== '' && !str_contains($q['konten_soal'], $mf)) {
+            $media_html = "<div class='mb-3 text-center'><img src='assets/uploads/soal/" . htmlspecialchars($mf, ENT_QUOTES, 'UTF-8') . "' class='img-fluid rounded shadow-sm' style='max-height:350px;' alt='Gambar Soal'></div>";
+        }
+    }
+    $html .= $media_html;
     $html .= "<div class='question-text mb-4'>" . $q['konten_soal'] . "</div>";
 
     $html .= "<div class='options-container'>";

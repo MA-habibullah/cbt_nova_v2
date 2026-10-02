@@ -34,6 +34,16 @@ if ($participant && $participant['status'] === 'finished') {
     echo '<script>loadView("dashboard");</script>';
     exit;
 }
+
+$display_total_soal = (int)$exam['total_soal'];
+if (!empty($participant['soal_ids'])) {
+    $decoded_sids = json_decode($participant['soal_ids'], true);
+    if (is_array($decoded_sids) && !empty($decoded_sids)) {
+        $display_total_soal = count($decoded_sids);
+    }
+} elseif (!empty($exam['jumlah_soal_limit']) && (int)$exam['jumlah_soal_limit'] > 0) {
+    $display_total_soal = min((int)$exam['jumlah_soal_limit'], (int)$exam['total_soal']);
+}
 ?>
 
 <div class="container py-3 py-md-5 px-3">
@@ -53,7 +63,7 @@ if ($participant && $participant['status'] === 'finished') {
                         </div>
                         <div class="mb-3 mb-md-0">
                             <label class="info-label d-block">Jumlah Soal</label>
-                            <span class="info-value"><?= esc($exam['total_soal']) ?> Butir</span>
+                            <span class="info-value"><?= esc($display_total_soal) ?> Butir</span>
                         </div>
                     </div>
                     <div class="col-6 col-md-6">
