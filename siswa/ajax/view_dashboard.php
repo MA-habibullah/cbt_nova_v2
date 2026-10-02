@@ -7,7 +7,8 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'siswa') {
     exit;
 }
 
-$student_id = $_SESSION['student_id'];
+$student_id = (int)$_SESSION['student_id'];
+session_write_close();
 
 $stmtSiswa = $pdo->prepare("SELECT s.*, c.nama_kelas, c.jenjang
                              FROM cbt_students s

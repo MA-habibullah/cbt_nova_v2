@@ -14,11 +14,13 @@ if (!isset($_GET['id'])) {
 }
 
 $exam_id    = (int)$_GET['id'];
-$student_id = $_SESSION['student_id'];
+$student_id = (int)$_SESSION['student_id'];
+session_write_close(); // Rilis session lock segera agar request lain tidak terblokir
 
+// 1. Ambil Data Partisipasi & Pengaturan Ujian
 $stmt = $pdo->prepare("
     SELECT p.*, e.nama_mapel_ujian, e.durasi_menit, e.selesai_pada as batas_waktu_server,
-           NOW() as waktu_sekarang_db
+           e.acak_soal, e.acak_opsi, NOW() as waktu_sekarang_db
     FROM cbt_exam_participants p
     JOIN cbt_exams e ON p.exam_id = e.id
     WHERE p.exam_id = ? AND p.student_id = ?
@@ -34,12 +36,267 @@ if (!$data) {
 
 $waktu      = hitung_sisa_waktu($pdo, (int)$data['id']);
 $sisa_detik = $waktu['sisa_detik'];
+
+// 2. Tentukan Daftar Urutan Soal Siswa
+$soal_ids_json = $data['soal_ids'] ?? null;
+if ($soal_ids_json) {
+    $all_question_ids = json_decode($soal_ids_json, true) ?: [];
+} else {
+    $stmtAllQ = $pdo->prepare("SELECT question_id FROM cbt_exam_questions WHERE exam_id = ? ORDER BY id ASC");
+    $stmtAllQ->execute([$exam_id]);
+    $all_question_ids = $stmtAllQ->fetchAll(PDO::FETCH_COLUMN);
+}
+
+$acak_soal = (int)($data['acak_soal'] ?? 0);
+$acak_opsi_global = (int)($data['acak_opsi'] ?? 0);
+
+if ($acak_soal && count($all_question_ids) > 1) {
+    $seed_soal = crc32($student_id . '_exam_' . $exam_id);
+    seeded_shuffle($all_question_ids, $seed_soal);
+}
+
+// 3. High-Concurrency Single-Payload: Ambil Seluruh Data Soal, Opsi, & Jawaban Tersimpan dalam 3 Query Cepat
+$questions_map = [];
+$nav_items = [];
+
+if (!empty($all_question_ids)) {
+    $in_placeholders = implode(',', array_fill(0, count($all_question_ids), '?'));
+    
+    // Query 1: Data Soal
+    $stQ = $pdo->prepare("SELECT id, tipe, konten_soal, media_files, acak_opsi FROM cbt_questions WHERE id IN ($in_placeholders)");
+    $stQ->execute($all_question_ids);
+    $raw_questions = [];
+    foreach ($stQ->fetchAll() as $rq) {
+        $raw_questions[$rq['id']] = $rq;
+    }
+
+    // Query 2: Data Opsi
+    $stOpt = $pdo->prepare("SELECT id, question_id, label, value_target FROM cbt_question_options WHERE question_id IN ($in_placeholders) ORDER BY label ASC");
+    $stOpt->execute($all_question_ids);
+    $raw_options = [];
+    foreach ($stOpt->fetchAll() as $ro) {
+        $raw_options[$ro['question_id']][] = $ro;
+    }
+
+    // Query 3: Jawaban Tersimpan Siswa
+    $stAns = $pdo->prepare("SELECT question_id, jawaban_simpan, is_ragu FROM cbt_student_answers WHERE participant_id = ? AND question_id IN ($in_placeholders)");
+    $stAns->execute(array_merge([$data['id']], $all_question_ids));
+    $raw_answers = [];
+    foreach ($stAns->fetchAll() as $ra) {
+        $raw_answers[$ra['question_id']] = $ra;
+    }
+
+    // 4. Pre-render HTML Soal ke dalam Payload Klien (0 ms Navigasi di Browser)
+    $option_labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+
+    foreach ($all_question_ids as $index => $qid) {
+        $no = $index + 1;
+        $q  = $raw_questions[$qid] ?? null;
+        if (!$q) continue;
+
+        $ans_row        = $raw_answers[$qid] ?? null;
+        $jawaban_simpan = $ans_row['jawaban_simpan'] ?? '';
+        $is_ragu        = (int)($ans_row['is_ragu'] ?? 0);
+        $is_answered    = false;
+
+        $html = "<input type='hidden' id='q_id' value='{$q['id']}'>";
+        $html .= "<div class='mb-3'><span class='badge bg-primary px-3 py-2 rounded-pill shadow-sm'>SOAL NOMOR $no</span></div>";
+
+        if (!empty($q['media_files'])) {
+            $mf = trim((string)$q['media_files']);
+            if ($mf !== '' && !str_contains($q['konten_soal'], $mf)) {
+                $html .= "<div class='mb-3 text-center'><img src='assets/uploads/soal/" . htmlspecialchars($mf, ENT_QUOTES, 'UTF-8') . "' class='img-fluid rounded shadow-sm' style='max-height:350px;' alt='Gambar Soal'></div>";
+            }
+        }
+        $html .= "<div class='question-text mb-4'>" . $q['konten_soal'] . "</div>";
+        $html .= "<div class='options-container'>";
+
+        $opts = $raw_options[$qid] ?? [];
+
+        switch ($q['tipe']) {
+            case 'pg':
+                if ($acak_opsi_global || $q['acak_opsi']) {
+                    $seed_opsi = crc32($student_id . '_exam_' . $exam_id . '_q_' . $q['id']);
+                    seeded_shuffle($opts, $seed_opsi);
+                }
+                foreach ($opts as $idx => $o) {
+                    $label = $option_labels[$idx] ?? ($idx + 1);
+                    $isSelected = ((string)$jawaban_simpan === (string)$o['id']) ? 'selected' : '';
+                    $isChecked  = ((string)$jawaban_simpan === (string)$o['id']) ? 'checked' : '';
+                    if ($isChecked) $is_answered = true;
+                    $html .= "
+                    <label class='option-item $isSelected'>
+                        <input type='radio' name='jawaban' class='answer-input d-none' value='{$o['id']}' $isChecked>
+                        <span class='me-3 fw-bold text-primary'>$label.</span>
+                        <span class='text-dark'>{$o['value_target']}</span>
+                    </label>";
+                }
+                break;
+
+            case 'pg_kompleks':
+                if ($acak_opsi_global || $q['acak_opsi']) {
+                    $seed_opsi = crc32($student_id . '_exam_' . $exam_id . '_q_' . $q['id']);
+                    seeded_shuffle($opts, $seed_opsi);
+                }
+                $jawaban_user = json_decode($jawaban_simpan, true) ?: [];
+                if (!empty($jawaban_user)) $is_answered = true;
+
+                foreach ($opts as $idx => $o) {
+                    $label = $option_labels[$idx] ?? ($idx + 1);
+                    $checked = in_array((string)$o['id'], array_map('strval', $jawaban_user), true);
+                    $isChecked = $checked ? 'checked' : '';
+                    $isSelected = $checked ? 'selected' : '';
+                    $html .= "
+                    <label class='option-item $isSelected'>
+                        <input type='checkbox' name='jawaban[]' class='answer-input d-none' value='{$o['id']}' $isChecked>
+                        <span class='me-3 fw-bold text-primary'>$label.</span>
+                        <span class='text-dark'>{$o['value_target']}</span>
+                    </label>";
+                }
+                break;
+
+            case 'isian':
+            case 'essay':
+                if (trim((string)$jawaban_simpan) !== '') $is_answered = true;
+                $html .= "
+                <div class='form-group'>
+                    <label class='small fw-bold text-muted mb-2 text-uppercase'>Jawaban Anda:</label>
+                    <textarea class='form-control answer-input p-3 shadow-sm' rows='6' placeholder='Ketik jawaban di sini...' style='border-radius:15px; border: 2px solid #eaecf4;'>{$jawaban_simpan}</textarea>
+                </div>";
+                break;
+
+            case 'benar_salah':
+                foreach ($opts as $idx => $o) {
+                    $label = $option_labels[$idx] ?? ($idx + 1);
+                    $isSelected = ((string)$jawaban_simpan === (string)$o['id']) ? 'selected' : '';
+                    $isChecked  = ((string)$jawaban_simpan === (string)$o['id']) ? 'checked' : '';
+                    if ($isChecked) $is_answered = true;
+                    $html .= "
+                    <label class='option-item $isSelected'>
+                        <input type='radio' name='jawaban' class='answer-input d-none' value='{$o['id']}' $isChecked>
+                        <span class='me-3 fw-bold text-primary'>$label.</span>
+                        <span class='text-dark'>{$o['value_target']}</span>
+                    </label>";
+                }
+                break;
+
+            case 'menjodohkan':
+                $jawaban_user = json_decode($jawaban_simpan, true) ?: [];
+                if (!empty($jawaban_user)) $is_answered = true;
+
+                $rows_display    = $opts;
+                $choices_display = $opts;
+
+                $seed_rows    = crc32($student_id . '_exam_' . $exam_id . '_q_' . $q['id'] . '_rows');
+                $seed_choices = crc32($student_id . '_exam_' . $exam_id . '_q_' . $q['id'] . '_choices');
+                seeded_shuffle($rows_display,    $seed_rows);
+                seeded_shuffle($choices_display, $seed_choices);
+
+                $n = count($rows_display);
+                if ($n >= 2) {
+                    for ($i = 0; $i < $n; $i++) {
+                        if ($choices_display[$i]['value_target'] === $rows_display[$i]['value_target']) {
+                            $j = ($i + 1) % $n;
+                            [$choices_display[$i], $choices_display[$j]] = [$choices_display[$j], $choices_display[$i]];
+                        }
+                    }
+                }
+
+                $choices_values = array_values(array_map(fn($c) => inject_domain_to_html($c['value_target']), $choices_display));
+
+                $html .= "<div class='matching-header d-none d-md-flex mb-2 px-1'>
+                            <div class='col-5 fw-semibold text-muted small'>Pertanyaan / Pernyataan</div>
+                            <div class='col-7 fw-semibold text-muted small ps-3'>Pilih Pasangan Jawaban</div>
+                          </div>
+                          <div class='matching-list'>";
+
+                foreach ($rows_display as $o) {
+                    $row_id         = $o['id'];
+                    $current_choice = $jawaban_user[$row_id] ?? '';
+
+                    $selected_idx = -1;
+                    foreach ($choices_display as $cidx => $ch) {
+                        if ($ch['value_target'] === $current_choice) {
+                            $selected_idx = $cidx;
+                            break;
+                        }
+                    }
+
+                    $selected_html = '<span class="text-muted">-- Pilih Jawaban --</span>';
+                    if ($selected_idx >= 0) {
+                        $selected_html = $choices_display[$selected_idx]['value_target'];
+                    }
+
+                    $current_val_attr = htmlspecialchars($current_choice, ENT_QUOTES, 'UTF-8');
+
+                    $html .= "<div class='matching-row border rounded-3 mb-3 p-3 bg-white shadow-sm'>
+                                <div class='row align-items-center g-2 g-md-3'>
+                                    <div class='col-12 col-md-5 matching-question-text'>
+                                        <span class='d-inline d-md-none badge bg-light text-secondary border mb-2' style='font-size:0.7rem;font-weight:600;'>PERNYATAAN</span>
+                                        <div>{$o['label']}</div>
+                                    </div>
+                                    <div class='col-12 col-md-7'>
+                                        <span class='d-inline d-md-none badge bg-light text-secondary border mb-2' style='font-size:0.7rem;font-weight:600;'>PILIH JAWABAN</span>
+                                        <div class='matching-custom-select' data-row-id='{$row_id}'>
+                                            <div class='matching-selected-display border rounded-3 px-3 py-2 d-flex justify-content-between align-items-center'
+                                                 style='cursor:pointer; min-height:46px; background:#f8f9fc;'>
+                                                <div class='selected-content flex-grow-1 me-2'>{$selected_html}</div>
+                                                <i class='fas fa-chevron-down flex-shrink-0 text-muted' style='font-size:0.8rem;'></i>
+                                            </div>
+                                            <div class='matching-options-dropdown border rounded-3 shadow-sm bg-white'
+                                                 style='display:none; position:absolute; z-index:9999; max-height:240px; overflow-y:auto; min-width:200px;'>
+                                                <div class='matching-option px-3 py-2 border-bottom' data-idx='-1'>
+                                                    <span class='text-muted'>-- Pilih Jawaban --</span>
+                                                </div>";
+
+                    foreach ($choices_display as $cidx => $choice) {
+                        $is_sel = ($cidx === $selected_idx) ? 'bg-primary-subtle fw-semibold' : '';
+                        $html .= "<div class='matching-option px-3 py-2 border-bottom {$is_sel}' data-idx='{$cidx}'>
+                                      {$choice['value_target']}
+                                  </div>";
+                    }
+
+                    $html .= "              </div>
+                                            <input type='hidden' class='matching-input' data-row-id='{$row_id}' value='{$current_val_attr}'>
+                                        </div>
+                                    </div>
+                                </div>
+                              </div>";
+                }
+
+                $html .= "</div>";
+                $html .= "<script>window._matchChoicesData = " . json_encode($choices_values) . ";</script>";
+                break;
+        }
+
+        $html .= "</div>";
+
+        $questions_map[$no] = [
+            'id'          => (int)$qid,
+            'no'          => $no,
+            'html'        => inject_domain_to_html($html),
+            'is_ragu'     => $is_ragu,
+            'is_answered' => $is_answered
+        ];
+
+        $nav_items[$no] = [
+            'no'          => $no,
+            'is_ragu'     => $is_ragu,
+            'is_answered' => $is_answered
+        ];
+    }
+}
+
+$exam_package_json = json_encode([
+    'total_soal' => count($all_question_ids),
+    'questions'  => $questions_map,
+    'nav_items'  => $nav_items
+], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);
 ?>
 
 <nav class="exam-header sticky-top py-2">
     <div class="container-fluid px-3 px-md-4 d-flex flex-wrap align-items-center gap-2">
         <div class="d-flex align-items-center gap-2 exam-title-group">
-            <!-- Tombol Reload Pintar (Soft Refresh) -->
             <button type="button" onclick="internalRefresh()" class="btn btn-light btn-sm border-0 shadow-sm flex-shrink-0" title="Muat Ulang Soal" aria-label="Muat Ulang">
                 <i class="fas fa-sync-alt text-primary"></i>
             </button>
@@ -75,7 +332,7 @@ $sisa_detik = $waktu['sisa_detik'];
             <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 p-lg-5 exam-question-card">
                 <div class="exam-progress mb-3" id="examProgress">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="small fw-bold text-muted" id="progressText">Soal 1 dari -</span>
+                        <span class="small fw-bold text-muted" id="progressText">Soal 1 dari <?= count($all_question_ids) ?></span>
                     </div>
                     <div class="progress exam-progress-bar" style="height:6px;">
                         <div class="progress-bar" id="progressBarFill" role="progressbar" style="width:0%"></div>
@@ -83,15 +340,8 @@ $sisa_detik = $waktu['sisa_detik'];
                 </div>
 
                 <div id="soal-container">
-                    <div class="skeleton-loader">
-                        <div class="skeleton-line skeleton-badge"></div>
-                        <div class="skeleton-line w-100"></div>
-                        <div class="skeleton-line w-75"></div>
-                        <div class="skeleton-line w-50 mb-4"></div>
-                        <div class="skeleton-option"></div>
-                        <div class="skeleton-option"></div>
-                        <div class="skeleton-option"></div>
-                        <div class="skeleton-option"></div>
+                    <div class="d-flex justify-content-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
                     </div>
                 </div>
 
@@ -121,13 +371,21 @@ $sisa_detik = $waktu['sisa_detik'];
     </div>
 </div>
 
+<script type="application/json" id="examPackageJson">
+<?= $exam_package_json ?>
+</script>
+
 <script>
 (function() {
     var examId        = <?= $exam_id ?>;
     var sisaWaktu     = <?= $sisa_detik ?>;
     var currentNumber = 1;
-    var totalSoal     = 0;
     var _finishCalled = false;
+
+    // Load Single-Payload Exam Package ke Memori Klien
+    var _pkg = JSON.parse(document.getElementById('examPackageJson').textContent || '{}');
+    var _questionsMap = _pkg.questions || {};
+    var totalSoal     = _pkg.total_soal || Object.keys(_questionsMap).length;
 
     function showTimer(s) {
         var h = Math.floor(s / 3600);
@@ -139,7 +397,6 @@ $sisa_detik = $waktu['sisa_detik'];
             (sec < 10 ? '0' + sec : sec)
         );
 
-        // Urgensi visual: pill & tombol SELESAI berubah warna saat waktu menipis
         var $pill   = $('#timerPill');
         var $finish = $('#btn-finish-exam');
         $pill.removeClass('timer-warning timer-danger');
@@ -153,15 +410,12 @@ $sisa_detik = $waktu['sisa_detik'];
             $finish.removeClass('btn-danger').addClass('btn-outline-danger');
         }
 
-        // Tombol Selesai hanya muncul & aktif 5 menit terakhir sebelum deadline
         if (s <= 300) {
             $finish.removeClass('d-none');
         } else {
             $finish.addClass('d-none');
         }
 
-        // Jika sedang berada di soal terakhir, sinkronkan tampilan tombol Next
-        // begitu window 5 menit terbuka/tertutup tanpa perlu re-navigasi soal
         if (totalSoal > 0 && currentNumber === totalSoal) {
             if (s <= 300) {
                 $('#btn-next').html('SELESAI UJIAN').addClass('btn-success is-finish').removeClass('btn-primary');
@@ -169,19 +423,6 @@ $sisa_detik = $waktu['sisa_detik'];
                 $('#btn-next').html('<i class="fas fa-arrow-right"></i>').addClass('btn-primary').removeClass('btn-success is-finish');
             }
         }
-    }
-
-    function skeletonHtml() {
-        return '<div class="skeleton-loader">' +
-            '<div class="skeleton-line skeleton-badge"></div>' +
-            '<div class="skeleton-line w-100"></div>' +
-            '<div class="skeleton-line w-75"></div>' +
-            '<div class="skeleton-line w-50 mb-4"></div>' +
-            '<div class="skeleton-option"></div>' +
-            '<div class="skeleton-option"></div>' +
-            '<div class="skeleton-option"></div>' +
-            '<div class="skeleton-option"></div>' +
-        '</div>';
     }
 
     function updateProgress() {
@@ -220,10 +461,8 @@ $sisa_detik = $waktu['sisa_detik'];
         }).then(function() { spaSelesai(examId, 'timeout'); });
     }
 
-    // Fungsi Terpadu untuk Log Pelanggaran & Alert
     function logSecurityViolation(type) {
         if (_finishCalled) return;
-        
         $.post('ajax_cheat_log.php', { 
             exam_id: examId, 
             type: type,
@@ -242,14 +481,12 @@ $sisa_detik = $waktu['sisa_detik'];
         }, 'json');
     }
 
-    // Tampilkan nilai awal timer sebelum tick pertama
     if (sisaWaktu > 0) {
         showTimer(sisaWaktu);
     } else {
         autoFinishUjian();
     }
 
-    // Assign to shell globals so loadView() can clear them on navigation
     _timerInterval = setInterval(function() {
         sisaWaktu--;
         if (sisaWaktu <= 0) {
@@ -259,9 +496,7 @@ $sisa_detik = $waktu['sisa_detik'];
         showTimer(sisaWaktu);
     }, 1000);
 
-    // High-Concurrency SRE: Perpanjang interval sinkronisasi waktu dan beri jitter acak
-    // agar 10.000 siswa tidak memukul server secara serentak (mencegah Thundering Herd).
-    var jitter = Math.floor(Math.random() * 30000); // 0-30 detik jitter
+    var jitter = Math.floor(Math.random() * 30000);
     _resyncInterval = setInterval(function() {
         $.get('ajax_get_waktu.php', { exam_id: examId }, function(res) {
             if (res.status === 'ok') {
@@ -294,18 +529,37 @@ $sisa_detik = $waktu['sisa_detik'];
         updateProgress();
     }
 
+    // Inisialisasi Grid Navigasi Soal Langsung di Klien (0 ms)
+    function initNavGrid() {
+        var htmlNav = '';
+        var navData = _pkg.nav_items || {};
+        for (var i = 1; i <= totalSoal; i++) {
+            var item = navData[i] || {};
+            var classes = ['no-box'];
+            if (i === currentNumber) classes.push('active');
+            if (item.is_ragu) classes.push('ragu');
+            if (item.is_answered) classes.push('answered');
+            htmlNav += "<div class='" + classes.join(' ') + "' data-no='" + i + "' onclick='loadSoal(" + i + ")'>" + i + "</div>";
+        }
+        $('#nav-numbers').html(htmlNav);
+        refreshNavSummary();
+    }
+
     var _saveTimers = {};
     function saveJawabanToServer(qId, val, isAnswered) {
-        // 1. Instant DOM Update tanpa chained request
+        // 1. Instant DOM Update
         var $targetBox = $('#nav-numbers .no-box[data-no="' + currentNumber + '"]');
         if (isAnswered) {
             $targetBox.addClass('answered');
         } else {
             $targetBox.removeClass('answered');
         }
+        if (_pkg.nav_items && _pkg.nav_items[currentNumber]) {
+            _pkg.nav_items[currentNumber].is_answered = isAnswered;
+        }
         refreshNavSummary();
 
-        // 2. Buffer LocalStorage untuk redundansi koneksi klien
+        // 2. Buffer LocalStorage untuk redundansi koneksi offline
         try {
             var storageKey = 'cbt_ans_' + examId;
             var stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
@@ -313,7 +567,7 @@ $sisa_detik = $waktu['sisa_detik'];
             localStorage.setItem(storageKey, JSON.stringify(stored));
         } catch (e) {}
 
-        // 3. Debounce 300ms + Random Jitter 0-150ms agar server tidak terkena thundering herd
+        // 3. Silent Asynchronous Background Autosave (Debounced 300ms)
         if (_saveTimers[qId]) {
             clearTimeout(_saveTimers[qId]);
         }
@@ -332,31 +586,25 @@ $sisa_detik = $waktu['sisa_detik'];
         }, delay);
     }
 
-    var _soalCache = {};
-    var _prefetchQueue = {};
+    // High-Concurrency Single-Payload Renderer: Pindah Soal 100% INSTAN di Klien (0 ms Latensi)
+    window.loadSoal = function loadSoal(num) {
+        currentNumber = num;
+        var qData = _questionsMap[num];
 
-    function prefetchSoal(num) {
-        if (num < 1 || (totalSoal > 0 && num > totalSoal) || _soalCache[num] || _prefetchQueue[num]) return;
-        _prefetchQueue[num] = true;
-        $.get('ajax_get_soal.php', { exam_id: examId, no: num }, function(res) {
-            delete _prefetchQueue[num];
-            if (res && res.html) {
-                _soalCache[num] = res;
-            }
-        }, 'json').fail(function() {
-            delete _prefetchQueue[num];
-        });
-    }
+        if (!qData) {
+            $('#soal-container').html('<div class="alert alert-warning">Soal tidak ditemukan.</div>');
+            return;
+        }
 
-    function renderSoalData(num, res) {
-        $('#soal-container').html(res.html);
+        // Render HTML langsung dari memori tanpa HTTP round-trip
+        $('#soal-container').html(qData.html);
         renderMath(document.getElementById('soal-container'));
 
-        // Sinkronisasi jawaban terkini dari buffer klien jika sudah pernah dijawab
+        // Sinkronisasi jawaban terkini dari LocalStorage buffer jika pernah diisi siswa
         try {
             var storageKey = 'cbt_ans_' + examId;
             var stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
-            var qId = $('#q_id').val();
+            var qId = qData.id;
             if (stored && stored[qId] && stored[qId].jawaban !== undefined) {
                 var ans = stored[qId].jawaban;
                 if (typeof ans === 'string' || typeof ans === 'number') {
@@ -376,13 +624,10 @@ $sisa_detik = $waktu['sisa_detik'];
             }
         } catch(e) {}
 
-        if ($('#nav-numbers').children().length === 0) {
-            updateNav();
-        } else {
-            $('#nav-numbers .no-box').removeClass('active');
-            $('#nav-numbers .no-box[data-no="' + num + '"]').addClass('active');
-            updateProgress();
-        }
+        // Update tombol dan indikator aktif
+        $('#nav-numbers .no-box').removeClass('active');
+        $('#nav-numbers .no-box[data-no="' + num + '"]').addClass('active');
+        updateProgress();
 
         $('#btn-prev').prop('disabled', num === 1);
         $('#btn-next').prop('disabled', false);
@@ -391,41 +636,12 @@ $sisa_detik = $waktu['sisa_detik'];
         } else {
             $('#btn-next').html('<i class="fas fa-arrow-right"></i>').addClass('btn-primary').removeClass('btn-success is-finish');
         }
-        $('#btnRagu').toggleClass('is-active', res.is_ragu == 1).attr('aria-pressed', res.is_ragu == 1 ? 'true' : 'false');
 
-        // Prefetch soal berikutnya dan sebelumnya di latar belakang (0 ms saat diklik)
-        prefetchSoal(num + 1);
-        prefetchSoal(num + 2);
-        prefetchSoal(num - 1);
-    }
+        var isRagu = qData.is_ragu || ($('#nav-numbers .no-box[data-no="' + num + '"]').hasClass('ragu') ? 1 : 0);
+        $('#btnRagu').toggleClass('is-active', isRagu == 1).attr('aria-pressed', isRagu == 1 ? 'true' : 'false');
+    };
 
-    window.loadSoal = function loadSoal(num) {
-        currentNumber = num;
-        $('#btn-prev, #btn-next').prop('disabled', true);
-
-        // Jika sudah ada di cache memori, render INSTAN (0 ms)
-        if (_soalCache[num]) {
-            renderSoalData(num, _soalCache[num]);
-            return;
-        }
-
-        // Tampilkan skeleton loader hanya jika pertama kali dimuat dan belum di-cache
-        $('#soal-container').html(skeletonHtml());
-        $.get('ajax_get_soal.php', { exam_id: examId, no: num }, function(res) {
-            _soalCache[num] = res;
-            renderSoalData(num, res);
-        }, 'json');
-    }
-
-    function updateNav() {
-        $.get('ajax_get_nav.php', { exam_id: examId, current: currentNumber }, function(res) {
-            $('#nav-numbers').html(res.html);
-            totalSoal = res.total;
-            refreshNavSummary();
-        }, 'json');
-    }
-
-    // Namespaced events so they can be safely re-bound on next view load
+    // Event Handler Input Jawaban
     $(document).off('change.ujian').on('change.ujian', '.answer-input', function() {
         var input = $(this);
         var val   = input.val();
@@ -475,10 +691,8 @@ $sisa_detik = $waktu['sisa_detik'];
         $wrapper.find('.matching-option').removeClass('bg-primary-subtle fw-semibold');
         if (idx >= 0) $(this).addClass('bg-primary-subtle fw-semibold');
 
-        // Render KaTeX pada pilihan yang tampil
         renderMath($wrapper.find('.selected-content')[0]);
 
-        // Simpan semua jawaban menjodohkan
         var mapping = {};
         var hasAnswer = false;
         $('#soal-container .matching-input').each(function() {
@@ -492,7 +706,6 @@ $sisa_detik = $waktu['sisa_detik'];
         saveJawabanToServer($('#q_id').val(), mapping, hasAnswer);
     });
 
-    // Tutup semua dropdown saat klik di luar
     $(document).off('click.ujian-match-outside').on('click.ujian-match-outside', function() {
         $('.matching-options-dropdown').hide();
     });
@@ -504,6 +717,12 @@ $sisa_detik = $waktu['sisa_detik'];
         
         var $targetBox = $('#nav-numbers .no-box[data-no="' + currentNumber + '"]');
         $targetBox.toggleClass('ragu', newState);
+        if (_questionsMap[currentNumber]) {
+            _questionsMap[currentNumber].is_ragu = newState ? 1 : 0;
+        }
+        if (_pkg.nav_items && _pkg.nav_items[currentNumber]) {
+            _pkg.nav_items[currentNumber].is_ragu = newState ? 1 : 0;
+        }
         refreshNavSummary();
 
         $.post('ajax_toggle_ragu.php', {
@@ -547,7 +766,6 @@ $sisa_detik = $waktu['sisa_detik'];
 
     $('#navDrawerBackdrop').off('click.ujian').on('click.ujian', closeNavDrawer);
 
-    // Tutup drawer otomatis saat siswa memilih nomor soal di mobile
     $(document).off('click.ujian-navclose').on('click.ujian-navclose', '.no-box', function() {
         if (window.innerWidth < 992) closeNavDrawer();
     });
@@ -556,9 +774,7 @@ $sisa_detik = $waktu['sisa_detik'];
         finishExamConfirm();
     });
 
-    // --- SISTEM KEAMANAN TERPADU (MOBILE & DESKTOP) ---
-
-    // 1. Deteksi Multi-Touch (3 Jari - Screenshot Gesture)
+    // Keamanan: Touch & Visibility Listeners
     $(document).on('touchstart.security', function(e) {
         if (e.originalEvent.touches.length >= 3) {
             document.body.style.opacity = "0";
@@ -572,7 +788,6 @@ $sisa_detik = $waktu['sisa_detik'];
         }, 1500);
     });
 
-    // 2. Deteksi App-Switcher & Kehilangan Fokus
     window._onBlurUjian = function() {
         document.body.style.opacity = "0";
         $('#privacy-screen').show();
@@ -591,7 +806,6 @@ $sisa_detik = $waktu['sisa_detik'];
     window.addEventListener('blur', window._onBlurUjian);
     window.addEventListener('focus', window._onFocusUjian);
 
-    // 3. Blokir Fungsi Native & Copy-Paste
     $(document).on('copy.security cut.security paste.security', function(e) {
         e.preventDefault();
         Swal.fire({
@@ -604,7 +818,6 @@ $sisa_detik = $waktu['sisa_detik'];
         return false;
     });
 
-    // Anti-Screenshot (PrintScreen)
     $(window).on('keyup.security', function(e) {
         if (e.key === 'PrintScreen' || (e.ctrlKey && e.key === 'p')) {
             if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -626,6 +839,8 @@ $sisa_detik = $waktu['sisa_detik'];
         }
     });
 
+    // Inisialisasi Navigasi & Muat Soal #1 secara Instan (0 ms)
+    initNavGrid();
     loadSoal(1);
 })();
 </script>

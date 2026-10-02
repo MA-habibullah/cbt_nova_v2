@@ -11,7 +11,8 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'siswa') {
 }
 
 $exam_id    = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$student_id = $_SESSION['student_id'];
+$student_id = (int)$_SESSION['student_id'];
+session_write_close();
 $waktu_selesai = date('Y-m-d H:i:s');
 
 try {
