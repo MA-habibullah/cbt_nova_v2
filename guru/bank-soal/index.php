@@ -190,10 +190,21 @@ $has_filter = $search !== '' || $f_subject || $f_jenjang !== '' || $f_status !==
 $subjects   = $pdo->query("SELECT * FROM cbt_subjects WHERE is_aktif = 1 ORDER BY nama_mapel")->fetchAll();
 
 // --- METRIC CARDS STATISTIK (GURU SCOPE) ---
-$metric_total_bank = (int)$pdo->query("SELECT COUNT(*) FROM cbt_bank_soal WHERE teacher_id = $teacher_id")->fetchColumn();
-$metric_bank_aktif = (int)$pdo->query("SELECT COUNT(*) FROM cbt_bank_soal WHERE teacher_id = $teacher_id AND status = 'aktif'")->fetchColumn();
-$metric_total_soal = (int)$pdo->query("SELECT COUNT(*) FROM cbt_questions q JOIN cbt_bank_soal b ON q.bank_soal_id = b.id WHERE b.teacher_id = $teacher_id")->fetchColumn();
-$metric_bank_baru  = (int)$pdo->query("SELECT COUNT(*) FROM cbt_bank_soal WHERE teacher_id = $teacher_id AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)")->fetchColumn();
+$st_tb = $pdo->prepare("SELECT COUNT(*) FROM cbt_bank_soal WHERE teacher_id = ?");
+$st_tb->execute([$teacher_id]);
+$metric_total_bank = (int)$st_tb->fetchColumn();
+
+$st_ba = $pdo->prepare("SELECT COUNT(*) FROM cbt_bank_soal WHERE teacher_id = ? AND status = 'aktif'");
+$st_ba->execute([$teacher_id]);
+$metric_bank_aktif = (int)$st_ba->fetchColumn();
+
+$st_ts = $pdo->prepare("SELECT COUNT(*) FROM cbt_questions q JOIN cbt_bank_soal b ON q.bank_soal_id = b.id WHERE b.teacher_id = ?");
+$st_ts->execute([$teacher_id]);
+$metric_total_soal = (int)$st_ts->fetchColumn();
+
+$st_nb = $pdo->prepare("SELECT COUNT(*) FROM cbt_bank_soal WHERE teacher_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
+$st_nb->execute([$teacher_id]);
+$metric_bank_baru  = (int)$st_nb->fetchColumn();
 
 function gbsQ(array $extra = []): string {
     global $search, $f_subject, $f_jenjang, $f_status, $date_from, $date_to, $limit;

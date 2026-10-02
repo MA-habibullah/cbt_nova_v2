@@ -73,7 +73,11 @@ $offset = ($page - 1) * $limit;
 $totalData = $pdo->query("SELECT COUNT(*) FROM cbt_admins")->fetchColumn();
 $pages     = ceil($totalData / $limit);
 
-$listAdmin = $pdo->query("SELECT * FROM cbt_admins ORDER BY role ASC, nama_lengkap ASC LIMIT $limit OFFSET $offset")->fetchAll();
+$stmtAdmin = $pdo->prepare("SELECT * FROM cbt_admins ORDER BY role ASC, nama_lengkap ASC LIMIT ? OFFSET ?");
+$stmtAdmin->bindValue(1, (int)$limit, PDO::PARAM_INT);
+$stmtAdmin->bindValue(2, (int)$offset, PDO::PARAM_INT);
+$stmtAdmin->execute();
+$listAdmin = $stmtAdmin->fetchAll();
 ?>
 
 <!DOCTYPE html>

@@ -19,8 +19,10 @@ if (!$bank) {
     exit;
 }
 
-// Dummy Count (Nanti diganti dengan Query Count asli sesuai kebutuhan)
-$jml_soal = $pdo->query("SELECT COUNT(*) FROM cbt_questions WHERE bank_soal_id = $id_bank")->fetchColumn();
+// Question count with prepared statement
+$stmt_cnt = $pdo->prepare("SELECT COUNT(*) FROM cbt_questions WHERE bank_soal_id = ?");
+$stmt_cnt->execute([$id_bank]);
+$jml_soal = (int)$stmt_cnt->fetchColumn();
 ?>
 
 <!DOCTYPE html>

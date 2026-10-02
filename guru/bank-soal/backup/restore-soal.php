@@ -63,7 +63,8 @@ try {
         return array_unique(array_filter($m[1]));
     };
 
-    // Tulis gambar dari ZIP ke disk, tangani collision dengan rename
+    // Tulis gambar dari ZIP ke disk, tangani collision dengan rename (dengan proteksi whitelist ekstensi & basename)
+    $allowedMediaExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp3', 'wav', 'mp4', 'ogg', 'svg'];
     $renameMap = [];
     foreach ($data['soal'] as $q) {
         $imgNames = [];
@@ -72,16 +73,24 @@ try {
         foreach ($q['options'] ?? [] as $o) {
             foreach ($extractImgNames($o['value_target'] ?? '') as $f) $imgNames[] = $f;
         }
-        foreach (array_unique(array_filter($imgNames)) as $origName) {
-            if (isset($renameMap[$origName])) continue;
+        foreach (array_unique(array_filter($imgNames)) as $rawOrigName) {
+            $origName = basename($rawOrigName); // Cegah path traversal
+            $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+            if (!in_array($ext, $allowedMediaExts)) continue; // Cegah upload file berbahaya (.php, .exe, dsb)
+
+            if (isset($renameMap[$rawOrigName])) continue;
             $imgContent = $zip->getFromName('images/' . $origName);
+            if ($imgContent === false) {
+                $imgContent = $zip->getFromName('images/' . $rawOrigName);
+            }
             if ($imgContent === false) continue;
+
             $destName = $origName;
             if (file_exists($uploadDir . $origName)) {
-                $destName = pathinfo($origName, PATHINFO_FILENAME) . '_' . uniqid() . '.' . pathinfo($origName, PATHINFO_EXTENSION);
+                $destName = pathinfo($origName, PATHINFO_FILENAME) . '_' . uniqid() . '.' . $ext;
             }
             file_put_contents($uploadDir . $destName, $imgContent);
-            $renameMap[$origName] = $destName;
+            $renameMap[$rawOrigName] = $destName;
         }
     }
 

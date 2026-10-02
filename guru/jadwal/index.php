@@ -270,10 +270,21 @@ $stmt->execute($dataParams);
 $listExams = $stmt->fetchAll();
 
 // --- 3. OVERVIEW METRIC CARDS (GURU SCOPE) ---
-$metric_total_jadwal = (int)$pdo->query("SELECT COUNT(*) FROM cbt_exams WHERE teacher_id = $teacher_id")->fetchColumn();
-$metric_live_now     = (int)$pdo->query("SELECT COUNT(*) FROM cbt_exams WHERE teacher_id = $teacher_id AND status = 'aktif' AND NOW() BETWEEN mulai_pada AND selesai_pada")->fetchColumn();
-$metric_upcoming     = (int)$pdo->query("SELECT COUNT(*) FROM cbt_exams WHERE teacher_id = $teacher_id AND (status = 'draft' OR (status = 'aktif' AND mulai_pada > NOW()))")->fetchColumn();
-$metric_completed    = (int)$pdo->query("SELECT COUNT(*) FROM cbt_exams WHERE teacher_id = $teacher_id AND (status = 'selesai' OR (status = 'aktif' AND selesai_pada < NOW()))")->fetchColumn();
+$st_tj = $pdo->prepare("SELECT COUNT(*) FROM cbt_exams WHERE teacher_id = ?");
+$st_tj->execute([$teacher_id]);
+$metric_total_jadwal = (int)$st_tj->fetchColumn();
+
+$st_ln = $pdo->prepare("SELECT COUNT(*) FROM cbt_exams WHERE teacher_id = ? AND status = 'aktif' AND NOW() BETWEEN mulai_pada AND selesai_pada");
+$st_ln->execute([$teacher_id]);
+$metric_live_now     = (int)$st_ln->fetchColumn();
+
+$st_up = $pdo->prepare("SELECT COUNT(*) FROM cbt_exams WHERE teacher_id = ? AND (status = 'draft' OR (status = 'aktif' AND mulai_pada > NOW()))");
+$st_up->execute([$teacher_id]);
+$metric_upcoming     = (int)$st_up->fetchColumn();
+
+$st_cp = $pdo->prepare("SELECT COUNT(*) FROM cbt_exams WHERE teacher_id = ? AND (status = 'selesai' OR (status = 'aktif' AND selesai_pada < NOW()))");
+$st_cp->execute([$teacher_id]);
+$metric_completed    = (int)$st_cp->fetchColumn();
 
 // Bank Soal Milik Guru
 $myBanks = $pdo->prepare("SELECT b.id, b.nama_bank_soal, b.kode_bank_soal, b.status, b.jenjang, s.nama_mapel, s.kode_mapel 
