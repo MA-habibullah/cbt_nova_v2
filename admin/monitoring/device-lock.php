@@ -98,11 +98,19 @@ $sessions = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
             url: 'ajax/device-data.php',
             type: 'GET',
             data: formData,
+            beforeSend: function() {
+                $('#deviceContent').html(`
+                    <div class="text-center p-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2 text-muted small fw-semibold">Memuat data perangkat terkunci...</p>
+                    </div>
+                `);
+            },
             success: function(data) {
                 $('#deviceContent').html(data);
             },
             error: function() {
-                $('#deviceContent').html('<div class="p-4 text-danger text-center">Gagal memuat data perangkat. Periksa koneksi server.</div>');
+                $('#deviceContent').html('<div class="p-4 text-danger text-center fw-semibold"><i class="fas fa-exclamation-circle me-1"></i> Gagal memuat data perangkat. Periksa koneksi server.</div>');
             }
         });
     }

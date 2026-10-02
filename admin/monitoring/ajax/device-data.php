@@ -68,17 +68,17 @@ if (!$results) {
 ?>
 
 <div class="table-responsive">
-    <table class="table table-hover mb-0 align-middle">
-        <thead class="bg-light">
+    <table class="table table-modern table-device-lock table-hover mb-0 align-middle">
+        <thead class="table-light text-secondary small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">
             <tr>
-                <th width="40" class="ps-3 text-center">
+                <th width="45" class="ps-3 text-center">
                     <input type="checkbox" id="checkAll" class="form-check-input">
                 </th>
                 <th>Siswa</th>
                 <th>Device ID / Browser</th>
                 <th>Alamat IP</th>
                 <th>Waktu Lock</th>
-                <th class="text-center">Aksi</th>
+                <th class="text-center" width="90">Aksi</th>
             </tr>
         </thead>
         <tbody>

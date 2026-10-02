@@ -360,10 +360,10 @@ if (isset($_POST['restore_siswa'])) {
 
 <body class="bg-light">
 
-<div class="d-flex" id="wrapper" style="overflow-x: hidden;">
+<div class="d-flex" id="wrapper">
     <?php include '../../includes/sidebar.php'; ?>
 
-    <div id="content" class="w-100" style="min-width: 0; max-width: 100%; overflow-x: hidden;">
+    <div id="content" class="w-100">
         <!-- Top Navbar -->
         <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm border-bottom">
             <button class="btn btn-light border" id="menu-toggle"><i class="fas fa-bars"></i></button>
@@ -548,16 +548,16 @@ if (isset($_POST['restore_siswa'])) {
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" style="min-width: 1000px;">
+                    <table class="table table-modern align-middle mb-0" style="min-width: 900px;">
                         <thead class="table-light text-secondary small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">
                             <tr>
                                 <th class="text-center py-3" width="50">#</th>
-                                <th class="text-center py-3" width="70">Foto</th>
+                                <th class="text-center py-3 d-none d-md-table-cell" width="60">Foto</th>
                                 <th class="py-3">Nama Lengkap & Identitas</th>
                                 <th class="py-3">Kelas & Jenjang</th>
-                                <th class="py-3">Sesi Ujian</th>
-                                <th class="py-3">Agama</th>
-                                <th class="py-3">Status</th>
+                                <th class="py-3 d-none d-sm-table-cell">Sesi Ujian</th>
+                                <th class="py-3 d-none d-lg-table-cell">Agama</th>
+                                <th class="py-3 text-center" width="120">Status</th>
                                 <th class="text-center py-3" width="180">Aksi</th>
                             </tr>
                         </thead>
@@ -576,58 +576,63 @@ if (isset($_POST['restore_siswa'])) {
                             <?php $no = $offset + 1; foreach($listSiswa as $row): ?>
                             <tr>
                                 <td class="text-center text-muted fw-bold small"><?= $no++ ?></td>
-                                <td class="text-center">
+                                <td class="text-center d-none d-md-table-cell">
                                     <?php if (!empty($row['foto'])): ?>
                                         <img src="<?= esc(BASE_URL) ?>assets/uploads/foto_siswa/<?= htmlspecialchars($row['foto']) ?>" 
                                              class="rounded-circle border shadow-sm" 
-                                             style="width:42px;height:42px;object-fit:cover;" 
+                                             style="width:38px;height:38px;object-fit:cover;" 
                                              alt="<?= esc($row['nama_lengkap']) ?>"
                                              onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=<?= urlencode($row['nama_lengkap']) ?>&background=random';">
                                     <?php else: ?>
-                                        <div class="avatar-placeholder rounded-circle d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary fw-bold" style="width:42px;height:42px;font-size:14px;">
-                                            <?= strtoupper(mb_substr($row['nama_lengkap'], 0, 2)) ?>
+                                        <div class="avatar-placeholder rounded-circle d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary fw-bold" style="width:38px;height:38px;font-size:13px;">
+                                             <?= strtoupper(mb_substr($row['nama_lengkap'], 0, 2)) ?>
                                         </div>
                                     <?php endif; ?>
                                 </td>
                                 <td>
                                     <div class="fw-bold text-dark fs-6"><?= esc($row['nama_lengkap']) ?></div>
                                     <div class="d-flex flex-wrap align-items-center gap-2 mt-1 small">
-                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace">
+                                        <span class="badge badge-soft-primary font-monospace">
                                             <i class="fas fa-id-card me-1"></i><?= esc($row['nisn']) ?>
                                         </span>
                                         <span class="text-muted font-monospace">
                                             <i class="fas fa-user text-secondary me-1"></i><?= esc($row['username']) ?>
                                         </span>
                                     </div>
+                                    <!-- Sub-label untuk Tampilan Mobile (< 768px) -->
+                                    <div class="d-md-none mt-1 small text-muted">
+                                        <span class="badge bg-light text-dark border me-1"><i class="fas fa-clock text-secondary me-1"></i>Sesi <?= esc($row['sesi']) ?></span>
+                                        <?php if (!empty($row['agama'])): ?><span class="text-secondary"><?= esc($row['agama']) ?></span><?php endif; ?>
+                                    </div>
                                 </td>
                                 <td>
                                     <?php if ((int)$row['is_aktif'] === 1): ?>
-                                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1 rounded-2 fw-semibold">
+                                        <span class="badge badge-soft-info px-2 py-1 rounded-2 fw-semibold">
                                             <i class="fas fa-graduation-cap me-1"></i><?= esc($row['jenjang'] ?? '-') ?> - <?= esc($row['nama_kelas'] ?? 'Tanpa Kelas') ?>
                                         </span>
                                     <?php else: ?>
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 rounded-2 fw-semibold">
+                                        <span class="badge badge-soft-secondary px-2 py-1 rounded-2 fw-semibold">
                                             <i class="fas fa-graduation-cap me-1"></i><?= esc($row['nama_kelas'] === 'LULUS' ? 'Alumni (Lulus)' : (($row['jenjang'] ? $row['jenjang'].'-' : '') . ($row['nama_kelas'] ?? 'Alumni'))) ?>
                                         </span>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td class="d-none d-sm-table-cell">
                                     <span class="badge bg-light text-dark border px-2 py-1">
                                         <i class="fas fa-clock text-secondary me-1"></i>Sesi <?= esc($row['sesi']) ?>
                                     </span>
                                 </td>
-                                <td>
+                                <td class="d-none d-lg-table-cell">
                                     <span class="badge bg-light text-secondary border px-2 py-1">
                                         <?= esc($row['agama'] ?? '-') ?>
                                     </span>
                                 </td>
-                                <td>
+                                <td class="text-center">
                                     <?php if ((int)$row['is_aktif'] === 1): ?>
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">
+                                        <span class="badge badge-soft-success px-2 py-1 rounded-pill">
                                             <i class="fas fa-check-circle me-1"></i>Aktif
                                         </span>
                                     <?php else: ?>
-                                        <span class="badge bg-secondary-subtle text-danger border border-secondary-subtle px-2 py-1 rounded-pill">
+                                        <span class="badge badge-soft-danger px-2 py-1 rounded-pill">
                                             <i class="fas fa-ban me-1"></i>Non-Aktif
                                         </span>
                                     <?php endif; ?>

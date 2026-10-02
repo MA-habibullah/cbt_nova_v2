@@ -262,10 +262,10 @@ function build_pagination_url($targetPage) {
 
 <body class="bg-light">
 
-<div class="d-flex" id="wrapper" style="overflow-x: hidden;">
+<div class="d-flex" id="wrapper">
     <?php include dirname(__DIR__, 2) . '/includes/sidebar.php'; ?>
 
-    <div id="content" class="w-100" style="min-width: 0; max-width: 100%; overflow-x: hidden;">
+    <div id="content" class="w-100">
         <!-- Top Navbar -->
         <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm border-bottom">
             <button class="btn btn-light border shadow-sm" id="menu-toggle"><i class="fas fa-bars"></i></button>
@@ -456,14 +456,14 @@ function build_pagination_url($targetPage) {
             <!-- Table Card -->
             <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" style="min-width: 1050px;">
+                    <table class="table table-modern align-middle mb-0" style="min-width: 950px;">
                         <thead class="table-light text-secondary small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">
                             <tr>
                                 <th class="text-center py-3" width="50">#</th>
                                 <th class="py-3">Identitas Ujian</th>
-                                <th class="py-3">Jenjang & Bank Soal</th>
+                                <th class="py-3 d-none d-sm-table-cell">Jenjang & Bank Soal</th>
                                 <th class="py-3 text-center">Jadwal & Waktu</th>
-                                <th class="py-3 text-center">Soal & Peserta</th>
+                                <th class="py-3 text-center d-none d-lg-table-cell">Soal & Peserta</th>
                                 <th class="py-3 text-center" width="130">Token Ujian</th>
                                 <th class="py-3 text-center" width="150">Status Pelaksanaan</th>
                                 <th class="text-center py-3" width="180">Aksi</th>
@@ -510,10 +510,16 @@ function build_pagination_url($targetPage) {
                                                 &bull; <i class="fas fa-user-tie ms-1 me-1"></i><?= esc($e['nama_guru']) ?>
                                             </span>
                                         </div>
+                                        <!-- Sub-label untuk Tampilan Mobile (< 768px) -->
+                                        <div class="d-md-none mt-1 small text-muted">
+                                            <span class="badge badge-soft-info me-1">Kelas <?= esc($e['jenjang']) ?></span>
+                                            <span class="badge bg-light text-dark border me-1"><i class="far fa-clock text-primary me-1"></i><?= (int)$e['durasi_menit'] ?>m</span>
+                                            <span class="badge bg-light text-secondary border"><i class="fas fa-user-graduate me-1"></i><?= (int)$e['jumlah_peserta'] ?></span>
+                                        </div>
                                     </td>
-                                    <td>
+                                    <td class="d-none d-sm-table-cell">
                                         <div class="mb-1">
-                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 rounded-2 fw-semibold">
+                                            <span class="badge badge-soft-primary px-2 py-1 rounded-2 fw-semibold">
                                                 <i class="fas fa-graduation-cap me-1"></i>Kelas <?= esc($e['jenjang']) ?>
                                             </span>
                                         </div>
@@ -530,13 +536,13 @@ function build_pagination_url($targetPage) {
                                             </span>
                                         </div>
                                     </td>
-                                    <td class="text-center">
+                                    <td class="text-center d-none d-lg-table-cell">
                                         <div class="mb-1">
-                                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1">
+                                            <span class="badge badge-soft-info px-2 py-1">
                                                 <i class="fas fa-tasks me-1"></i><?= (int)$e['jumlah_soal'] ?> Soal
                                             </span>
                                         </div>
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size:0.75rem;">
+                                        <span class="badge badge-soft-success px-2 py-1" style="font-size:0.75rem;">
                                             <i class="fas fa-user-graduate me-1"></i><?= (int)$e['jumlah_peserta'] ?> Peserta
                                         </span>
                                     </td>

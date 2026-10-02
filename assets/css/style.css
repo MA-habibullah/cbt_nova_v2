@@ -8,33 +8,99 @@ html, body {
     font-family: 'Poppins', sans-serif;
     background-color: var(--bg-light);
     color: #333;
-    max-width: 100%;
-    overflow-x: hidden;
 }
 
 #wrapper {
     display: flex;
     width: 100%;
-    max-width: 100%;
     min-height: 100vh;
-    overflow-x: hidden;
+    position: relative;
 }
 
 #content {
     flex: 1 1 0%;
     min-width: 0;
-    max-width: 100%;
-    overflow-x: hidden;
+    width: 100%;
 }
 
-/* Sidebar Styling */
+/* Sidebar Styling (Desktop >= 992px) */
 #sidebar {
     background: var(--sidebar-bg);
+    width: 260px;
     min-width: 260px;
     max-width: 260px;
-    transition: all 0.3s;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    position: sticky !important;
+    top: 0 !important;
+    align-self: flex-start !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    transition: all 0.3s ease;
     box-shadow: 4px 0 10px rgba(0,0,0,0.03);
-    z-index: 1000;
+    z-index: 1020;
+}
+
+/* Custom Scrollbar for Sidebar */
+#sidebar::-webkit-scrollbar {
+    width: 5px;
+}
+#sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+#sidebar::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 4px;
+}
+#sidebar::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
+}
+
+/* ============================================================
+   LOADING OVERLAY & TABLE INTERACTION RECOVERY SYSTEM
+   ============================================================ */
+.loading-overlay {
+    display: none !important;
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.75);
+    z-index: 50;
+    pointer-events: none !important;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-overlay.active,
+.loading-overlay.show {
+    display: flex !important;
+    pointer-events: auto !important;
+}
+
+/* Pastikan seluruh tabel monitoring, device lock, dan data tables 100% interaktif */
+.table-monitoring,
+.table-device-lock,
+.table-responsive table,
+#monitoring-data,
+#deviceContent table,
+.table-modern {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+.table-monitoring tbody tr,
+.table-device-lock tbody tr,
+.table-responsive table tbody tr,
+.table-monitoring input[type="checkbox"],
+.table-device-lock input[type="checkbox"],
+.table-responsive table input[type="checkbox"],
+.check-item,
+.checkItem,
+#checkAll {
+    pointer-events: auto !important;
+    cursor: pointer !important;
 }
 
 .sidebar-heading {
@@ -286,28 +352,93 @@ Styling Sub-menu
 .table-modern {
     margin-bottom: 0;
     vertical-align: middle;
+    width: 100%;
 }
 
 .table-modern thead th {
     background-color: #f8fafc;
-    color: #475569;
-    font-size: 0.75rem;
+    color: #64748b;
+    font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 0.85rem 1rem;
+    letter-spacing: 0.6px;
+    padding: 0.9rem 1rem;
     border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
 }
 
 .table-modern tbody td {
-    padding: 0.85rem 1rem;
+    padding: 0.9rem 1rem;
     font-size: 0.875rem;
     color: #334155;
     border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.table-modern tbody tr {
+    transition: background-color 0.15s ease;
 }
 
 .table-modern tbody tr:hover {
     background-color: #f8fafc;
+}
+
+/* Soft Pill Badges (Enterprise Palette) */
+.badge-soft-primary {
+    background-color: #eef2ff !important;
+    color: #3730a3 !important;
+    border: 1px solid rgba(79, 70, 229, 0.15);
+}
+
+.badge-soft-success {
+    background-color: #f0fdf4 !important;
+    color: #15803d !important;
+    border: 1px solid rgba(22, 163, 74, 0.15);
+}
+
+.badge-soft-danger {
+    background-color: #fef2f2 !important;
+    color: #b91c1c !important;
+    border: 1px solid rgba(220, 38, 38, 0.15);
+}
+
+.badge-soft-warning {
+    background-color: #fffbeb !important;
+    color: #b45309 !important;
+    border: 1px solid rgba(217, 119, 6, 0.15);
+}
+
+.badge-soft-info {
+    background-color: #f0f9ff !important;
+    color: #0369a1 !important;
+    border: 1px solid rgba(2, 132, 199, 0.15);
+}
+
+.badge-soft-secondary {
+    background-color: #f8fafc !important;
+    color: #475569 !important;
+    border: 1px solid rgba(100, 116, 139, 0.15);
+}
+
+/* Action Icon Buttons */
+.btn-action-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 0.825rem;
+}
+
+/* MathJax & KaTeX Responsive Container */
+.katex-display {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    padding: 6px 0;
 }
 
 /* Modern Card Layout */
@@ -321,4 +452,57 @@ Styling Sub-menu
 
 .card-modern:hover {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+/* ==============================================
+   Mobile & Smartphone Responsiveness (< 768px)
+   ============================================== */
+@media (max-width: 767.98px) {
+    /* Touch-friendly target sizing (Apple HIG & Material Design >= 42px) */
+    .btn:not(.btn-sm):not(.btn-action-icon) {
+        min-height: 42px;
+        padding-top: 0.55rem;
+        padding-bottom: 0.55rem;
+    }
+
+    .form-control, .form-select {
+        min-height: 42px;
+        font-size: 0.9rem;
+    }
+
+    /* Modals on smartphone */
+    .modal-dialog {
+        margin: 0.5rem auto;
+        max-width: calc(100% - 1rem);
+    }
+
+    .modal-content {
+        border-radius: 16px;
+    }
+
+    .modal-body {
+        max-height: calc(100vh - 160px);
+        overflow-y: auto;
+    }
+
+    /* Metric cards 2 per row on phone */
+    .metric-card-text {
+        font-size: 1.25rem !important;
+    }
+
+    /* Filter Toolbar stack */
+    .filter-toolbar-row {
+        row-gap: 8px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .container-fluid {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+
+    .card-body {
+        padding: 1rem !important;
+    }
 }

@@ -25,113 +25,117 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
         .main-content { transition: all 0.3s; }
     </style>
 
-<body class="bg-gray-50 font-sans">
-    <div class="flex min-h-screen flex-col md:flex-row">
+<body class="bg-light">
+    <div class="d-flex" id="wrapper">
         <?php include dirname(__DIR__, 2) . '/includes/sidebar.php'; ?>
 
-        <main class="flex-1 w-full overflow-x-hidden p-4 md:p-8 main-content">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-800">Monitoring Peserta</h1>
-                    <div class="flex items-center gap-2 bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-xs font-bold border border-green-200">
-                        <span class="animate-pulse h-2 w-2 rounded-full bg-green-500"></span>
+        <div id="content" class="w-100">
+            <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm justify-content-between mb-4">
+                <div class="d-flex align-items-center gap-3">
+                    <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-desktop me-2 text-primary"></i> Monitoring Peserta</h5>
+                    <div class="d-inline-flex align-items-center gap-2 bg-success bg-opacity-10 text-success px-3 py-1 rounded-pill small fw-bold border border-success border-opacity-25">
+                        <span class="spinner-grow spinner-grow-sm text-success" style="width: 0.5rem; height: 0.5rem;"></span>
                         Auto Refresh: <span id="timer-text">30s</span>
                     </div>
                 </div>
-                <div id="last-update" class="text-xs bg-white px-4 py-2 rounded-lg border shadow-sm text-gray-400">
+                <div id="last-update" class="small text-muted bg-light px-3 py-1.5 rounded-3 border">
                     Update terakhir: --:--:--
                 </div>
-            </div>
+            </nav>
 
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mb-6">
-                <form id="filterForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Tanggal Ujian</label>
-                        <input type="date" name="tanggal" id="filter-tanggal" value="<?= esc(date('Y-m-d')) ?>" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm outline-none">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Mata Pelajaran</label>
-                        <select name="exam_id" id="filter-mapel" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm outline-none">
-                            <option value="">-- Pilih Tanggal Dulu --</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Kelas</label>
-                        <select name="class_id" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm outline-none">
-                            <option value="">-- Semua Kelas --</option>
-                            <?php foreach($classes as $c): ?>
-                                <option value="<?= esc($c['id']) ?>"><?= esc($c['nama_kelas']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Sesi</label>
-                        <select name="sesi" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm outline-none">
-                            <option value="">-- Semua Sesi --</option>
-                            <?php foreach ($listSesi as $s): ?>
-                                <option value="<?= esc($s['id']) ?>"><?= htmlspecialchars($s['nama_sesi']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </form>
+            <div class="container-fluid px-4">
+                <div class="card border-0 shadow-sm rounded-3 p-4 mb-4">
+                    <form id="filterForm" class="row g-3">
+                        <div class="col-12 col-sm-6 col-lg-3">
+                            <label class="form-label text-muted text-uppercase small fw-bold" style="font-size: 0.7rem;">Tanggal Ujian</label>
+                            <input type="date" name="tanggal" id="filter-tanggal" value="<?= esc(date('Y-m-d')) ?>" class="form-control form-control-sm rounded-2">
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-3">
+                            <label class="form-label text-muted text-uppercase small fw-bold" style="font-size: 0.7rem;">Mata Pelajaran</label>
+                            <select name="exam_id" id="filter-mapel" class="form-select form-select-sm rounded-2">
+                                <option value="">-- Pilih Tanggal Dulu --</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-3">
+                            <label class="form-label text-muted text-uppercase small fw-bold" style="font-size: 0.7rem;">Kelas</label>
+                            <select name="class_id" class="form-select form-select-sm rounded-2">
+                                <option value="">-- Semua Kelas --</option>
+                                <?php foreach($classes as $c): ?>
+                                    <option value="<?= esc($c['id']) ?>"><?= esc($c['nama_kelas']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-3">
+                            <label class="form-label text-muted text-uppercase small fw-bold" style="font-size: 0.7rem;">Sesi</label>
+                            <select name="sesi" class="form-select form-select-sm rounded-2">
+                                <option value="">-- Semua Sesi --</option>
+                                <?php foreach ($listSesi as $s): ?>
+                                    <option value="<?= esc($s['id']) ?>"><?= htmlspecialchars($s['nama_sesi']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </form>
 
-                <div class="row g-2 mt-4 pt-4 border-top">
-                    <div class="col-6 col-md-2">
-                        <button onclick="bulkAction('add_time')" class="w-100 bg-primary border-0 text-white p-3 rounded-lg flex flex-col items-center shadow-sm">
-                            <i class="fas fa-clock mb-1 text-lg"></i>
-                            <span class="fw-bold" style="font-size: 10px;">+ WAKTU</span>
-                        </button>
+                    <div class="row g-2 mt-3 pt-3 border-top">
+                        <div class="col-6 col-md-2">
+                            <button type="button" onclick="bulkAction('add_time')" class="btn btn-primary w-100 py-2.5 rounded-3 d-flex flex-column align-items-center shadow-sm">
+                                <i class="fas fa-clock mb-1 fs-5"></i>
+                                <span class="fw-bold" style="font-size: 11px;">+ WAKTU</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <button type="button" onclick="bulkAction('reset_login')" class="btn btn-warning w-100 py-2.5 rounded-3 d-flex flex-column align-items-center shadow-sm text-dark">
+                                <i class="fas fa-key mb-1 fs-5"></i>
+                                <span class="fw-bold" style="font-size: 11px;">RESET LOGIN</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <button type="button" onclick="bulkAction('unlock_exam')" class="btn btn-success w-100 py-2.5 rounded-3 d-flex flex-column align-items-center shadow-sm">
+                                <i class="fas fa-door-open mb-1 fs-5"></i>
+                                <span class="fw-bold" style="font-size: 11px;">BUKA UJIAN</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <button type="button" onclick="bulkAction('lock_exam')" class="btn btn-danger w-100 py-2.5 rounded-3 d-flex flex-column align-items-center shadow-sm">
+                                <i class="fas fa-lock mb-1 fs-5"></i>
+                                <span class="fw-bold" style="font-size: 11px;">KUNCI UJIAN</span>
+                            </button>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <button type="button" onclick="bulkAction('finish_exam')" class="btn btn-dark w-100 py-2.5 rounded-3 d-flex flex-column align-items-center shadow-sm">
+                                <i class="fas fa-check-double mb-1 fs-5 text-info"></i>
+                                <span class="fw-bold" style="font-size: 11px;">SELESAIKAN UJIAN (FORCE)</span>
+                            </button>
+                        </div>
                     </div>
-                    <div class="col-6 col-md-2">
-                        <button onclick="bulkAction('reset_login')" class="w-100 bg-warning border-0 text-dark p-3 rounded-lg flex flex-col items-center shadow-sm">
-                            <i class="fas fa-key mb-1 text-lg"></i>
-                            <span class="fw-bold" style="font-size: 10px;">RESET LOGIN</span>
-                        </button>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-3 overflow-hidden position-relative mb-4">
+                    <div id="loader" class="loading-overlay flex-column align-items-center justify-content-center">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <span class="mt-2 text-muted small fw-semibold">Memperbarui data...</span>
                     </div>
-                    <div class="col-6 col-md-2">
-                        <button onclick="bulkAction('unlock_exam')" class="w-100 bg-success border-0 text-white p-3 rounded-lg flex flex-col items-center shadow-sm">
-                            <i class="fas fa-door-open mb-1 text-lg"></i>
-                            <span class="fw-bold" style="font-size: 10px;">BUKA UJIAN</span>
-                        </button>
-                    </div>
-                    <div class="col-6 col-md-2">
-                        <button onclick="bulkAction('lock_exam')" class="w-100 bg-danger border-0 text-white p-3 rounded-lg flex flex-col items-center shadow-sm">
-                            <i class="fas fa-lock mb-1 text-lg"></i>
-                            <span class="fw-bold" style="font-size: 10px;">KUNCI UJIAN</span>
-                        </button>
-                    </div>
-                    <div class="col-6 col-md-4">
-                        <button onclick="bulkAction('finish_exam')" class="w-100 bg-dark border-0 text-white p-3 rounded-lg flex flex-col items-center shadow-sm">
-                            <i class="fas fa-check-double mb-1 text-lg text-info"></i>
-                            <span class="fw-bold" style="font-size: 10px;">SELESAIKAN UJIAN (FORCE)</span>
-                        </button>
+                    <div class="table-responsive">
+                        <table class="table table-modern table-monitoring align-middle mb-0" style="min-width: 900px;">
+                            <thead class="table-light text-secondary small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">
+                                <tr>
+                                    <th class="py-3 px-3 w-12 text-center" width="50"><input type="checkbox" id="checkAll" class="form-check-input"></th>
+                                    <th class="py-3 px-3">Nama Peserta</th>
+                                    <th class="py-3 px-3 d-none d-sm-table-cell">Kelas / Sesi</th>
+                                    <th class="py-3 px-3">Mata Pelajaran & Progress</th>
+                                    <th class="py-3 px-3 text-center">Status & Sisa Waktu</th>
+                                    <th class="py-3 px-3 text-center d-none d-md-table-cell">Device & IP</th>
+                                    <th class="py-3 px-3 text-center" width="100">Pelanggaran</th>
+                                </tr>
+                            </thead>
+                            <tbody id="monitoring-data">
+                                <tr><td colspan="7" class="p-5 text-center text-muted italic">Memuat data monitoring...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
-
-            <div class="relative bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                <div id="loader" class="loading-overlay flex flex-col items-center justify-center">
-                    <div class="w-8 h-8 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
-                </div>
-                <div class="overflow-x-auto custom-scroll w-full">
-                    <table class="w-full text-left border-collapse min-w-[900px]">
-                        <thead class="bg-gray-50 text-gray-400 uppercase text-[10px] font-bold tracking-wider">
-                            <tr>
-                                <th class="p-4 border-b w-12 text-center"><input type="checkbox" id="checkAll"></th>
-                                <th class="p-4 border-b">Nama Peserta</th>
-                                <th class="p-4 border-b">Kelas / Sesi</th>
-                                <th class="p-4 border-b">Mata Pelajaran & Progress</th> <th class="p-4 border-b text-center">Status & Sisa Waktu</th>
-                                <th class="p-4 border-b text-center">Device & IP</th>
-                                <th class="p-4 border-b text-center">Pelanggaran</th>
-                            </tr>
-                        </thead>
-                        <tbody id="monitoring-data" class="divide-y divide-gray-100 text-sm">
-                            <tr><td colspan="7" class="p-10 text-center text-gray-400 italic">Memuat data monitoring...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
+        </div>
     </div>
 
     <div class="modal fade" id="modalLogs" tabindex="-1" aria-hidden="true">
@@ -171,7 +175,9 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
                 url: 'fetch_data.php',
                 type: 'GET',
                 data: formData,
-                beforeSend: function() { $('#loader').show(); },
+                beforeSend: function() { 
+                    $('#loader').addClass('active').show(); 
+                },
                 success: function(html) {
                     $('#monitoring-data').html(html);
                     if (checkedIds.length > 0) {
@@ -179,7 +185,6 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
                             $('.check-item[value="' + id + '"]').prop('checked', true);
                         });
                     }
-                    $('#loader').hide();
                     countdown = 30;
                     $('#last-update').text('Update terakhir: ' + new Date().toLocaleTimeString('id-ID'));
                     // Mulai client-side countdown tiap detik
@@ -201,6 +206,12 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
                             }
                         });
                     }, 1000);
+                },
+                error: function() {
+                    $('#monitoring-data').html('<tr><td colspan="7" class="p-5 text-center text-danger fw-semibold"><i class="fas fa-exclamation-circle me-1"></i> Gagal memuat data monitoring. Silakan periksa jaringan.</td></tr>');
+                },
+                complete: function() {
+                    $('#loader').removeClass('active').hide();
                 }
             });
         }

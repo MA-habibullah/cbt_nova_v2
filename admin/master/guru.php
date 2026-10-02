@@ -160,10 +160,10 @@ $count_all    = $count_aktif + $count_nonaktif;
 </style>
 
 <body class="bg-light">
-<div class="d-flex" id="wrapper" style="overflow-x: hidden;">
+<div class="d-flex" id="wrapper">
     <?php include '../../includes/sidebar.php'; ?>
 
-    <div id="content" class="w-100" style="min-width: 0; max-width: 100%; overflow-x: hidden;">
+    <div id="content" class="w-100">
         <!-- Top Navbar -->
         <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm border-bottom">
             <button class="btn btn-light border" id="menu-toggle"><i class="fas fa-bars"></i></button>
@@ -302,16 +302,16 @@ $count_all    = $count_aktif + $count_nonaktif;
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" style="min-width: 1000px;">
+                    <table class="table table-modern align-middle mb-0" style="min-width: 850px;">
                         <thead class="table-light text-secondary small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">
                             <tr>
                                 <th class="text-center py-3" width="50">#</th>
-                                <th class="text-center py-3" width="70">Avatar</th>
+                                <th class="text-center py-3 d-none d-md-table-cell" width="60">Avatar</th>
                                 <th class="py-3">Nama Lengkap & NIP</th>
-                                <th class="py-3">Username Login</th>
-                                <th class="py-3 text-center">Bank Soal</th>
-                                <th class="py-3 text-center">Jadwal Ujian</th>
-                                <th class="py-3">Status</th>
+                                <th class="py-3 d-none d-sm-table-cell">Username Login</th>
+                                <th class="py-3 text-center d-none d-lg-table-cell">Bank Soal</th>
+                                <th class="py-3 text-center d-none d-lg-table-cell">Jadwal Ujian</th>
+                                <th class="py-3 text-center" width="120">Status</th>
                                 <th class="text-center py-3" width="180">Aksi</th>
                             </tr>
                         </thead>
@@ -330,14 +330,14 @@ $count_all    = $count_aktif + $count_nonaktif;
                             <?php $no = $offset + 1; foreach($listGuru as $row): ?>
                             <tr>
                                 <td class="text-center text-muted fw-bold small"><?= $no++ ?></td>
-                                <td class="text-center">
-                                    <div class="avatar-placeholder rounded-circle d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary fw-bold shadow-sm" style="width:42px;height:42px;font-size:14px;">
+                                <td class="text-center d-none d-md-table-cell">
+                                    <div class="avatar-placeholder rounded-circle d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary fw-bold shadow-sm" style="width:38px;height:38px;font-size:13px;">
                                         <?= strtoupper(mb_substr($row['nama_lengkap'], 0, 2)) ?>
                                     </div>
                                 </td>
                                 <td>
                                     <div class="fw-bold text-dark fs-6"><?= esc($row['nama_lengkap']) ?></div>
-                                    <div class="mt-1">
+                                    <div class="mt-1 small">
                                         <?php if (!empty($row['nip'])): ?>
                                             <span class="badge bg-light text-secondary border font-monospace">
                                                 <i class="fas fa-id-badge me-1"></i>NIP: <?= esc($row['nip']) ?>
@@ -346,29 +346,34 @@ $count_all    = $count_aktif + $count_nonaktif;
                                             <span class="text-muted small fst-italic">NIP Belum Diisi</span>
                                         <?php endif; ?>
                                     </div>
+                                    <!-- Sub-label untuk Tampilan Mobile (< 768px) -->
+                                    <div class="d-md-none mt-1 small text-muted">
+                                        <span class="badge badge-soft-info me-1"><i class="fas fa-folder-open me-1"></i><?= (int)$row['total_bank_soal'] ?> Soal</span>
+                                        <span class="badge badge-soft-primary"><i class="fas fa-calendar-alt me-1"></i><?= (int)$row['total_ujian'] ?> Ujian</span>
+                                    </div>
                                 </td>
-                                <td>
-                                    <span class="badge bg-secondary-subtle text-dark border font-monospace px-2 py-1">
+                                <td class="d-none d-sm-table-cell">
+                                    <span class="badge badge-soft-primary font-monospace px-2 py-1">
                                         <i class="fas fa-user text-primary me-1"></i><?= esc($row['username']) ?>
                                     </span>
                                 </td>
-                                <td class="text-center">
-                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1">
+                                <td class="text-center d-none d-lg-table-cell">
+                                    <span class="badge badge-soft-info px-2 py-1">
                                         <i class="fas fa-folder-open me-1"></i><?= (int)$row['total_bank_soal'] ?> Bank Soal
                                     </span>
                                 </td>
-                                <td class="text-center">
-                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                                <td class="text-center d-none d-lg-table-cell">
+                                    <span class="badge badge-soft-primary px-2 py-1">
                                         <i class="fas fa-calendar-alt me-1"></i><?= (int)$row['total_ujian'] ?> Ujian
                                     </span>
                                 </td>
-                                <td>
+                                <td class="text-center">
                                     <?php if ((int)$row['is_aktif'] === 1): ?>
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">
+                                        <span class="badge badge-soft-success px-2 py-1 rounded-pill">
                                             <i class="fas fa-check-circle me-1"></i>Aktif
                                         </span>
                                     <?php else: ?>
-                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill">
+                                        <span class="badge badge-soft-danger px-2 py-1 rounded-pill">
                                             <i class="fas fa-ban me-1"></i>Non-Aktif
                                         </span>
                                     <?php endif; ?>

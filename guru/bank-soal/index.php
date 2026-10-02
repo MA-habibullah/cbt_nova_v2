@@ -238,10 +238,10 @@ function gbsQ(array $extra = []): string {
 
 <body class="bg-light">
 
-<div class="d-flex" id="wrapper" style="overflow-x: hidden;">
+<div class="d-flex" id="wrapper">
     <?php include '../includes/sidebar.php'; ?>
 
-    <div id="content" class="w-100" style="min-width: 0; max-width: 100%; overflow-x: hidden;">
+    <div id="content" class="w-100">
         <!-- Top Navbar -->
         <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm border-bottom">
             <button class="btn btn-light border shadow-sm" id="menu-toggle"><i class="fas fa-bars"></i></button>
@@ -422,17 +422,17 @@ function gbsQ(array $extra = []): string {
             <!-- Main Data Table Card -->
             <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" style="min-width: 1050px;">
+                    <table class="table table-modern align-middle mb-0" style="min-width: 950px;">
                         <thead class="table-light text-secondary small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">
                             <tr>
                                 <th class="text-center py-3" width="50">#</th>
                                 <th class="py-3">Identitas Bank Soal</th>
                                 <th class="py-3">Jenjang Kelas</th>
-                                <th class="py-3 text-center">Komposisi Soal</th>
-                                <th class="py-3 text-center">Peserta & Jadwal</th>
-                                <th class="py-3 text-center">Status</th>
-                                <th class="py-3">Tanggal Dibuat</th>
-                                <th class="text-center py-3" width="220">Aksi</th>
+                                <th class="py-3 text-center d-none d-md-table-cell">Komposisi Soal</th>
+                                <th class="py-3 text-center d-none d-lg-table-cell">Peserta & Jadwal</th>
+                                <th class="py-3 text-center" width="120">Status</th>
+                                <th class="py-3 d-none d-xl-table-cell" width="140">Tanggal Dibuat</th>
+                                <th class="text-center py-3" width="200">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -456,26 +456,32 @@ function gbsQ(array $extra = []): string {
                                 <td>
                                     <div class="fw-bold text-dark fs-6"><?= esc($b['nama_bank_soal']) ?></div>
                                     <div class="d-flex flex-wrap align-items-center gap-2 mt-1 small">
-                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace">
+                                        <span class="badge badge-soft-primary font-monospace">
                                             <i class="fas fa-barcode me-1"></i><?= esc($b['kode_bank_soal']) ?>
                                         </span>
                                         <span class="text-secondary">
                                             <i class="fas fa-book-open me-1"></i><?= esc($b['kode_mapel']) ?> - <?= esc($b['nama_mapel']) ?>
                                         </span>
                                     </div>
+                                    <!-- Sub-label untuk Tampilan Mobile (< 768px) -->
+                                    <div class="d-md-none mt-1 small text-muted">
+                                        <span class="badge badge-soft-info me-1"><i class="fas fa-tasks me-1"></i><?= (int)$b['total_soal'] ?> Soal</span>
+                                        <span class="badge bg-light text-dark border me-1"><i class="fas fa-user-friends me-1"></i><?= (int)$b['total_siswa'] ?> Siswa</span>
+                                        <span class="badge bg-light text-secondary border"><i class="fas fa-calendar-alt me-1"></i><?= (int)$b['total_jadwal'] ?> Jadwal</span>
+                                    </div>
                                 </td>
                                 <td>
                                     <?php if (!empty($b['jenjang'])): ?>
-                                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1 rounded-2 fw-semibold">
+                                        <span class="badge badge-soft-info px-2 py-1 rounded-2 fw-semibold">
                                             <i class="fas fa-graduation-cap me-1"></i>Kelas <?= esc($b['jenjang']) ?>
                                         </span>
                                     <?php else: ?>
                                         <span class="badge bg-light text-muted border px-2 py-1 rounded-2">Semua Jenjang</span>
                                     <?php endif; ?>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center d-none d-md-table-cell">
                                     <div class="mb-1">
-                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fs-6 fw-bold">
+                                        <span class="badge badge-soft-primary px-2 py-1 fs-6 fw-bold">
                                             <?= (int)$b['total_soal'] ?> Soal
                                         </span>
                                     </div>
@@ -487,7 +493,7 @@ function gbsQ(array $extra = []): string {
                                         <?php endif; ?>
                                     </div>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center d-none d-lg-table-cell">
                                     <div class="mb-1">
                                         <span class="badge bg-light text-dark border px-2 py-1">
                                             <i class="fas fa-calendar-alt text-primary me-1"></i><?= (int)$b['total_jadwal'] ?> Jadwal
@@ -499,16 +505,16 @@ function gbsQ(array $extra = []): string {
                                 </td>
                                 <td class="text-center">
                                     <?php if ($b['status'] === 'aktif'): ?>
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">
+                                        <span class="badge badge-soft-success px-2 py-1 rounded-pill">
                                             <i class="fas fa-unlock me-1"></i>Terbuka
                                         </span>
                                     <?php else: ?>
-                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill">
+                                        <span class="badge badge-soft-danger px-2 py-1 rounded-pill">
                                             <i class="fas fa-lock me-1"></i>Terkunci
                                         </span>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td class="d-none d-xl-table-cell">
                                     <span class="text-muted small">
                                         <i class="far fa-clock me-1"></i><?= date('d/m/Y H:i', strtotime($b['created_at'])) ?>
                                     </span>

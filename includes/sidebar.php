@@ -24,14 +24,18 @@ if (!empty($setting['logo'])) {
 $current_page = basename($_SERVER['PHP_SELF']);
 $current_dir  = basename(dirname($_SERVER['PHP_SELF']));
 
-function menu_show($pages) {
-    global $current_page;
-    return in_array($current_page, $pages) ? 'show' : '';
+if (!function_exists('menu_show')) {
+    function menu_show($pages) {
+        global $current_page;
+        return in_array($current_page, $pages) ? 'show' : '';
+    }
 }
 
-function menu_active($pages) {
-    global $current_page;
-    return in_array($current_page, $pages) ? 'active' : '';
+if (!function_exists('menu_active')) {
+    function menu_active($pages) {
+        global $current_page;
+        return in_array($current_page, $pages) ? 'active' : '';
+    }
 }
 ?>
 

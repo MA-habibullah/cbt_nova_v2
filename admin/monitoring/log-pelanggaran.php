@@ -150,9 +150,16 @@ $classes = query("SELECT id, nama_kelas FROM cbt_classes WHERE is_aktif = 1 ORDE
             url: 'log_pelanggaran_data.php',
             type: 'GET',
             data: formData,
-            beforeSend: function() { $('#log-loader').css('display', 'flex'); },
+            beforeSend: function() { 
+                $('#log-loader').css('display', 'flex'); 
+            },
             success: function(html) {
                 $('#log-table-body').html(html);
+            },
+            error: function() {
+                $('#log-table-body').html('<div class="p-4 text-center text-danger fw-semibold"><i class="fas fa-exclamation-circle me-1"></i> Gagal memuat log pelanggaran.</div>');
+            },
+            complete: function() {
                 $('#log-loader').hide();
             }
         });

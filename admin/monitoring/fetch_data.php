@@ -137,44 +137,57 @@ foreach ($data as $row) {
     if($row['total_soal'] > 0) {
         $pct = round(($row['jml_jawab'] / $row['total_soal']) * 100);
     }
-    $bar_color = $pct == 100 ? 'bg-green-500' : 'bg-blue-500';
+    $bar_color = $pct == 100 ? 'bg-success' : 'bg-primary';
 
-    $status_color = [
-        'working' => 'bg-green-100 text-green-700 animate-pulse',
-        'ready' => 'bg-blue-100 text-blue-700',
-        'finished' => 'bg-gray-100 text-gray-500',
-        'blocked' => 'bg-red-100 text-red-700 font-bold'
-    ];
-    $color = $status_color[$st] ?? 'bg-gray-100';
+    $status_badge = match($st) {
+        'working'  => '<span class="badge badge-soft-success rounded-pill px-2.5 py-1 text-uppercase fw-bold"><i class="fas fa-spinner fa-spin me-1"></i>Mengerjakan</span>',
+        'ready'    => '<span class="badge badge-soft-info rounded-pill px-2.5 py-1 text-uppercase fw-bold">Siap</span>',
+        'finished' => '<span class="badge badge-soft-secondary rounded-pill px-2.5 py-1 text-uppercase fw-bold">Selesai</span>',
+        'blocked'  => '<span class="badge badge-soft-danger rounded-pill px-2.5 py-1 text-uppercase fw-bold"><i class="fas fa-lock me-1"></i>Terkunci</span>',
+        default    => '<span class="badge badge-soft-secondary rounded-pill px-2.5 py-1 text-uppercase fw-bold">'.htmlspecialchars($st).'</span>',
+    };
+
+    $nama_peserta = htmlspecialchars($row['nama_lengkap']);
+    $username     = htmlspecialchars($row['username']);
+    $nama_kelas   = htmlspecialchars($row['nama_kelas'] ?? '-');
+    $mapel_ujian  = htmlspecialchars($row['nama_mapel_ujian']);
+    $ip_addr      = htmlspecialchars($row['ip_address'] ?? '-');
+    $ua           = htmlspecialchars($row['user_agent'] ? substr($row['user_agent'], 0, 18) : '-');
 
     echo "<tr>
-        <td class='p-4 text-center'><input type='checkbox' class='check-item' value='{$row['p_id']}'></td>
-        <td class='p-4'>
-            <div class='font-bold text-gray-800 uppercase text-xs'>".htmlspecialchars($row['nama_lengkap'])."</div>
-            <div class='text-[10px] text-blue-500 font-mono'>".htmlspecialchars($row['username'])."</div>
-        </td>
-        <td class='p-4 text-[10px] text-gray-500 font-bold'>".htmlspecialchars($row['nama_kelas'])."<br>Sesi {$row['sesi']}</td>
-        <td class='p-4'>
-            <div class='text-[10px] mb-1 font-medium'>".htmlspecialchars($row['nama_mapel_ujian'])."</div>
-            <div class='flex items-center gap-2'>
-                <div class='w-24 bg-gray-200 rounded-full h-1.5'>
-                    <div class='$bar_color h-1.5 rounded-full' style='width: {$pct}%'></div>
-                </div>
-                <span class='text-[9px] font-bold text-gray-500'>{$row['jml_jawab']}/{$row['total_soal']}</span>
+        <td class='py-3 px-3 text-center'><input type='checkbox' class='form-check-input check-item' value='{$row['p_id']}'></td>
+        <td class='py-3 px-3'>
+            <div class='fw-bold text-dark fs-6'>{$nama_peserta}</div>
+            <div class='text-muted font-monospace small'>{$username}</div>
+            <div class='d-sm-none text-muted small mt-1'>
+                <span class='badge bg-light text-dark border me-1'>{$nama_kelas}</span> Sesi {$row['sesi']}
             </div>
         </td>
-        <td class='p-4 text-center'>
-            <span class='px-3 py-1 rounded-full text-[10px] font-bold uppercase $color'>$st</span>
-            <div class='mt-1 text-[10px]'>$display_time</div>
+        <td class='py-3 px-3 d-none d-sm-table-cell'>
+            <span class='badge bg-light text-dark border px-2 py-1 fw-semibold'>{$nama_kelas}</span>
+            <div class='text-muted small mt-1'>Sesi {$row['sesi']}</div>
         </td>
-        <td class='p-4 text-center text-[10px] text-gray-400'>
-            <div class='font-mono text-indigo-600 font-bold'>".($row['ip_address'] ?? '-')."</div>
-            <div class='truncate w-24 mx-auto'>".($row['user_agent'] ? substr($row['user_agent'], 0, 15) : '-')."</div>
+        <td class='py-3 px-3'>
+            <div class='fw-medium text-dark small mb-1'>{$mapel_ujian}</div>
+            <div class='d-flex align-items-center gap-2'>
+                <div class='progress flex-grow-1' style='height: 6px; width: 80px; max-width: 120px;'>
+                    <div class='progress-bar {$bar_color}' role='progressbar' style='width: {$pct}%'></div>
+                </div>
+                <span class='small text-muted fw-bold font-monospace' style='font-size:0.75rem;'>{$row['jml_jawab']}/{$row['total_soal']}</span>
+            </div>
         </td>
-        <td class='p-4 text-center'>
-            <button onclick=\"viewLogs({$row['s_id']}, {$row['e_id']})\" class='flex flex-col items-center mx-auto border-0 bg-transparent'>
-                <span class='text-sm font-black ".($row['logs'] > 0 ? 'text-red-600' : 'text-gray-200')."'>{$row['logs']}</span>
-                <span class='text-[8px] uppercase text-gray-400 font-bold'>Pelanggaran</span>
+        <td class='py-3 px-3 text-center'>
+            <div>{$status_badge}</div>
+            <div class='mt-1 small'>{$display_time}</div>
+        </td>
+        <td class='py-3 px-3 text-center d-none d-md-table-cell'>
+            <div class='font-monospace text-primary fw-bold small'>{$ip_addr}</div>
+            <div class='text-muted' style='font-size:0.72rem;' title='{$ua}'>{$ua}</div>
+        </td>
+        <td class='py-3 px-3 text-center'>
+            <button onclick=\"viewLogs({$row['s_id']}, {$row['e_id']})\" class='btn btn-sm btn-light border p-1 px-2 shadow-none'>
+                <span class='fw-bold ".($row['logs'] > 0 ? 'text-danger' : 'text-muted')."'>{$row['logs']}</span>
+                <span class='d-block text-muted' style='font-size: 0.65rem;'>Log</span>
             </button>
         </td>
     </tr>";

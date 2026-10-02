@@ -160,6 +160,27 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'siswa') {
         .exam-btn-ragu:hover { border-color: var(--warning-color); }
         .exam-btn-ragu.is-active { background: var(--warning-color); border-color: var(--warning-color); color: #fff; }
 
+        /* KaTeX & Formula Responsive Wrapping */
+        .katex-display {
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            -webkit-overflow-scrolling: touch;
+            max-width: 100%;
+            padding: 6px 0;
+        }
+        .katex {
+            font-size: 1.05em;
+            max-width: 100%;
+        }
+        .soal-konten {
+            max-width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .soal-konten table {
+            max-width: 100%;
+        }
+
         @media (max-width: 991.98px) {
             #navContainer {
                 position: fixed;
