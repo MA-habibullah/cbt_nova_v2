@@ -83,7 +83,7 @@ try {
 
                 // Cek apakah tabel minimal berisi TIPE dan SOAL
                 if (isset($dataSoal['TIPE']) && isset($dataSoal['SOAL'])) {
-                    $tipe = strtolower($dataSoal['TIPE']);
+                    $tipe = normalize_tipe_soal($dataSoal['TIPE']);
                     $konten = $dataSoal['SOAL'];
                     $bobot = isset($dataSoal['BOBOT']) ? (float)$dataSoal['BOBOT'] : 1.00;
                     $kesulitan = 'sedang'; 
@@ -134,10 +134,17 @@ try {
                         }
 
                     } elseif ($tipe === 'isian') {
-                        // Kunci jawaban isian singkat
+                        // Kunci jawaban isian singkat (mendukung multi-kunci dengan delimiter ; atau |)
                         if (!empty($dataSoal['KUNCI'])) {
                             $stmtOpt = $pdo->prepare("INSERT INTO cbt_question_options (question_id, label, value_target, is_correct) VALUES (?, ?, ?, ?)");
-                            $stmtOpt->execute([$question_id, 'JAWABAN', $dataSoal['KUNCI'], 1]);
+                            $stmtOpt->execute([$question_id, 'KUNCI', $dataSoal['KUNCI'], 1]);
+                        }
+
+                    } elseif ($tipe === 'essay') {
+                        // Rubrik/kunci esai (opsional)
+                        if (!empty($dataSoal['KUNCI'])) {
+                            $stmtOpt = $pdo->prepare("INSERT INTO cbt_question_options (question_id, label, value_target, is_correct) VALUES (?, ?, ?, ?)");
+                            $stmtOpt->execute([$question_id, 'RUBRIK', $dataSoal['KUNCI'], 1]);
                         }
                     }
 

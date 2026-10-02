@@ -144,6 +144,42 @@ if (!function_exists('e')) {
     }
 }
 
+if (!function_exists('normalize_tipe_soal')) {
+    /**
+     * Normalisasi tipe soal dari berbagai format/alias ke 6 tipe standar sistem:
+     * 5 Tipe Objektif: 'pg', 'pg_kompleks', 'benar_salah', 'menjodohkan', 'isian'
+     * 1 Tipe Esai: 'essay'
+     */
+    function normalize_tipe_soal(?string $tipe): string {
+        if ($tipe === null) return 'pg';
+        $t = strtolower(trim($tipe));
+        $t = str_replace(['-', ' '], '_', $t);
+
+        return match ($t) {
+            'pg', 'pilihan_ganda', 'pilihan_tunggal', 'multiple_choice', 'mc' => 'pg',
+            'pg_kompleks', 'pg_komplek', 'pilihan_ganda_kompleks', 'pilihan_ganda_komplek', 'complex', 'checkbox' => 'pg_kompleks',
+            'benar_salah', 'benar_dan_salah', 'true_false', 'bs', 'tf' => 'benar_salah',
+            'menjodohkan', 'jodohkan', 'matching', 'match', 'pasangan' => 'menjodohkan',
+            'isian', 'isian_singkat', 'jawaban_singkat', 'short_answer', 'isian_pendek', 'singkat' => 'isian',
+            'essay', 'esai', 'uraian', 'long_answer', 'deskripsi' => 'essay',
+            default => in_array($t, ['pg', 'pg_kompleks', 'benar_salah', 'menjodohkan', 'isian', 'essay'], true) ? $t : 'pg',
+        };
+    }
+}
+
+if (!function_exists('is_tipe_objektif')) {
+    function is_tipe_objektif(string $tipe): bool {
+        $normalized = normalize_tipe_soal($tipe);
+        return in_array($normalized, ['pg', 'pg_kompleks', 'benar_salah', 'menjodohkan', 'isian'], true);
+    }
+}
+
+if (!function_exists('is_tipe_essay')) {
+    function is_tipe_essay(string $tipe): bool {
+        return normalize_tipe_soal($tipe) === 'essay';
+    }
+}
+
 /**
  * ==========================================================================
  *  CENTRALIZED SCORING ENGINE (CBT NOVA)

@@ -72,10 +72,11 @@ $bobot_essay    = 0.0;
 $tipe_objektif  = ['pg', 'pg_kompleks', 'benar_salah', 'menjodohkan', 'isian'];
 
 foreach ($answers as $_a) {
+    $_t = normalize_tipe_soal($_a['tipe'] ?? 'pg');
     $_j = $_a['jawaban_simpan'];
     if ($_j === null || $_j === '' || $_j === '[]' || $_j === '{}') {
         $cnt_kosong++;
-    } elseif ($_a['tipe'] === 'essay') {
+    } elseif ($_t === 'essay') {
         // essay: tidak masuk benar/salah, ditampilkan terpisah
     } elseif ((float)$_a['skor_didapat'] > 0) {
         $cnt_benar++;
@@ -83,10 +84,10 @@ foreach ($answers as $_a) {
         $cnt_salah++;
     }
 
-    if (in_array($_a['tipe'], $tipe_objektif)) {
+    if (in_array($_t, $tipe_objektif, true)) {
         $skor_objektif  += (float)$_a['skor_didapat'];
         $bobot_objektif += (float)$_a['bobot_asli'];
-    } elseif ($_a['tipe'] === 'essay') {
+    } elseif ($_t === 'essay') {
         $skor_essay_tot += (float)$_a['skor_didapat'];
         $bobot_essay    += (float)$_a['bobot_asli'];
     }

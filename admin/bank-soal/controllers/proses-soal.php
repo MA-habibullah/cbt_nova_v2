@@ -112,9 +112,9 @@ if (($_POST['action'] ?? '') === 'delete') {
 if (isset($_POST['simpan_soal']) || isset($_POST['update_soal'])) {
     $is_update  = isset($_POST['update_soal']);
     $bank_id    = $_POST['bank_soal_id'];
-    $tipe       = $_POST['tipe'];
-    $konten     = strip_domain_from_html($_POST['konten_soal']);
-    $bobot      = $_POST['bobot_skor'];
+    $tipe       = normalize_tipe_soal($_POST['tipe'] ?? 'pg');
+    $konten     = strip_domain_from_html($_POST['konten_soal'] ?? '');
+    $bobot      = (float)($_POST['bobot_skor'] ?? 1.00);
     $kesulitan  = $_POST['tingkat_kesulitan'];
     $soal_id    = $is_update ? $_POST['soal_id'] : null;
 

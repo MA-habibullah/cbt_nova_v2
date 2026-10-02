@@ -119,9 +119,9 @@ if (isset($_POST['simpan_soal']) || isset($_POST['update_soal'])) {
         header("Location: ../soal.php?id=$bank_id&msg=locked"); exit;
     }
 
-    $tipe      = $_POST['tipe'];
-    $konten    = strip_domain_from_html($_POST['konten_soal']);
-    $bobot     = $_POST['bobot_skor'];
+    $tipe      = normalize_tipe_soal($_POST['tipe'] ?? 'pg');
+    $konten    = strip_domain_from_html($_POST['konten_soal'] ?? '');
+    $bobot     = (float)($_POST['bobot_skor'] ?? 1.00);
     $kesulitan = $_POST['tingkat_kesulitan'];
     $soal_id   = $is_update ? (int)$_POST['soal_id'] : null;
 

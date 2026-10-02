@@ -55,8 +55,9 @@ try {
 
     $count = 0;
     for ($rowNumber = 2; $rowNumber <= $highestRow; $rowNumber++) {
-        $tipe = strtolower($txt('A', $rowNumber));
-        if (empty($tipe)) continue;
+        $tipe_raw = $txt('A', $rowNumber);
+        if (empty($tipe_raw)) continue;
+        $tipe = normalize_tipe_soal($tipe_raw);
 
         $konten    = excelCellToHtml($sheet->getCell('B'.$rowNumber));
         $bobot     = (float)($txt('C', $rowNumber) ?: 1.00);
@@ -115,6 +116,12 @@ try {
             if ($kunci_raw !== '') {
                 $stmtOpt = $pdo->prepare("INSERT INTO cbt_question_options (question_id, label, value_target, is_correct) VALUES (?, ?, ?, ?)");
                 $stmtOpt->execute([$question_id, 'KUNCI', $kunci_raw, 1]);
+            }
+
+        } elseif ($tipe === 'essay') {
+            if ($kunci_raw !== '') {
+                $stmtOpt = $pdo->prepare("INSERT INTO cbt_question_options (question_id, label, value_target, is_correct) VALUES (?, ?, ?, ?)");
+                $stmtOpt->execute([$question_id, 'RUBRIK', $kunci_raw, 1]);
             }
         }
 

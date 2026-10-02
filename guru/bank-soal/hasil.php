@@ -150,10 +150,10 @@ if ($filter_active) {
                             </div>
                         <?php endif; ?>
                         <div class="btn-group">
-                            <a href="<?= esc(BASE_URL) ?>admin/hasil/cetak/export-excel.php?id=<?= esc($id_bank) ?>&exam_id=<?= esc($filter_exam) ?>&class_id=<?= esc($filter_kelas) ?>&sesi=<?= esc($filter_sesi) ?>" class="btn btn-success btn-sm px-3">
+                            <a href="<?= esc(BASE_URL) ?>guru/hasil/cetak/export-excel.php?id=<?= esc($id_bank) ?>&exam_id=<?= esc($filter_exam) ?>&class_id=<?= esc($filter_kelas) ?>&sesi=<?= esc($filter_sesi) ?>" class="btn btn-success btn-sm px-3">
                                 <i class="fas fa-file-excel me-2"></i> Excel
                             </a>
-                            <a href="<?= esc(BASE_URL) ?>admin/hasil/cetak/export-pdf.php?id=<?= esc($id_bank) ?>&exam_id=<?= esc($filter_exam) ?>&class_id=<?= esc($filter_kelas) ?>&sesi=<?= esc($filter_sesi) ?>" class="btn btn-danger btn-sm px-3">
+                            <a href="<?= esc(BASE_URL) ?>guru/hasil/cetak/export-pdf.php?id=<?= esc($id_bank) ?>&exam_id=<?= esc($filter_exam) ?>&class_id=<?= esc($filter_kelas) ?>&sesi=<?= esc($filter_sesi) ?>" class="btn btn-danger btn-sm px-3">
                                 <i class="fas fa-file-pdf me-2"></i> PDF
                             </a>
                         </div>
@@ -168,23 +168,34 @@ if ($filter_active) {
                                 <th>Kelas</th>
                                 <th class="text-center">Status</th>
                                 <th class="text-center">Jawaban Benar</th>
-                                <th class="text-center">Nilai (Skala 100)</th>
+                                <th class="text-center">Nilai Obj</th>
+                                <th class="text-center">Nilai Esai</th>
+                                <th class="text-center">Nilai Akhir (100)</th>
                                 <th class="text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (!$results): ?>
-                                <tr><td colspan="7" class="text-center py-5 text-muted">Belum ada data hasil ujian.</td></tr>
+                                <tr><td colspan="9" class="text-center py-5 text-muted">Belum ada data hasil ujian.</td></tr>
                             <?php else: $n = 1; foreach ($results as $r):
-                                $stmt_q = $pdo->prepare("SELECT COUNT(*) FROM cbt_exam_questions WHERE exam_id = ?");
-                                $stmt_q->execute([$r['exam_id']]);
-                                $total_soal = (int)$stmt_q->fetchColumn();
+                                $soal_ids_arr = !empty($r['soal_ids']) ? json_decode($r['soal_ids'], true) : null;
+                                if (is_array($soal_ids_arr) && !empty($soal_ids_arr)) {
+                                    $total_soal = count($soal_ids_arr);
+                                } else {
+                                    $stmt_q = $pdo->prepare("SELECT COUNT(*) FROM cbt_exam_questions WHERE exam_id = ?");
+                                    $stmt_q->execute([$r['exam_id']]);
+                                    $total_soal = (int)$stmt_q->fetchColumn();
+                                }
 
                                 $stmt_ans = $pdo->prepare("SELECT COUNT(*) FROM cbt_student_answers WHERE participant_id = ? AND skor_didapat > 0");
                                 $stmt_ans->execute([$r['id']]);
                                 $jml_benar = (int)$stmt_ans->fetchColumn();
 
-                                $nilai_akhir = $total_soal > 0 ? round(($jml_benar / $total_soal) * 100, 2) : 0;
+                                $nilai_obj_row  = (float)($r['nilai_objektif'] ?? 0);
+                                $nilai_esai_row = (float)($r['nilai_esai']     ?? 0);
+                                $nilai_akhir    = (isset($r['skor_akhir']) && $r['skor_akhir'] !== null)
+                                    ? (float)$r['skor_akhir']
+                                    : ($total_soal > 0 ? round(($jml_benar / $total_soal) * 100, 2) : 0);
                             ?>
                             <tr>
                                 <td class="ps-4 text-muted"><?= $n++ ?></td>
@@ -197,11 +208,16 @@ if ($filter_active) {
                                     <span class="badge <?= $r['status'] == 'finished' ? 'bg-success' : 'bg-warning text-dark' ?>">
                                         <?= strtoupper($r['status']) ?>
                                     </span>
+                                    <?php if (($r['skor_status'] ?? '') === 'pending'): ?>
+                                        <span class="badge bg-warning text-dark d-block mt-1" style="font-size:0.7rem;">Esai Belum Dinilai</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="text-center fw-bold text-dark"><?= $jml_benar ?> / <?= $total_soal ?></td>
+                                <td class="text-center fw-semibold text-primary"><?= number_format($nilai_obj_row, 2) ?></td>
+                                <td class="text-center fw-semibold <?= $nilai_esai_row > 0 ? 'text-success' : 'text-muted' ?>"><?= number_format($nilai_esai_row, 2) ?></td>
                                 <td class="text-center">
                                     <h5 class="fw-bold mb-0 <?= $nilai_akhir >= 75 ? 'text-success' : 'text-danger' ?>">
-                                        <?= $nilai_akhir ?>
+                                        <?= number_format($nilai_akhir, 2) ?>
                                     </h5>
                                 </td>
                                 <td class="text-center">
