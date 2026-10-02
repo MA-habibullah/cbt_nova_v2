@@ -316,14 +316,20 @@ foreach ($columnUpdates as $col) {
     }
 }
 
-// 3. Penambahan Indeks Skalabilitas 10.000 Peserta
+// 3. Penambahan Indeks Skalabilitas 10.000 Peserta (High-Concurrency Optimization)
 $indexUpdates = [
-    ['table' => 'cbt_exam_participants', 'index' => 'idx_exam_status',      'sql' => "ALTER TABLE `cbt_exam_participants` ADD INDEX `idx_exam_status` (`exam_id`, `status`)"],
-    ['table' => 'cbt_exam_participants', 'index' => 'idx_student_exam',     'sql' => "ALTER TABLE `cbt_exam_participants` ADD INDEX `idx_student_exam` (`student_id`, `exam_id`)"],
-    ['table' => 'cbt_exam_participants', 'index' => 'idx_ep_class_id',      'sql' => "ALTER TABLE `cbt_exam_participants` ADD INDEX `idx_ep_class_id` (`class_id`)"],
-    ['table' => 'cbt_student_answers',   'index' => 'idx_part_quest',        'sql' => "ALTER TABLE `cbt_student_answers` ADD INDEX `idx_part_quest` (`participant_id`, `question_id`)"],
-    ['table' => 'cbt_device_locks',      'index' => 'idx_student_device',    'sql' => "ALTER TABLE `cbt_device_locks` ADD INDEX `idx_student_device` (`student_id`, `device_id`)"],
-    ['table' => 'cbt_cheat_logs',        'index' => 'idx_part_cheat',        'sql' => "ALTER TABLE `cbt_cheat_logs` ADD INDEX `idx_part_cheat` (`exam_id`, `student_id`)"]
+    ['table' => 'cbt_exam_participants', 'index' => 'idx_exam_status',             'sql' => "ALTER TABLE `cbt_exam_participants` ADD INDEX `idx_exam_status` (`exam_id`, `status`)"],
+    ['table' => 'cbt_exam_participants', 'index' => 'idx_student_exam',            'sql' => "ALTER TABLE `cbt_exam_participants` ADD INDEX `idx_student_exam` (`student_id`, `exam_id`)"],
+    ['table' => 'cbt_exam_participants', 'index' => 'idx_ep_class_id',             'sql' => "ALTER TABLE `cbt_exam_participants` ADD INDEX `idx_ep_class_id` (`class_id`)"],
+    ['table' => 'cbt_exam_participants', 'index' => 'idx_ep_exam_student_status',  'sql' => "ALTER TABLE `cbt_exam_participants` ADD INDEX `idx_ep_exam_student_status` (`exam_id`, `student_id`, `status`)"],
+    ['table' => 'cbt_exam_participants', 'index' => 'idx_ep_exam_status_waktu',     'sql' => "ALTER TABLE `cbt_exam_participants` ADD INDEX `idx_ep_exam_status_waktu` (`exam_id`, `status`, `waktu_mulai`)"],
+    ['table' => 'cbt_student_answers',   'index' => 'idx_part_quest',               'sql' => "ALTER TABLE `cbt_student_answers` ADD INDEX `idx_part_quest` (`participant_id`, `question_id`)"],
+    ['table' => 'cbt_student_answers',   'index' => 'idx_ans_part_quest_ragu',      'sql' => "ALTER TABLE `cbt_student_answers` ADD INDEX `idx_ans_part_quest_ragu` (`participant_id`, `question_id`, `is_ragu`)"],
+    ['table' => 'cbt_question_options',  'index' => 'idx_opt_qid_label',            'sql' => "ALTER TABLE `cbt_question_options` ADD INDEX `idx_opt_qid_label` (`question_id`, `label`(50))"],
+    ['table' => 'cbt_device_locks',      'index' => 'idx_student_device',           'sql' => "ALTER TABLE `cbt_device_locks` ADD INDEX `idx_student_device` (`student_id`, `device_id`)"],
+    ['table' => 'cbt_cheat_logs',        'index' => 'idx_part_cheat',               'sql' => "ALTER TABLE `cbt_cheat_logs` ADD INDEX `idx_part_cheat` (`exam_id`, `student_id`)"],
+    ['table' => 'cbt_cheat_logs',        'index' => 'idx_cheat_exam_student_waktu', 'sql' => "ALTER TABLE `cbt_cheat_logs` ADD INDEX `idx_cheat_exam_student_waktu` (`exam_id`, `student_id`, `waktu_kejadian`)"],
+    ['table' => 'cbt_online_sessions',   'index' => 'idx_sess_role_seen',           'sql' => "ALTER TABLE `cbt_online_sessions` ADD INDEX `idx_sess_role_seen` (`role`, `last_seen`)"]
 ];
 
 foreach ($indexUpdates as $idx) {
