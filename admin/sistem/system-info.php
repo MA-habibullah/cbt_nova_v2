@@ -369,7 +369,7 @@ if (!isset($_SESSION['admin_id'])) {
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-const CSRF_TOKEN = '<?= csrf_token() ?>';
+window.CSRF_TOKEN = window.CSRF_TOKEN || '<?= csrf_token() ?>';
 
 // ── Sidebar toggle ───────────────────────────────────────────────────────────
 document.getElementById('menu-toggle').addEventListener('click', e => {
