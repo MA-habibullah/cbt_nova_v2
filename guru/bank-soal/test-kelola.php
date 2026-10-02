@@ -53,7 +53,7 @@ if (isset($_POST['simpan_soal'])) {
     try {
         $pdo->prepare("DELETE FROM cbt_exam_questions WHERE exam_id = ?")->execute([$exam_id]);
         if (!empty($selected_questions)) {
-            $stmt_q = $pdo->prepare("INSERT INTO cbt_exam_questions (exam_id, question_id, created_at) VALUES (?, ?, NOW())");
+            $stmt_q = $pdo->prepare("INSERT INTO cbt_exam_questions (exam_id, question_id) VALUES (?, ?)");
             foreach ($selected_questions as $q_id) { 
                 $stmt_q->execute([$exam_id, (int)$q_id]); 
             }
@@ -63,7 +63,9 @@ if (isset($_POST['simpan_soal'])) {
         header("Location: test-kelola.php?exam_id=$exam_id&id=$id_bank&msg=soal_success"); 
         exit;
     } catch (Exception $e) {
-        $pdo->rollBack();
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         header("Location: test-kelola.php?exam_id=$exam_id&id=$id_bank&msg=error"); 
         exit;
     }

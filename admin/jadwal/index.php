@@ -49,8 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $new_exam_id = (int)$pdo->lastInsertId();
 
                 // Salin butir soal dari bank soal ke exam questions
-                $pdo->prepare("INSERT INTO cbt_exam_questions (exam_id, question_id, created_at) 
-                               SELECT ?, id, NOW() FROM cbt_questions WHERE bank_soal_id = ?")
+                $pdo->prepare("INSERT INTO cbt_exam_questions (exam_id, question_id) 
+                               SELECT ?, id FROM cbt_questions WHERE bank_soal_id = ?")
                     ->execute([$new_exam_id, $bank_id]);
 
                 log_activity("Tambah jadwal ujian baru: $nama_ujian (ID: $new_exam_id)", null, null, null, 'ujian');

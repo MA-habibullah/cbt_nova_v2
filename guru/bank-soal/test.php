@@ -59,8 +59,8 @@ if (isset($_POST['tambah_test'])) {
     $new_exam_id = (int)$pdo->lastInsertId();
 
     // Default: Salin butir soal ke exam_questions
-    $pdo->prepare("INSERT INTO cbt_exam_questions (exam_id, question_id, created_at) 
-                   SELECT ?, id, NOW() FROM cbt_questions WHERE bank_soal_id = ?")
+    $pdo->prepare("INSERT INTO cbt_exam_questions (exam_id, question_id) 
+                   SELECT ?, id FROM cbt_questions WHERE bank_soal_id = ?")
         ->execute([$new_exam_id, $id_bank]);
 
     log_activity("Guru tambah ujian: " . $_POST['nama_test'] . " di bank soal ID $id_bank", $teacher_id, 'guru', null, 'ujian');
