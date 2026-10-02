@@ -245,14 +245,14 @@ function bsQuery(array $extra = []): string {
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body p-3">
                     <form method="GET" action="" class="row g-2 align-items-end" id="filterForm">
-                        <div class="col-md-3">
+                        <div class="col-12 col-md-4 col-lg-3">
                             <label class="form-label form-label-sm mb-1 fw-bold text-muted" style="font-size:.7rem;">CARI</label>
                             <div class="input-group input-group-sm">
                                 <input type="text" name="q" class="form-control" placeholder="Nama / kode / mapel..." value="<?= htmlspecialchars($search) ?>">
                                 <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i></button>
                             </div>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-6 col-md-4 col-lg-2">
                             <label class="form-label form-label-sm mb-1 fw-bold text-muted" style="font-size:.7rem;">MATA PELAJARAN</label>
                             <select name="subject_id" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">Semua Mapel</option>
@@ -263,7 +263,7 @@ function bsQuery(array $extra = []): string {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-6 col-md-4 col-lg-2">
                             <label class="form-label form-label-sm mb-1 fw-bold text-muted" style="font-size:.7rem;">JENJANG</label>
                             <select name="jenjang" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">Semua Jenjang</option>
@@ -272,24 +272,24 @@ function bsQuery(array $extra = []): string {
                                 <option value="12" <?= esc($f_jenjang=='12'?'selected':'') ?>>Kelas 12</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-6 col-md-3 col-lg-2">
                             <label class="form-label form-label-sm mb-1 fw-bold text-muted" style="font-size:.7rem;">DARI TANGGAL</label>
                             <input type="date" name="date_from" class="form-control form-control-sm" value="<?= htmlspecialchars($date_from) ?>" onchange="this.form.submit()">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-6 col-md-3 col-lg-2">
                             <label class="form-label form-label-sm mb-1 fw-bold text-muted" style="font-size:.7rem;">SAMPAI TANGGAL</label>
                             <input type="date" name="date_to" class="form-control form-control-sm" value="<?= htmlspecialchars($date_to) ?>" onchange="this.form.submit()">
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label form-label-sm mb-1 fw-bold text-muted" style="font-size:.7rem;">TAMPILKAN</label>
+                        <div class="col-6 col-md-3 col-lg-1">
+                            <label class="form-label form-label-sm mb-1 fw-bold text-muted" style="font-size:.7rem;">SHOW</label>
                             <select name="show" class="form-select form-select-sm" onchange="this.form.submit()">
-                                <option value="10"  <?= esc($limit==10  ? 'selected':'') ?>>10 / halaman</option>
-                                <option value="25"  <?= esc($limit==25  ? 'selected':'') ?>>25 / halaman</option>
-                                <option value="50"  <?= esc($limit==50  ? 'selected':'') ?>>50 / halaman</option>
+                                <option value="10"  <?= esc($limit==10  ? 'selected':'') ?>>10</option>
+                                <option value="25"  <?= esc($limit==25  ? 'selected':'') ?>>25</option>
+                                <option value="50"  <?= esc($limit==50  ? 'selected':'') ?>>50</option>
                             </select>
                         </div>
                         <?php if($has_filter): ?>
-                        <div class="col-md-1">
+                        <div class="col-6 col-md-3 col-lg-auto">
                             <a href="index.php" class="btn btn-outline-secondary btn-sm w-100" title="Reset"><i class="fas fa-times me-1"></i>Reset</a>
                         </div>
                         <?php endif; ?>
