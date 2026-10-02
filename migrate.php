@@ -281,6 +281,30 @@ $columnUpdates = [
         'description'=> 'Kolom distribusi kuota jenis soal'
     ],
     [
+        'table'      => 'cbt_exams',
+        'column'     => 'jumlah_soal_limit',
+        'alter'      => "ALTER TABLE `cbt_exams` ADD `jumlah_soal_limit` INT UNSIGNED NULL DEFAULT NULL",
+        'description'=> 'Kolom limit kuota butir soal ujian'
+    ],
+    [
+        'table'      => 'cbt_exams',
+        'column'     => 'distribusi_tipe',
+        'alter'      => "ALTER TABLE `cbt_exams` ADD `distribusi_tipe` LONGTEXT NULL DEFAULT NULL",
+        'description'=> 'Kolom konfigurasi distribusi tipe soal'
+    ],
+    [
+        'table'      => 'cbt_exams',
+        'column'     => 'distribusi_kesulitan',
+        'alter'      => "ALTER TABLE `cbt_exams` ADD `distribusi_kesulitan` LONGTEXT NULL DEFAULT NULL",
+        'description'=> 'Kolom konfigurasi distribusi tingkat kesulitan'
+    ],
+    [
+        'table'      => 'cbt_exams',
+        'column'     => 'tampilkan_nilai',
+        'alter'      => "ALTER TABLE `cbt_exams` ADD `tampilkan_nilai` TINYINT(1) NOT NULL DEFAULT 0",
+        'description'=> 'Kolom visibilitas nilai untuk siswa'
+    ],
+    [
         'table'      => 'cbt_exam_participants',
         'column'     => 'soal_ids',
         'alter'      => "ALTER TABLE `cbt_exam_participants` ADD `soal_ids` LONGTEXT NULL DEFAULT NULL AFTER `status`",
@@ -291,6 +315,42 @@ $columnUpdates = [
         'column'     => 'class_id',
         'alter'      => "ALTER TABLE `cbt_exam_participants` ADD `class_id` BIGINT UNSIGNED NULL DEFAULT NULL AFTER `student_id`",
         'description'=> 'Kolom snapshot kelas peserta saat ujian (Historical Immobility)'
+    ],
+    [
+        'table'      => 'cbt_exam_participants',
+        'column'     => 'nilai_objektif',
+        'alter'      => "ALTER TABLE `cbt_exam_participants` ADD `nilai_objektif` DECIMAL(5,2) NULL DEFAULT NULL",
+        'description'=> 'Kolom kalkulasi nilai objektif (PG/Kompleks/Jodoh/BS)'
+    ],
+    [
+        'table'      => 'cbt_exam_participants',
+        'column'     => 'nilai_esai',
+        'alter'      => "ALTER TABLE `cbt_exam_participants` ADD `nilai_esai` DECIMAL(5,2) NULL DEFAULT NULL",
+        'description'=> 'Kolom koreksi nilai esai'
+    ],
+    [
+        'table'      => 'cbt_exam_participants',
+        'column'     => 'skor_status',
+        'alter'      => "ALTER TABLE `cbt_exam_participants` ADD `skor_status` ENUM('pending','final') NOT NULL DEFAULT 'final'",
+        'description'=> 'Kolom status kalkulasi skor'
+    ],
+    [
+        'table'      => 'cbt_student_answers',
+        'column'     => 'is_ragu',
+        'alter'      => "ALTER TABLE `cbt_student_answers` ADD `is_ragu` TINYINT(1) NOT NULL DEFAULT 0",
+        'description'=> 'Kolom penanda ragu-ragu jawaban'
+    ],
+    [
+        'table'      => 'cbt_student_answers',
+        'column'     => 'skor_didapat',
+        'alter'      => "ALTER TABLE `cbt_student_answers` ADD `skor_didapat` DECIMAL(5,2) NOT NULL DEFAULT 0.00",
+        'description'=> 'Kolom skor per butir soal'
+    ],
+    [
+        'table'      => 'cbt_student_answers',
+        'column'     => 'is_graded',
+        'alter'      => "ALTER TABLE `cbt_student_answers` ADD `is_graded` TINYINT(1) NOT NULL DEFAULT 0",
+        'description'=> 'Kolom penanda penilaian selesai'
     ],
     [
         'table'      => 'cbt_display_tokens',
@@ -326,6 +386,7 @@ $indexUpdates = [
     ['table' => 'cbt_student_answers',   'index' => 'idx_part_quest',               'sql' => "ALTER TABLE `cbt_student_answers` ADD INDEX `idx_part_quest` (`participant_id`, `question_id`)"],
     ['table' => 'cbt_student_answers',   'index' => 'idx_ans_part_quest_ragu',      'sql' => "ALTER TABLE `cbt_student_answers` ADD INDEX `idx_ans_part_quest_ragu` (`participant_id`, `question_id`, `is_ragu`)"],
     ['table' => 'cbt_question_options',  'index' => 'idx_opt_qid_label',            'sql' => "ALTER TABLE `cbt_question_options` ADD INDEX `idx_opt_qid_label` (`question_id`, `label`(50))"],
+    ['table' => 'cbt_exam_questions',    'index' => 'idx_eq_exam_quest',            'sql' => "ALTER TABLE `cbt_exam_questions` ADD INDEX `idx_eq_exam_quest` (`exam_id`, `question_id`)"],
     ['table' => 'cbt_device_locks',      'index' => 'idx_student_device',           'sql' => "ALTER TABLE `cbt_device_locks` ADD INDEX `idx_student_device` (`student_id`, `device_id`)"],
     ['table' => 'cbt_cheat_logs',        'index' => 'idx_part_cheat',               'sql' => "ALTER TABLE `cbt_cheat_logs` ADD INDEX `idx_part_cheat` (`exam_id`, `student_id`)"],
     ['table' => 'cbt_cheat_logs',        'index' => 'idx_cheat_exam_student_waktu', 'sql' => "ALTER TABLE `cbt_cheat_logs` ADD INDEX `idx_cheat_exam_student_waktu` (`exam_id`, `student_id`, `waktu_kejadian`)"],
