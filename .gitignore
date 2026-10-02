@@ -21,7 +21,6 @@ config/database.php
 *.dump
 /backups/*
 !/backups/.gitkeep
-/sql/db_cbt_backup.sql
 !/sql/cbt_nova_schema_10k.sql
 !/sql/migrate_*.sql
 !/sql/add_*.sql
