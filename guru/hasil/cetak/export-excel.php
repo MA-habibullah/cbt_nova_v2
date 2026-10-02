@@ -1,6 +1,9 @@
 <?php
 ob_start();
 require_once dirname(__DIR__, 3) . '/config/database.php';
+require_once dirname(__DIR__, 3) . '/includes/SimpleXLSXGen.php';
+
+use Shuchkin\SimpleXLSXGen;
 
 if (!isset($_SESSION['teacher_id']) || ($_SESSION['role'] ?? '') !== 'guru') {
     header("Location: " . BASE_URL . "index.php"); 
@@ -8,23 +11,19 @@ if (!isset($_SESSION['teacher_id']) || ($_SESSION['role'] ?? '') !== 'guru') {
 }
 $teacher_id = (int)$_SESSION['teacher_id'];
 
-// Autoload composer if available
-$vendor_autoload = dirname(__DIR__, 3) . '/vendor/autoload.php';
-if (file_exists($vendor_autoload)) {
-    require_once $vendor_autoload;
-}
-
-$exam_id  = isset($_GET['exam_id'])  ? (int)$_GET['exam_id']  : 0;
+// Tangkap Parameter
+$id_bank  = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$exam_id  = isset($_GET['exam_id']) ? (int)$_GET['exam_id'] : 0;
 $class_id = isset($_GET['class_id']) ? (int)$_GET['class_id'] : 0;
-$sesi     = isset($_GET['sesi'])     ? trim($_GET['sesi'])     : '';
+$sesi     = isset($_GET['sesi']) ? trim($_GET['sesi']) : '';
 
-// 1. AMBIL INFORMASI UJIAN
+// 1. AMBIL INFORMASI MAPEL DAN UJIAN UNTUK JUDUL SECARA AMAN
 $nama_ujian_label = '-';
 $nama_mapel_label = '-';
 
 if ($exam_id) {
     $stmt_info = $pdo->prepare(
-        "SELECT e.nama_mapel_ujian, b.nama_bank_soal, s.nama_mapel
+        "SELECT e.nama_mapel_ujian, e.bank_soal_id, b.nama_bank_soal, s.nama_mapel
          FROM cbt_exams e
          LEFT JOIN cbt_bank_soal b ON e.bank_soal_id = b.id
          LEFT JOIN cbt_subjects s ON b.subject_id = s.id
@@ -35,6 +34,28 @@ if ($exam_id) {
     if ($info) {
         $nama_ujian_label = !empty($info['nama_mapel_ujian']) ? $info['nama_mapel_ujian'] : (!empty($info['nama_bank_soal']) ? $info['nama_bank_soal'] : '-');
         $nama_mapel_label = !empty($info['nama_mapel']) ? $info['nama_mapel'] : '-';
+        if (!$id_bank && !empty($info['bank_soal_id'])) {
+            $id_bank = (int)$info['bank_soal_id'];
+        }
+    }
+}
+
+if (($nama_ujian_label === '-' || $nama_mapel_label === '-') && $id_bank) {
+    $stmt_mapel = $pdo->prepare(
+        "SELECT b.nama_bank_soal, s.nama_mapel
+         FROM cbt_bank_soal b
+         LEFT JOIN cbt_subjects s ON b.subject_id = s.id
+         WHERE b.id = ? AND b.teacher_id = ?"
+    );
+    $stmt_mapel->execute([$id_bank, $teacher_id]);
+    $info_mapel = $stmt_mapel->fetch(PDO::FETCH_ASSOC);
+    if ($info_mapel) {
+        if ($nama_ujian_label === '-') {
+            $nama_ujian_label = !empty($info_mapel['nama_bank_soal']) ? $info_mapel['nama_bank_soal'] : '-';
+        }
+        if ($nama_mapel_label === '-') {
+            $nama_mapel_label = !empty($info_mapel['nama_mapel']) ? $info_mapel['nama_mapel'] : '-';
+        }
     }
 }
 
@@ -50,15 +71,18 @@ if ($class_id) {
     $stmt_kelas->execute([$class_id]);
     $kelas_row = $stmt_kelas->fetch(PDO::FETCH_ASSOC);
     if ($kelas_row) {
-        $nama_kelas_label = $kelas_row['jenjang'] . ' - ' . $kelas_row['nama_kelas'];
+        $nama_kelas_label = (!empty($kelas_row['jenjang']) ? $kelas_row['jenjang'] . ' - ' : '') . $kelas_row['nama_kelas'];
     }
 }
 
-// 2. QUERY AMBIL DATA HASIL PESERTA (Hanya ujian guru ini)
+// 2. QUERY AMBIL DATA HASIL PESERTA (Hanya ujian guru yang bersangkutan)
 $query = "SELECT
             s.nisn, s.nama_lengkap, s.sesi, k.jenjang, k.nama_kelas, 
             COALESCE(sub.nama_mapel, ?) as nama_mapel,
             (SELECT COUNT(*) FROM cbt_exam_questions eq WHERE eq.exam_id = p.exam_id) as total_soal,
+            (SELECT COUNT(*) FROM cbt_student_answers sa WHERE sa.participant_id = p.id AND sa.skor_didapat > 0) as jml_benar,
+            (SELECT SUM(sa2.skor_didapat) FROM cbt_student_answers sa2 WHERE sa2.participant_id = p.id) as skor_siswa,
+            (SELECT SUM(q.bobot_skor) FROM cbt_exam_questions eq2 JOIN cbt_questions q ON eq2.question_id = q.id WHERE eq2.exam_id = p.exam_id) as total_skor_maks,
             (SELECT SUM(sa3.skor_didapat) FROM cbt_student_answers sa3
              JOIN cbt_questions q3 ON sa3.question_id = q3.id
              WHERE sa3.participant_id = p.id AND q3.tipe != 'essay') as skor_objektif,
@@ -97,16 +121,19 @@ $query = "SELECT
           WHERE e.teacher_id = ?";
 
 $params = [$nama_mapel_label, $teacher_id];
-if ($exam_id)  { 
-    $query .= " AND p.exam_id = ?";   
-    $params[] = $exam_id; 
+if ($exam_id) {
+    $query .= " AND p.exam_id = ?";
+    $params[] = $exam_id;
+} elseif ($id_bank) {
+    $query .= " AND e.bank_soal_id = ?";
+    $params[] = $id_bank;
 }
 if ($class_id) { 
-    $query .= " AND COALESCE(p.class_id, s.class_id) = ?";  
+    $query .= " AND COALESCE(p.class_id, s.class_id) = ?"; 
     $params[] = $class_id; 
 }
 if ($sesi !== '') { 
-    $query .= " AND s.sesi = ?";       
+    $query .= " AND s.sesi = ?"; 
     $params[] = $sesi; 
 }
 $query .= " ORDER BY k.jenjang ASC, k.nama_kelas ASC, s.nama_lengkap ASC";
@@ -115,7 +142,7 @@ $stmt = $pdo->prepare($query);
 $stmt->execute($params);
 $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Pre-fetch question types if any participants have custom soal_ids
+// Pre-fetch question metadata if any participants have custom soal_ids
 $all_q_ids = [];
 foreach ($data as $d) {
     if (!empty($d['soal_ids'])) {
@@ -127,51 +154,104 @@ foreach ($data as $d) {
         }
     }
 }
-$q_types_map = [];
+$q_meta_map = [];
 if (!empty($all_q_ids)) {
     $q_id_keys = array_keys($all_q_ids);
     $ph_q = implode(',', array_fill(0, count($q_id_keys), '?'));
-    $stmtQTypes = $pdo->prepare("SELECT id, tipe FROM cbt_questions WHERE id IN ($ph_q)");
+    $stmtQTypes = $pdo->prepare("SELECT id, tipe, bobot_skor FROM cbt_questions WHERE id IN ($ph_q)");
     $stmtQTypes->execute($q_id_keys);
     foreach ($stmtQTypes->fetchAll(PDO::FETCH_ASSOC) as $qr) {
-        $q_types_map[(int)$qr['id']] = $qr['tipe'];
+        $q_meta_map[(int)$qr['id']] = $qr;
     }
 }
 
-// 3. SUSUN ARRAY DATA BERSIH
-$export_rows = [];
+// Inisialisasi XLSX Generator
+$xlsx = new SimpleXLSXGen();
+
+// Buat Style XF
+$style_title = $xlsx->createStyle(['bold' => true, 'size' => 14, 'align' => 'center']);
+$style_meta  = $xlsx->createStyle(['bold' => true, 'size' => 11, 'align' => 'left']);
+$style_head  = $xlsx->createStyle(['bold' => true, 'size' => 10, 'bg' => 'D9EAD3', 'border' => true, 'align' => 'center']);
+
+$style_cell_left   = $xlsx->createStyle(['size' => 10, 'border' => true, 'align' => 'left']);
+$style_cell_center = $xlsx->createStyle(['size' => 10, 'border' => true, 'align' => 'center']);
+$style_cell_bold_center = $xlsx->createStyle(['bold' => true, 'size' => 10, 'border' => true, 'align' => 'center']);
+
+// 3. SUSUN BARIS DATA SHEET
+$rows = [];
+
+// Header Dokumen
+$rows[] = [['v' => 'REKAPITULASI HASIL UJIAN', 's' => $style_title]];
+$rows[] = [['v' => 'Nama Ujian   : ' . $nama_ujian_label, 's' => $style_meta]];
+$rows[] = [['v' => 'Kelas        : ' . $nama_kelas_label, 's' => $style_meta]];
+$rows[] = [['v' => 'Tahun Ajaran : ' . $str_ta, 's' => $style_meta]];
+$rows[] = ['']; // Baris kosong pemisah
+
+// Header Kolom Tabel
+$rows[] = [
+    ['v' => 'NO', 's' => $style_head],
+    ['v' => 'NISN', 's' => $style_head],
+    ['v' => 'NAMA SISWA', 's' => $style_head],
+    ['v' => 'KELAS', 's' => $style_head],
+    ['v' => 'MATA PELAJARAN', 's' => $style_head],
+    ['v' => 'SESI', 's' => $style_head],
+    ['v' => 'BENAR OBJ', 's' => $style_head],
+    ['v' => 'BENAR ESAI', 's' => $style_head],
+    ['v' => 'NILAI OBJEKTIF', 's' => $style_head],
+    ['v' => 'NILAI ESAI', 's' => $style_head],
+    ['v' => 'NILAI AKHIR (100)', 's' => $style_head],
+    ['v' => 'STATUS KOREKSI', 's' => $style_head]
+];
+
+// Data Peserta
 foreach ($data as $i => $d) {
     $tot_obj_row  = (int)($d['total_soal_obj']  ?? 0);
     $tot_esai_row = (int)($d['total_soal_esai'] ?? 0);
+    $bobot_obj_e  = (float)($d['bobot_obj_exam']  ?? 0);
+    $bobot_ess_e  = (float)($d['bobot_essay_exam'] ?? 0);
 
-    // Jika peserta memiliki subset soal_ids, hitung total soal per tipe dari subsetnya
+    // Jika peserta memiliki subset dinamis (soal_ids), hitung total soal & bobot dari subsetnya
     if (!empty($d['soal_ids'])) {
         $decoded_sids = json_decode($d['soal_ids'], true);
         if (is_array($decoded_sids) && !empty($decoded_sids)) {
             $tot_obj_row  = 0;
             $tot_esai_row = 0;
+            $bobot_obj_e  = 0.0;
+            $bobot_ess_e  = 0.0;
             foreach ($decoded_sids as $sid) {
-                $t = $q_types_map[(int)$sid] ?? 'pg';
-                if ($t === 'essay') {
+                $q_info = $q_meta_map[(int)$sid] ?? ['tipe' => 'pg', 'bobot_skor' => 1];
+                if ($q_info['tipe'] === 'essay') {
                     $tot_esai_row++;
+                    $bobot_ess_e += (float)$q_info['bobot_skor'];
                 } else {
                     $tot_obj_row++;
+                    $bobot_obj_e += (float)$q_info['bobot_skor'];
                 }
             }
         }
     }
 
-    $bobot_obj_e  = (float)($d['bobot_obj_exam']  ?? 0);
-    $bobot_ess_e  = (float)($d['bobot_essay_exam'] ?? 0);
-    $skor_obj_v   = (float)($d['skor_objektif']   ?? 0);
-    $skor_ess_v   = (float)($d['skor_essay']      ?? 0);
+    $skor_obj_v = (float)($d['skor_objektif'] ?? 0);
+    $skor_ess_v = (float)($d['skor_essay'] ?? 0);
 
-    $nilai_obj_x  = isset($d['nilai_objektif']) ? (float)$d['nilai_objektif'] : (($bobot_obj_e > 0) ? round($skor_obj_v / $bobot_obj_e * 100, 2) : 0.0);
-    $nilai_esai_x = isset($d['nilai_esai']) ? (float)$d['nilai_esai'] : (($bobot_ess_e > 0) ? round($skor_ess_v / $bobot_ess_e * 100, 2) : 0.0);
+    // Hitung Nilai Objektif (prioritaskan kolom database, fallback ke formula scoring engine)
+    if (isset($d['nilai_objektif']) && $d['nilai_objektif'] !== null) {
+        $nilai_obj_x = (float)$d['nilai_objektif'];
+    } else {
+        $nilai_obj_x = ($bobot_obj_e > 0) ? round(($skor_obj_v / $bobot_obj_e) * 100, 2) : 0.0;
+    }
+
+    // Hitung Nilai Esai (prioritaskan kolom database, fallback ke formula scoring engine)
+    if (isset($d['nilai_esai']) && $d['nilai_esai'] !== null) {
+        $nilai_esai_x = (float)$d['nilai_esai'];
+    } else {
+        $nilai_esai_x = ($bobot_ess_e > 0) ? round(($skor_ess_v / $bobot_ess_e) * 100, 2) : 0.0;
+    }
 
     $has_obj_x = $bobot_obj_e > 0;
     $has_ess_x = $bobot_ess_e > 0;
 
+    // Hitung Nilai Akhir (prioritaskan kolom skor_akhir database)
     if (isset($d['skor_akhir']) && $d['skor_akhir'] !== null) {
         $nilai_akhir_x = (float)$d['skor_akhir'];
     } elseif ($has_obj_x && $has_ess_x) {
@@ -188,150 +268,38 @@ foreach ($data as $i => $d) {
     $benar_obj_str  = ($tot_obj_row > 0) ? ($d['jml_benar_obj'] . '/' . $tot_obj_row) : '-';
     $benar_esai_str = ($tot_esai_row > 0) ? ($d['jml_benar_esai'] . '/' . $tot_esai_row) : '-';
 
-    $export_rows[] = [
-        'nisn'           => (string)($d['nisn'] ?? ''),
-        'nama_lengkap'   => (string)($d['nama_lengkap'] ?? '-'),
-        'nama_kelas'     => (!empty($d['jenjang']) ? $d['jenjang'] . ' - ' : '') . (string)($d['nama_kelas'] ?? '-'),
-        'nama_mapel'     => (string)($d['nama_mapel'] ?? $nama_mapel_label),
-        'sesi'           => (string)($d['sesi'] ?? '-'),
-        'benar_obj'      => $benar_obj_str,
-        'benar_esai'     => $benar_esai_str,
-        'nilai_obj'      => number_format($nilai_obj_x, 2, '.', ''),
-        'nilai_esai'     => number_format($nilai_esai_x, 2, '.', ''),
-        'nilai_akhir'    => number_format($nilai_akhir_x, 2, '.', ''),
-        'status_koreksi' => $status_koreksi,
+    // Format kelas: pastikan string murni agar Excel TIDAK pernah mengonversi '10-1' menjadi tanggal
+    $kelas_text = (!empty($d['jenjang']) ? $d['jenjang'] . ' - ' : '') . (string)($d['nama_kelas'] ?? '-');
+    $nisn_text  = (string)($d['nisn'] ?? '');
+
+    $rows[] = [
+        ['v' => $i + 1, 's' => $style_cell_center],
+        ['v' => $nisn_text, 't' => 's', 's' => $style_cell_center],
+        ['v' => (string)($d['nama_lengkap'] ?? '-'), 't' => 's', 's' => $style_cell_left],
+        ['v' => $kelas_text, 't' => 's', 's' => $style_cell_center],
+        ['v' => (string)($d['nama_mapel'] ?? $nama_mapel_label), 't' => 's', 's' => $style_cell_left],
+        ['v' => (string)($d['sesi'] ?? '-'), 't' => 's', 's' => $style_cell_center],
+        ['v' => $benar_obj_str, 't' => 's', 's' => $style_cell_center],
+        ['v' => $benar_esai_str, 't' => 's', 's' => $style_cell_center],
+        ['v' => (float)number_format($nilai_obj_x, 2, '.', ''), 's' => $style_cell_center],
+        ['v' => (float)number_format($nilai_esai_x, 2, '.', ''), 's' => $style_cell_center],
+        ['v' => (float)number_format($nilai_akhir_x, 2, '.', ''), 's' => $style_cell_bold_center],
+        ['v' => $status_koreksi, 't' => 's', 's' => $style_cell_center]
     ];
 }
 
+$merge_cells = [
+    'A1:L1',
+    'A2:L2',
+    'A3:L3',
+    'A4:L4'
+];
+
+$xlsx->addSheet($rows, 'Rekap Nilai', $merge_cells);
+
 $safe_ujian = preg_replace('/[^a-zA-Z0-9\s\-]/', '', $nama_ujian_label);
 $safe_kelas = preg_replace('/[^a-zA-Z0-9\s\-]/', '', $nama_kelas_label);
-$filename_base = 'Rekap Nilai - ' . trim($safe_ujian) . ' - ' . trim($safe_kelas);
+$filename   = 'Rekap Nilai - ' . trim($safe_ujian) . ' - ' . trim($safe_kelas) . '.xlsx';
 
-// 4. ENGINE 1: PHPSPREADSHEET (Jika pustaka dan ZipArchive tersedia)
-$can_use_phpspreadsheet = class_exists('\PhpOffice\PhpSpreadsheet\Spreadsheet') && class_exists('\ZipArchive');
-
-if ($can_use_phpspreadsheet) {
-    try {
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Rekap Nilai');
-
-        // Header Laporan
-        $sheet->mergeCells('A1:L1');
-        $sheet->setCellValue('A1', 'REKAPITULASI HASIL UJIAN');
-        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-        $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-
-        $sheet->mergeCells('A2:L2');
-        $sheet->setCellValue('A2', 'Nama Ujian   : ' . $nama_ujian_label);
-
-        $sheet->mergeCells('A3:L3');
-        $sheet->setCellValue('A3', 'Kelas        : ' . $nama_kelas_label);
-
-        $sheet->mergeCells('A4:L4');
-        $sheet->setCellValue('A4', 'Tahun Ajaran : ' . $str_ta);
-
-        // Header Kolom Tabel (Baris 6)
-        $headers = [
-            'A6'=>'NO', 'B6'=>'NISN', 'C6'=>'NAMA SISWA', 'D6'=>'KELAS',
-            'E6'=>'MATA PELAJARAN', 'F6'=>'SESI', 'G6'=>'BENAR OBJ', 'H6'=>'BENAR ESAI',
-            'I6'=>'NILAI OBJEKTIF', 'J6'=>'NILAI ESAI', 'K6'=>'NILAI AKHIR (100)', 'L6'=>'STATUS KOREKSI'
-        ];
-        foreach ($headers as $cell => $value) {
-            $sheet->setCellValue($cell, $value);
-        }
-        $sheet->getStyle('A6:L6')->getFont()->setBold(true);
-        $sheet->getStyle('A6:L6')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-        $sheet->getStyle('A6:L6')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('D9EAD3');
-
-        $row_idx = 7;
-        foreach ($export_rows as $i => $row) {
-            $sheet->setCellValue('A'.$row_idx, $i + 1);
-            $sheet->setCellValueExplicit('B'.$row_idx, $row['nisn'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            $sheet->setCellValue('C'.$row_idx, $row['nama_lengkap']);
-            $sheet->setCellValue('D'.$row_idx, $row['nama_kelas']);
-            $sheet->setCellValue('E'.$row_idx, $row['nama_mapel']);
-            $sheet->setCellValue('F'.$row_idx, $row['sesi']);
-            $sheet->setCellValueExplicit('G'.$row_idx, $row['benar_obj'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            $sheet->setCellValueExplicit('H'.$row_idx, $row['benar_esai'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            $sheet->setCellValue('I'.$row_idx, (float)$row['nilai_obj']);
-            $sheet->setCellValue('J'.$row_idx, (float)$row['nilai_esai']);
-            $sheet->setCellValue('K'.$row_idx, (float)$row['nilai_akhir']);
-            $sheet->setCellValue('L'.$row_idx, $row['status_koreksi']);
-            $row_idx++;
-        }
-
-        foreach (range('A', 'L') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
-        $last_row = max(6, $row_idx - 1);
-        $sheet->getStyle('A6:L' . $last_row)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
-
-        if (ob_get_length()) ob_end_clean();
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment;filename="' . $filename_base . '.xlsx"');
-        header('Cache-Control: max-age=0');
-        header('Pragma: public');
-
-        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-        $writer->save('php://output');
-        exit;
-    } catch (\Throwable $e) {
-        // Fallback ke Engine 2 jika PhpSpreadsheet error
-    }
-}
-
-// 5. ENGINE 2: UNIVERSAL SPREADSHEETML / EXCEL HTML FALLBACK (Zero Dependency, 100% Reliable)
-if (ob_get_length()) ob_end_clean();
-header('Content-Type: application/vnd.ms-excel; charset=utf-8');
-header('Content-Disposition: attachment;filename="' . $filename_base . '.xls"');
-header('Cache-Control: max-age=0');
-header('Pragma: public');
-
-echo '<!DOCTYPE html>';
-echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
-echo '<head><meta charset="utf-8">';
-echo '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Rekap Nilai</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
-echo '<style>';
-echo 'body { font-family: Calibri, Arial, sans-serif; }';
-echo 'table { border-collapse: collapse; width: 100%; }';
-echo 'th { background-color: #D9EAD3; color: #000; font-weight: bold; border: 1px solid #777; padding: 7px; text-align: center; }';
-echo 'td { border: 1px solid #999; padding: 5px; vertical-align: middle; }';
-echo '.text-center { text-align: center; }';
-echo '.text-bold { font-weight: bold; }';
-echo '.mso-text { mso-number-format:"\@"; }';
-echo '.title { font-size: 14pt; font-weight: bold; text-align: center; }';
-echo '</style></head><body>';
-
-echo '<table>';
-echo '<tr><td colspan="12" class="title">REKAPITULASI HASIL UJIAN</td></tr>';
-echo '<tr><td colspan="12"><b>Nama Ujian &nbsp;&nbsp;:</b> ' . htmlspecialchars($nama_ujian_label) . '</td></tr>';
-echo '<tr><td colspan="12"><b>Kelas &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</b> ' . htmlspecialchars($nama_kelas_label) . '</td></tr>';
-echo '<tr><td colspan="12"><b>Tahun Ajaran :</b> ' . htmlspecialchars($str_ta) . '</td></tr>';
-echo '<tr><td colspan="12">&nbsp;</td></tr>';
-
-echo '<tr>';
-echo '<th>NO</th><th>NISN</th><th>NAMA SISWA</th><th>KELAS</th>';
-echo '<th>MATA PELAJARAN</th><th>SESI</th><th>BENAR OBJ</th><th>BENAR ESAI</th>';
-echo '<th>NILAI OBJEKTIF</th><th>NILAI ESAI</th><th>NILAI AKHIR (100)</th><th>STATUS KOREKSI</th>';
-echo '</tr>';
-
-foreach ($export_rows as $i => $d) {
-    echo '<tr>';
-    echo '<td class="text-center">' . ($i + 1) . '</td>';
-    echo '<td class="mso-text">' . htmlspecialchars($d['nisn']) . '</td>';
-    echo '<td>' . htmlspecialchars($d['nama_lengkap']) . '</td>';
-    echo '<td class="text-center">' . htmlspecialchars($d['nama_kelas']) . '</td>';
-    echo '<td>' . htmlspecialchars($d['nama_mapel']) . '</td>';
-    echo '<td class="text-center">' . htmlspecialchars($d['sesi']) . '</td>';
-    echo '<td class="text-center mso-text">' . htmlspecialchars($d['benar_obj']) . '</td>';
-    echo '<td class="text-center mso-text">' . htmlspecialchars($d['benar_esai']) . '</td>';
-    echo '<td class="text-center">' . htmlspecialchars($d['nilai_obj']) . '</td>';
-    echo '<td class="text-center">' . htmlspecialchars($d['nilai_esai']) . '</td>';
-    echo '<td class="text-center text-bold">' . htmlspecialchars($d['nilai_akhir']) . '</td>';
-    echo '<td class="text-center">' . htmlspecialchars($d['status_koreksi']) . '</td>';
-    echo '</tr>';
-}
-
-echo '</table></body></html>';
+$xlsx->downloadAs($filename);
 exit;
