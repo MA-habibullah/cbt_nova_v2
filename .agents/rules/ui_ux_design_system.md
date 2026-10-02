@@ -117,11 +117,11 @@ Satukan area kontrol ke dalam card yang rapi dan seragam:
 ---
 
 ### C. Standard Table Layout & Badge System
-Tabel menggunakan thead abu-abu terang dengan teks semi-bold uppercase:
+Tabel menggunakan thead abu-abu terang dengan teks semi-bold uppercase, dibungkus kontainer `.table-responsive` berlebar minimal agar scroll horizontal terisolasi sempurna di dalam tabel (tidak membuat halaman web bergeser):
 ```html
 <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table class="table table-hover align-middle mb-0" style="min-width: 1050px;">
             <thead class="table-light text-secondary small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">
                 <tr>
                     <th class="text-center py-3" width="50">#</th>
@@ -141,6 +141,11 @@ Tabel menggunakan thead abu-abu terang dengan teks semi-bold uppercase:
     <!-- Footer Pagination -->
 </div>
 ```
+
+**Aturan Isolasi Scroll Horizontal:**
+1. **Dilarang keras** membuat `body` atau `#wrapper` bergeser ke samping. Pastikan `#content` terkunci dengan `min-width: 0; max-width: 100%; overflow-x: hidden;`.
+2. Scroll horizontal **hanya aktif di dalam `.table-responsive`** ketika lebar layar kurang dari batas minimal tabel.
+3. Pasang custom scrollbar 7px yang ramping di `.table-responsive`.
 
 **Standard Badge Styles:**
 - **Kode Unik / NISN / NIP / Username**: `.badge.bg-primary-subtle.text-primary.border.border-primary-subtle.font-monospace`

@@ -214,12 +214,34 @@ function gbsQ(array $extra = []): string {
 <html lang="id">
 <?php include '../../includes/header.php'; ?>
 
+<style>
+/* Custom Horizontal Scrollbar */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.table-responsive::-webkit-scrollbar {
+    height: 7px;
+}
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+</style>
+
 <body class="bg-light">
 
-<div class="d-flex" id="wrapper">
+<div class="d-flex" id="wrapper" style="overflow-x: hidden;">
     <?php include '../includes/sidebar.php'; ?>
 
-    <div id="content" class="w-100">
+    <div id="content" class="w-100" style="min-width: 0; max-width: 100%; overflow-x: hidden;">
         <!-- Top Navbar -->
         <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm border-bottom">
             <button class="btn btn-light border shadow-sm" id="menu-toggle"><i class="fas fa-bars"></i></button>
@@ -400,7 +422,7 @@ function gbsQ(array $extra = []): string {
             <!-- Main Data Table Card -->
             <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0" style="min-width: 1050px;">
                         <thead class="table-light text-secondary small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">
                             <tr>
                                 <th class="text-center py-3" width="50">#</th>

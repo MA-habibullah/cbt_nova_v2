@@ -4,10 +4,27 @@
     --sidebar-bg: #ffffff;
 }
 
-body {
+html, body {
     font-family: 'Poppins', sans-serif;
     background-color: var(--bg-light);
     color: #333;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+#wrapper {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+#content {
+    flex: 1 1 0%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 /* Sidebar Styling */
@@ -241,8 +258,29 @@ Styling Sub-menu
 
 /* Table Responsive & Modern Styling */
 .table-responsive {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
     border-radius: 12px;
-    overflow-x: auto;
+}
+
+.table-responsive::-webkit-scrollbar {
+    height: 7px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
 .table-modern {
