@@ -56,7 +56,7 @@ if ($class_id) {
 
 // 2. QUERY AMBIL DATA HASIL PESERTA (Hanya ujian guru ini)
 $query = "SELECT
-            s.nisn, s.nama_lengkap, s.sesi, k.nama_kelas, 
+            s.nisn, s.nama_lengkap, s.sesi, k.jenjang, k.nama_kelas, 
             COALESCE(sub.nama_mapel, ?) as nama_mapel,
             (SELECT COUNT(*) FROM cbt_exam_questions eq WHERE eq.exam_id = p.exam_id) as total_soal,
             (SELECT SUM(sa3.skor_didapat) FROM cbt_student_answers sa3
@@ -109,7 +109,7 @@ if ($sesi !== '') {
     $query .= " AND s.sesi = ?";       
     $params[] = $sesi; 
 }
-$query .= " ORDER BY k.nama_kelas ASC, s.nama_lengkap ASC";
+$query .= " ORDER BY k.jenjang ASC, k.nama_kelas ASC, s.nama_lengkap ASC";
 
 $stmt = $pdo->prepare($query);
 $stmt->execute($params);
@@ -191,7 +191,7 @@ foreach ($data as $i => $d) {
     $export_rows[] = [
         'nisn'           => (string)($d['nisn'] ?? ''),
         'nama_lengkap'   => (string)($d['nama_lengkap'] ?? '-'),
-        'nama_kelas'     => (string)($d['nama_kelas'] ?? '-'),
+        'nama_kelas'     => (!empty($d['jenjang']) ? $d['jenjang'] . ' - ' : '') . (string)($d['nama_kelas'] ?? '-'),
         'nama_mapel'     => (string)($d['nama_mapel'] ?? $nama_mapel_label),
         'sesi'           => (string)($d['sesi'] ?? '-'),
         'benar_obj'      => $benar_obj_str,

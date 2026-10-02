@@ -583,7 +583,11 @@ function koreksiSkor(answerId, bobotMaks, skorSekarang) {
             return $.ajax({
                 url: 'update_skor_manual.php',
                 type: 'POST',
-                data: { id: answerId, skor: value },
+                data: {
+                    id: answerId,
+                    skor: value,
+                    csrf_token: '<?= csrf_token() ?>'
+                },
                 dataType: 'json'
             }).then(response => {
                 if (response.status !== 'success') {

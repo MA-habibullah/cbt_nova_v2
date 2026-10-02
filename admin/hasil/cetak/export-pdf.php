@@ -91,7 +91,7 @@ if ($class_id) {
 
 // 3. Query Data Peserta
 $query = "SELECT
-            p.id as p_id, p.exam_id, p.soal_ids, s.nama_lengkap, s.nisn, s.sesi, k.nama_kelas,
+            p.id as p_id, p.exam_id, p.soal_ids, s.nama_lengkap, s.nisn, s.sesi, k.jenjang, k.nama_kelas,
             COALESCE(sub.nama_mapel, ?) as nama_mapel,
             (SELECT COUNT(*) FROM cbt_exam_questions eq3
              JOIN cbt_questions q3 ON eq3.question_id = q3.id
@@ -343,12 +343,13 @@ if (empty($results)) {
 
         $status_koreksi = ($r['skor_status'] ?? 'final') === 'pending' ? 'Belum Final' : 'Final';
 
+        $kelas_display  = !empty($r['jenjang']) ? $r['jenjang'] . ' - ' . ($r['nama_kelas'] ?? '-') : ($r['nama_kelas'] ?? '-');
         $html .= '
         <tr>
             <td class="text-center">' . ($i + 1) . '</td>
             <td class="text-center">' . htmlspecialchars($r['nisn'] ?? '-') . '</td>
             <td class="text-left text-bold">' . htmlspecialchars(strtoupper($r['nama_lengkap'])) . '</td>
-            <td class="text-center">' . htmlspecialchars($r['nama_kelas'] ?? '-') . '</td>
+            <td class="text-center">' . htmlspecialchars($kelas_display) . '</td>
             <td class="text-center">' . htmlspecialchars($r['sesi'] ?? '-') . '</td>
             <td class="text-center">' . $benar_obj_str . '</td>
             <td class="text-center">' . $benar_esai_str . '</td>

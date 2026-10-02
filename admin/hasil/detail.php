@@ -588,7 +588,8 @@ function koreksiSkor(answerId, bobotMaks, skorSekarang) {
                 type: 'POST',
                 data: {
                     id: answerId,
-                    skor: value
+                    skor: value,
+                    csrf_token: '<?= csrf_token() ?>'
                 },
                 dataType: 'json'
             }).then(response => {
