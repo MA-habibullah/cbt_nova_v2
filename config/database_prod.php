@@ -57,7 +57,7 @@ if (APP_DEBUG) {
     error_reporting(0);
 }
 
-if (session_status() === PHP_SESSION_NONE) {
+if (session_status() === PHP_SESSION_NONE && php_sapi_name() !== 'cli') {
     ini_set('session.cookie_path', APP_BASEPATH);
     session_start();
 }

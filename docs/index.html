@@ -857,15 +857,27 @@ opcache.validate_timestamps     = 0   # Zero-disk check pada mode produksi (re-c
 
         <!-- BAB 7 -->
         <section id="bab7" class="doc-section">
-            <h2><i class="fas fa-sync-alt text-info"></i> 7. SOP Migrasi & Sinkronisasi Kode</h2>
-            <p>Setiap kali ada pembaruan kode pada repositori GitHub, ikuti prosedur rilis standar berikut:</p>
+            <h2><i class="fas fa-sync-alt text-info"></i> 7. SOP Migrasi & Pembaruan Sistem (One-Click Runner)</h2>
+            <p>Sistem kini dilengkapi dengan skrip otomatis <code>migrate.php</code> yang menjalankan git pull, update database, verifikasi folder, dan pembersihan cache dalam satu kali perintah:</p>
 
+            <div class="callout callout-success">
+                <h4><i class="fas fa-magic"></i> Perintah Pembaruan Otomatis 1-Klik:</h4>
+                <p>Jalankan perintah berikut di root folder aplikasi server:</p>
+                <div class="code-container">
+                    <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+                    <pre><code># Masuk ke direktori dan jalankan migrator otomatis:
+cd /var/www/cbt_nova
+php migrate.php</code></pre>
+                </div>
+            </div>
+
+            <h3>Prosedur Manual (Alternatif Jika Diperlukan)</h3>
             <div class="code-container">
                 <button class="btn-copy" onclick="copyCode(this)">Copy</button>
                 <pre><code># 1. Masuk ke direktori aplikasi
 cd /var/www/cbt_nova
 
-# 2. Tarik update kode terbaru
+# 2. Tarik update kode terbaru dari GitHub
 git pull origin main
 
 # 3. Jalankan migrasi SQL idempotent jika terdapat pembaruan skema
