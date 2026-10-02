@@ -161,6 +161,15 @@ $results = $stmt->fetchAll();
             </div>
 
             <?php if ($filter_active): ?>
+            <!-- Info Banner Nilai Otomatis -->
+            <div class="alert alert-info border-0 shadow-sm rounded-3 py-2 px-3 mb-3 d-flex align-items-center gap-3">
+                <i class="fas fa-info-circle text-info fs-4 flex-shrink-0"></i>
+                <div class="small">
+                    <span class="fw-bold">Nilai Otomatis Tersimpan:</span> Nilai peserta ujian otomatis terhitung secara instan saat siswa menekan tombol <em>Selesai Ujian</em>. Anda bisa <strong>langsung mengunduh Excel atau PDF</strong> tanpa perlu menekan tombol <em>Hitung Ulang Nilai</em>.
+                    <br><span class="text-muted"><i class="fas fa-lightbulb text-warning me-1"></i>Tombol <strong>Hitung Ulang Nilai</strong> hanya digunakan jika ada revisi kunci jawaban di bank soal, perubahan bobot nilai, atau setelah selesai mengoreksi soal esai.</span>
+                </div>
+            </div>
+
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-0">
                     <div>
@@ -168,7 +177,7 @@ $results = $stmt->fetchAll();
                     </div>
                     <div class="d-flex gap-2">
                         <?php if ($filter_exam || $id_bank): ?>
-                        <button type="button" class="btn btn-warning btn-sm px-3 fw-bold shadow-sm" id="btnRecalculateBatch" data-exam-id="<?= esc($filter_exam) ?>" data-bank-id="<?= esc($id_bank) ?>">
+                        <button type="button" class="btn btn-warning btn-sm px-3 fw-bold shadow-sm" id="btnRecalculateBatch" data-exam-id="<?= esc($filter_exam) ?>" data-bank-id="<?= esc($id_bank) ?>" title="Gunakan hanya jika ada revisi kunci jawaban di bank soal atau perubahan bobot">
                             <i class="fas fa-sync-alt me-1"></i> Hitung Ulang Nilai
                         </button>
                         <?php endif; ?>

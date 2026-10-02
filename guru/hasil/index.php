@@ -152,21 +152,30 @@ if ($filter_active) {
                     <p class="text-muted small mb-0">Pilih minimal satu ujian, kelas, atau sesi terlebih dahulu</p>
                 </div>
             <?php else: ?>
-                <!-- Tabel Hasil -->
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-0">
-                        <div>
-                            <h6 class="mb-0 fw-bold"><i class="fas fa-list me-2 text-primary"></i>Daftar Nilai Siswa</h6>
-                            <?php if (!$filter_exam): ?>
-                                <small class="text-danger">*Pilih Jadwal Ujian untuk melihat Analisis Soal &amp; Jawaban</small>
-                            <?php endif; ?>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <?php if ($filter_exam): ?>
-                            <button type="button" class="btn btn-warning btn-sm px-3 fw-bold shadow-sm" id="btnRecalculateBatch" data-exam-id="<?= esc($filter_exam) ?>" data-bank-id="<?= esc($filter_bank_id) ?>">
-                                <i class="fas fa-sync-alt me-1"></i> Hitung Ulang Nilai
-                            </button>
-                            <?php endif; ?>
+            <!-- Info Banner Nilai Otomatis -->
+            <div class="alert alert-info border-0 shadow-sm rounded-3 py-2 px-3 mb-3 d-flex align-items-center gap-3">
+                <i class="fas fa-info-circle text-info fs-4 flex-shrink-0"></i>
+                <div class="small">
+                    <span class="fw-bold">Nilai Otomatis Tersimpan:</span> Nilai peserta ujian otomatis terhitung secara instan saat siswa menekan tombol <em>Selesai Ujian</em>. Anda bisa <strong>langsung mengunduh Excel atau PDF</strong> tanpa perlu menekan tombol <em>Hitung Ulang Nilai</em>.
+                    <br><span class="text-muted"><i class="fas fa-lightbulb text-warning me-1"></i>Tombol <strong>Hitung Ulang Nilai</strong> hanya digunakan jika ada revisi kunci jawaban di bank soal, perubahan bobot nilai, atau setelah selesai mengoreksi soal esai.</span>
+                </div>
+            </div>
+
+            <!-- Tabel Hasil -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-0">
+                    <div>
+                        <h6 class="mb-0 fw-bold"><i class="fas fa-list me-2 text-primary"></i>Daftar Nilai Siswa</h6>
+                        <?php if (!$filter_exam): ?>
+                            <small class="text-danger">*Pilih Jadwal Ujian untuk melihat Analisis Soal &amp; Jawaban</small>
+                        <?php endif; ?>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <?php if ($filter_exam): ?>
+                        <button type="button" class="btn btn-warning btn-sm px-3 fw-bold shadow-sm" id="btnRecalculateBatch" data-exam-id="<?= esc($filter_exam) ?>" data-bank-id="<?= esc($filter_bank_id) ?>" title="Gunakan hanya jika ada revisi kunci jawaban di bank soal atau perubahan bobot">
+                            <i class="fas fa-sync-alt me-1"></i> Hitung Ulang Nilai
+                        </button>
+                        <?php endif; ?>
                             <div class="btn-group">
                                 <a href="<?= esc(BASE_URL) ?>guru/hasil/cetak/export-excel.php?exam_id=<?= esc($filter_exam) ?>&class_id=<?= esc($filter_kelas) ?>&sesi=<?= esc($filter_sesi) ?>" class="btn btn-success btn-sm px-3">
                                     <i class="fas fa-file-excel me-2"></i> Excel
