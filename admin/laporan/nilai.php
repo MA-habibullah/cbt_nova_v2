@@ -46,13 +46,13 @@ if ($filter_exam) {
             (SELECT COUNT(*) FROM cbt_student_answers sa WHERE sa.participant_id = p.id AND (sa.jawaban_simpan IS NULL OR sa.jawaban_simpan = '')) as kosong
         FROM cbt_exam_participants p
         JOIN cbt_students s ON p.student_id = s.id
-        JOIN cbt_classes c ON s.class_id = c.id
+        JOIN cbt_classes c ON COALESCE(p.class_id, s.class_id) = c.id
         WHERE p.exam_id = ? AND p.status = 'finished'
     ";
 
     $params = [$filter_exam];
     if ($filter_class) {
-        $query .= " AND s.class_id = ?";
+        $query .= " AND COALESCE(p.class_id, s.class_id) = ?";
         $params[] = $filter_class;
     }
 

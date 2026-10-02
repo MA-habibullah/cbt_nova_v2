@@ -124,7 +124,7 @@ $query = "SELECT
           FROM cbt_exam_participants p
           JOIN cbt_students s ON p.student_id = s.id
           JOIN cbt_exams e ON p.exam_id = e.id
-          LEFT JOIN cbt_classes k ON s.class_id = k.id
+          LEFT JOIN cbt_classes k ON COALESCE(p.class_id, s.class_id) = k.id
           LEFT JOIN cbt_subjects sub ON e.subject_id = sub.id
           WHERE 1=1";
 
@@ -144,7 +144,7 @@ if ($is_guru && $teacher_id > 0) {
 }
 
 if ($class_id) {
-    $query .= " AND s.class_id = ?";
+    $query .= " AND COALESCE(p.class_id, s.class_id) = ?";
     $params[] = $class_id;
 }
 

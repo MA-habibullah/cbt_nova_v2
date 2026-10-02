@@ -41,12 +41,12 @@ $exams->execute([$id_bank]);
 $listExams = $exams->fetchAll();
 
 if ($filter_exam) {
-    // Only show classes that have participants in the selected exam
+    // Only show classes that have participants in the selected exam (menggunakan snapshot kelas)
     $stmt_cls = $pdo->prepare(
         "SELECT DISTINCT k.id, k.jenjang, k.nama_kelas
          FROM cbt_exam_participants p
          JOIN cbt_students s ON p.student_id = s.id
-         JOIN cbt_classes k ON s.class_id = k.id
+         JOIN cbt_classes k ON COALESCE(p.class_id, s.class_id) = k.id
          WHERE p.exam_id = ?
          ORDER BY k.jenjang ASC, k.nama_kelas ASC"
     );
@@ -74,12 +74,12 @@ $query = "SELECT p.*, s.nama_lengkap, s.nisn, s.sesi, k.jenjang, k.nama_kelas, e
           FROM cbt_exam_participants p
           JOIN cbt_students s ON p.student_id = s.id
           JOIN cbt_exams e ON p.exam_id = e.id
-          LEFT JOIN cbt_classes k ON s.class_id = k.id
+          LEFT JOIN cbt_classes k ON COALESCE(p.class_id, s.class_id) = k.id
           WHERE e.bank_soal_id = ?";
 
 $params = [$id_bank];
 if ($filter_exam) { $query .= " AND p.exam_id = ?"; $params[] = $filter_exam; }
-if ($filter_kelas) { $query .= " AND s.class_id = ?"; $params[] = $filter_kelas; }
+if ($filter_kelas) { $query .= " AND COALESCE(p.class_id, s.class_id) = ?"; $params[] = $filter_kelas; }
 if ($filter_sesi) { $query .= " AND s.sesi = ?"; $params[] = $filter_sesi; }
 
 $query .= " ORDER BY k.jenjang ASC, k.nama_kelas ASC, s.nama_lengkap ASC";

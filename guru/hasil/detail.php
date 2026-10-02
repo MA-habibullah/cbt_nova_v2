@@ -15,7 +15,7 @@ $query_p = "SELECT p.*, s.nama_lengkap, s.nisn, k.nama_kelas, e.nama_mapel_ujian
             FROM cbt_exam_participants p
             JOIN cbt_students s ON p.student_id = s.id
             JOIN cbt_exams e ON p.exam_id = e.id
-            LEFT JOIN cbt_classes k ON s.class_id = k.id
+            LEFT JOIN cbt_classes k ON COALESCE(p.class_id, s.class_id) = k.id
             WHERE p.id = ? AND e.teacher_id = ?";
 $stmt_p = $pdo->prepare($query_p);
 $stmt_p->execute([$p_id, $teacher_id]);

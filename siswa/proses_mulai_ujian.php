@@ -73,13 +73,23 @@ try {
         header("Location: index.php?msg=device_locked"); exit;
     }
 
-    // 6. UPDATE ATAU INSERT DATA (LOGIKA DIPERBAIKI)
+    // 6. UPDATE ATAU INSERT DATA (LOGIKA DIPERBAIKI — HISTORICAL CLASS SNAPSHOT)
+    // Ambil class_id aktif siswa saat ini untuk snapshot historis
+    $student_class_id = null;
+    if (!empty($_SESSION['class_id'])) {
+        $student_class_id = (int)$_SESSION['class_id'];
+    } else {
+        $stCls = $pdo->prepare("SELECT class_id FROM cbt_students WHERE id = ?");
+        $stCls->execute([$student_id]);
+        $student_class_id = $stCls->fetchColumn() ?: null;
+    }
+
     if (!$participant) {
         // Siswa benar-benar baru pertama kali klik
         $stmtInsert = $pdo->prepare("INSERT INTO cbt_exam_participants
-            (exam_id, student_id, waktu_mulai, status, created_at)
-            VALUES (?, ?, CURRENT_TIMESTAMP, 'working', CURRENT_TIMESTAMP)");
-        $stmtInsert->execute([$exam_id, $student_id]);
+            (exam_id, student_id, class_id, waktu_mulai, status, created_at)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP, 'working', CURRENT_TIMESTAMP)");
+        $stmtInsert->execute([$exam_id, $student_id, $student_class_id]);
         $participant_id = (int)$pdo->lastInsertId();
         // Re-fetch participant agar soal_ids bisa dicek
         $participant = $pdo->prepare("SELECT * FROM cbt_exam_participants WHERE id = ?");
@@ -89,14 +99,21 @@ try {
         // Jika data sudah ada (tapi status bukan finished)
         if ($participant['status'] !== 'finished') {
             // Set status working; waktu_mulai HANYA diisi jika belum ada (resume tidak reset timer)
+            // Snapshot class_id jika sebelumnya masih NULL
             $sqlUp = "UPDATE cbt_exam_participants SET status = 'working'";
+            $upParams = [];
             if (empty($participant['waktu_mulai'])) {
                 $sqlUp .= ", waktu_mulai = CURRENT_TIMESTAMP";
             }
+            if (empty($participant['class_id']) && !empty($student_class_id)) {
+                $sqlUp .= ", class_id = ?";
+                $upParams[] = $student_class_id;
+            }
             $sqlUp .= " WHERE id = ?";
+            $upParams[] = $participant['id'];
 
             $stmtUpdate = $pdo->prepare($sqlUp);
-            $stmtUpdate->execute([$participant['id']]);
+            $stmtUpdate->execute($upParams);
             $participant_id = (int)$participant['id'];
         } else {
             // Jika sudah finished, lempar ke index

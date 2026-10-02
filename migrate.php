@@ -287,6 +287,12 @@ $columnUpdates = [
         'description'=> 'Kolom cache urutan soal peserta'
     ],
     [
+        'table'      => 'cbt_exam_participants',
+        'column'     => 'class_id',
+        'alter'      => "ALTER TABLE `cbt_exam_participants` ADD `class_id` BIGINT UNSIGNED NULL DEFAULT NULL AFTER `student_id`",
+        'description'=> 'Kolom snapshot kelas peserta saat ujian (Historical Immobility)'
+    ],
+    [
         'table'      => 'cbt_display_tokens',
         'column'     => 'short_code',
         'alter'      => "ALTER TABLE `cbt_display_tokens` ADD `short_code` VARCHAR(12) NULL DEFAULT NULL AFTER `token_hash`",
@@ -314,6 +320,7 @@ foreach ($columnUpdates as $col) {
 $indexUpdates = [
     ['table' => 'cbt_exam_participants', 'index' => 'idx_exam_status',      'sql' => "ALTER TABLE `cbt_exam_participants` ADD INDEX `idx_exam_status` (`exam_id`, `status`)"],
     ['table' => 'cbt_exam_participants', 'index' => 'idx_student_exam',     'sql' => "ALTER TABLE `cbt_exam_participants` ADD INDEX `idx_student_exam` (`student_id`, `exam_id`)"],
+    ['table' => 'cbt_exam_participants', 'index' => 'idx_ep_class_id',      'sql' => "ALTER TABLE `cbt_exam_participants` ADD INDEX `idx_ep_class_id` (`class_id`)"],
     ['table' => 'cbt_student_answers',   'index' => 'idx_part_quest',        'sql' => "ALTER TABLE `cbt_student_answers` ADD INDEX `idx_part_quest` (`participant_id`, `question_id`)"],
     ['table' => 'cbt_device_locks',      'index' => 'idx_student_device',    'sql' => "ALTER TABLE `cbt_device_locks` ADD INDEX `idx_student_device` (`student_id`, `device_id`)"],
     ['table' => 'cbt_cheat_logs',        'index' => 'idx_part_cheat',        'sql' => "ALTER TABLE `cbt_cheat_logs` ADD INDEX `idx_part_cheat` (`exam_id`, `student_id`)"]
@@ -332,6 +339,25 @@ foreach ($indexUpdates as $idx) {
         } else {
             out("  -> [OK] Indeks {$idx['table']}.{$idx['index']} (Tersedia)", COLOR_BLUE);
         }
+    }
+}
+
+// 4. Backfill Data Snapshot Kelas untuk Peserta Ujian Lama
+if (table_exists($pdo, 'cbt_exam_participants') && column_exists($pdo, 'cbt_exam_participants', 'class_id')) {
+    try {
+        $stmtBackfill = $pdo->exec("
+            UPDATE cbt_exam_participants p
+            JOIN cbt_students s ON p.student_id = s.id
+            SET p.class_id = s.class_id
+            WHERE p.class_id IS NULL OR p.class_id = 0
+        ");
+        if ($stmtBackfill > 0) {
+            out("  -> [BACKFILL] Berhasil menyinkronkan snapshot class_id pada {$stmtBackfill} riwayat peserta.", COLOR_GREEN);
+        } else {
+            out("  -> [OK] Seluruh riwayat peserta telah memiliki snapshot class_id.", COLOR_BLUE);
+        }
+    } catch (PDOException $e) {
+        out("  -> [BACKFILL NOTICE] " . $e->getMessage(), COLOR_YELLOW);
     }
 }
 

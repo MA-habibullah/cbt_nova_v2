@@ -20,7 +20,7 @@ $sql = "SELECT p.id as p_id, s.id as s_id, s.nama_lengkap, s.username, s.sesi, c
         dl.ip_address, dl.user_agent
         FROM cbt_exam_participants p
         JOIN cbt_students s ON p.student_id = s.id
-        LEFT JOIN cbt_classes c ON s.class_id = c.id
+        LEFT JOIN cbt_classes c ON COALESCE(p.class_id, s.class_id) = c.id
         JOIN cbt_exams e ON p.exam_id = e.id
         LEFT JOIN cbt_device_locks dl ON s.id = dl.student_id
         WHERE e.teacher_id = ?";
@@ -32,7 +32,7 @@ if ($tanggal) {
     $params[] = $tanggal . ' 23:59:59';
 }
 if ($exam_id) { $sql .= " AND e.id = ?"; $params[] = $exam_id; }
-if ($class_id) { $sql .= " AND c.id = ?"; $params[] = $class_id; }
+if ($class_id) { $sql .= " AND COALESCE(p.class_id, s.class_id) = ?"; $params[] = $class_id; }
 if ($sesi) { $sql .= " AND s.sesi = ?"; $params[] = $sesi; }
 
 $sql .= " ORDER BY p.status DESC, s.nama_lengkap ASC";

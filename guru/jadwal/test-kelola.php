@@ -74,10 +74,15 @@ if (isset($_POST['simpan_peserta'])) {
                 ->execute(array_merge([$exam_id], array_values($to_remove)));
         }
 
-        // Insert hanya siswa baru yang belum ada di daftar peserta
+        // Insert hanya siswa baru yang belum ada di daftar peserta (dengan snapshot class_id siswa)
         $to_add = array_diff($new_ids, $existing_ids);
         if (!empty($to_add)) {
-            $stmt_ins = $pdo->prepare("INSERT INTO cbt_exam_participants (exam_id, student_id, status) VALUES (?, ?, 'ready')");
+            $stmt_ins = $pdo->prepare("
+                INSERT INTO cbt_exam_participants (exam_id, student_id, class_id, status)
+                SELECT ?, s.id, s.class_id, 'ready'
+                FROM cbt_students s
+                WHERE s.id = ?
+            ");
             foreach ($to_add as $s_id) { $stmt_ins->execute([$exam_id, $s_id]); }
         }
 

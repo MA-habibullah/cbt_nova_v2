@@ -42,7 +42,7 @@ if ($class_id === 'all') {
                 p.skor_akhir, p.skor_status, p.status
          FROM cbt_exam_participants p
          JOIN cbt_students s ON p.student_id = s.id
-         LEFT JOIN cbt_classes k ON s.class_id = k.id
+         LEFT JOIN cbt_classes k ON COALESCE(p.class_id, s.class_id) = k.id
          WHERE p.exam_id = ? AND p.status = 'finished'
          ORDER BY p.skor_akhir DESC
          LIMIT ?"
@@ -54,8 +54,8 @@ if ($class_id === 'all') {
                 p.skor_akhir, p.skor_status, p.status
          FROM cbt_exam_participants p
          JOIN cbt_students s ON p.student_id = s.id
-         LEFT JOIN cbt_classes k ON s.class_id = k.id
-         WHERE p.exam_id = ? AND s.class_id = ? AND p.status = 'finished'
+         LEFT JOIN cbt_classes k ON COALESCE(p.class_id, s.class_id) = k.id
+         WHERE p.exam_id = ? AND COALESCE(p.class_id, s.class_id) = ? AND p.status = 'finished'
          ORDER BY p.skor_akhir DESC
          LIMIT ?"
     );

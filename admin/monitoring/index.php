@@ -10,7 +10,7 @@ if (!isset($_SESSION['admin_id'])) {
 log_activity('Akses halaman Monitoring Peserta', null, null, null, 'akses');
 
 // Ambil data filter awal
-$classes  = query("SELECT id, nama_kelas FROM cbt_classes WHERE is_aktif = 1 ORDER BY jenjang, nama_kelas")->fetchAll();
+$classes  = query("SELECT id, jenjang, nama_kelas FROM cbt_classes WHERE is_aktif = 1 ORDER BY jenjang ASC, nama_kelas ASC")->fetchAll();
 $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER BY id")->fetchAll();
 ?>
 
@@ -51,7 +51,7 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
                             <input type="date" name="tanggal" id="filter-tanggal" value="<?= esc(date('Y-m-d')) ?>" class="form-control form-control-sm rounded-2">
                         </div>
                         <div class="col-12 col-sm-6 col-lg-3">
-                            <label class="form-label text-muted text-uppercase small fw-bold" style="font-size: 0.7rem;">Mata Pelajaran</label>
+                            <label class="form-label text-muted text-uppercase small fw-bold" style="font-size: 0.7rem;">Nama Ujian / Test</label>
                             <select name="exam_id" id="filter-mapel" class="form-select form-select-sm rounded-2">
                                 <option value="">-- Pilih Tanggal Dulu --</option>
                             </select>
@@ -61,7 +61,7 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
                             <select name="class_id" class="form-select form-select-sm rounded-2">
                                 <option value="">-- Semua Kelas --</option>
                                 <?php foreach($classes as $c): ?>
-                                    <option value="<?= esc($c['id']) ?>"><?= esc($c['nama_kelas']) ?></option>
+                                    <option value="<?= esc($c['id']) ?>">Kelas <?= esc($c['jenjang']) ?> - <?= esc($c['nama_kelas']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>

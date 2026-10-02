@@ -16,7 +16,7 @@ $classes = query(
     "SELECT DISTINCT k.id, k.nama_kelas, k.jenjang
      FROM cbt_exam_participants p
      JOIN cbt_students s ON p.student_id = s.id
-     JOIN cbt_classes k ON s.class_id = k.id
+     JOIN cbt_classes k ON COALESCE(p.class_id, s.class_id) = k.id
      WHERE p.exam_id = ?
      ORDER BY k.jenjang, k.nama_kelas",
     [$exam_id]

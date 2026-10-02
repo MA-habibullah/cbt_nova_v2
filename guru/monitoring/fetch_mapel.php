@@ -11,13 +11,23 @@ $tanggal       = $_GET['tanggal'] ?? date('Y-m-d');
 $tanggal_start = $tanggal . ' 00:00:00';
 $tanggal_end   = $tanggal . ' 23:59:59';
 
-$sql   = "SELECT id, nama_mapel_ujian FROM cbt_exams WHERE mulai_pada BETWEEN ? AND ? AND status != 'draft' AND teacher_id = ?";
+$sql   = "SELECT e.id, e.nama_mapel_ujian, s.nama_mapel 
+          FROM cbt_exams e 
+          LEFT JOIN cbt_subjects s ON e.subject_id = s.id 
+          WHERE e.mulai_pada BETWEEN ? AND ? AND e.status != 'draft' AND e.teacher_id = ?
+          ORDER BY e.nama_mapel_ujian ASC";
 $mapels = query($sql, [$tanggal_start, $tanggal_end, $teacher_id])->fetchAll();
 
-echo '<option value="">-- Semua Mapel Aktif --</option>';
+echo '<option value="">-- Semua Ujian / Test Aktif --</option>';
 if ($mapels) {
     foreach ($mapels as $m) {
-        echo "<option value='{$m['id']}'>".htmlspecialchars($m['nama_mapel_ujian'])."</option>";
+        $namaTest = trim($m['nama_mapel_ujian'] ?? '');
+        $namaMapel = trim($m['nama_mapel'] ?? '');
+        $label = $namaTest;
+        if (!empty($namaMapel) && strcasecmp($namaMapel, $namaTest) !== 0) {
+            $label .= " - " . $namaMapel;
+        }
+        echo "<option value='{$m['id']}'>" . htmlspecialchars($label) . "</option>";
     }
 } else {
     echo '<option value="">Tidak ada ujian Anda di tanggal ini</option>';

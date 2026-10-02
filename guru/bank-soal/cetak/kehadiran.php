@@ -46,8 +46,8 @@ if ($filter_exam && $filter_class) {
     $query  = "SELECT s.nisn, s.nama_lengkap, k.nama_kelas, s.sesi
                FROM cbt_exam_participants p
                JOIN cbt_students s ON p.student_id = s.id
-               JOIN cbt_classes k ON s.class_id = k.id
-               WHERE p.exam_id = ? AND s.class_id = ?";
+               JOIN cbt_classes k ON COALESCE(p.class_id, s.class_id) = k.id
+               WHERE p.exam_id = ? AND COALESCE(p.class_id, s.class_id) = ?";
     $params = [$filter_exam, $filter_class];
 
     if ($filter_sesi !== 'all') { $query .= " AND s.sesi = ?"; $params[] = (int)$filter_sesi; }

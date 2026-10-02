@@ -34,12 +34,12 @@ if ($filter_active) {
                FROM cbt_exam_participants p
                JOIN cbt_students s ON p.student_id = s.id
                JOIN cbt_exams e ON p.exam_id = e.id
-               LEFT JOIN cbt_classes k ON s.class_id = k.id
+               LEFT JOIN cbt_classes k ON COALESCE(p.class_id, s.class_id) = k.id
                WHERE e.bank_soal_id = ? AND e.teacher_id = ?";
     $params = [$id_bank, $teacher_id];
 
     if ($filter_exam)  { $query .= " AND p.exam_id = ?";  $params[] = $filter_exam; }
-    if ($filter_kelas) { $query .= " AND s.class_id = ?"; $params[] = $filter_kelas; }
+    if ($filter_kelas) { $query .= " AND COALESCE(p.class_id, s.class_id) = ?"; $params[] = $filter_kelas; }
     if ($filter_sesi)  { $query .= " AND s.sesi = ?";     $params[] = $filter_sesi; }
 
     $query .= " ORDER BY k.nama_kelas ASC, s.nama_lengkap ASC";

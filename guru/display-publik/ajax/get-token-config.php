@@ -39,8 +39,8 @@ foreach ($slots_raw as $s) {
     if (!$exam) continue;
     $classes = query(
         "SELECT DISTINCT c.id, c.jenjang, c.nama_kelas FROM cbt_classes c
-         INNER JOIN cbt_students st ON st.class_id = c.id
-         INNER JOIN cbt_exam_participants ep ON ep.student_id = st.id
+         INNER JOIN cbt_exam_participants ep ON COALESCE(ep.class_id, st.class_id) = c.id
+         INNER JOIN cbt_students st ON ep.student_id = st.id
          WHERE ep.exam_id = ? ORDER BY c.jenjang, c.nama_kelas",
         [$exam_id]
     )->fetchAll();
