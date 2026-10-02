@@ -560,6 +560,7 @@ $exam_package_json = json_encode([
         }
         if (_questionsMap[currentNumber]) {
             _questionsMap[currentNumber].is_answered = isAnswered;
+            _questionsMap[currentNumber].jawaban = val;
         }
         refreshNavSummary();
 
@@ -590,8 +591,20 @@ $exam_package_json = json_encode([
         }, delay);
     }
 
+    function flushActiveInputs() {
+        var $ta = $('#soal-container textarea.answer-input');
+        if ($ta.length) {
+            var val = $ta.val();
+            var qId = $('#q_id').val();
+            if (qId) {
+                saveJawabanToServer(qId, val, $.trim(val) !== '');
+            }
+        }
+    }
+
     // High-Concurrency Single-Payload Renderer: Pindah Soal 100% INSTAN di Klien (0 ms Latensi)
     window.loadSoal = function loadSoal(num) {
+        flushActiveInputs();
         currentNumber = num;
         var qData = _questionsMap[num];
 
@@ -604,14 +617,19 @@ $exam_package_json = json_encode([
         $('#soal-container').html(qData.html);
         renderMath(document.getElementById('soal-container'));
 
-        // Sinkronisasi jawaban terkini dari LocalStorage buffer jika pernah diisi siswa
+        // Sinkronisasi jawaban terkini dari LocalStorage buffer atau In-Memory State
         try {
             var storageKey = 'cbt_ans_' + examId;
             var stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
             var qId = qData.id;
+            var ans = undefined;
             if (stored && stored[qId] && stored[qId].jawaban !== undefined) {
-                var ans = stored[qId].jawaban;
+                ans = stored[qId].jawaban;
+            } else if (qData.jawaban !== undefined) {
+                ans = qData.jawaban;
+            }
 
+            if (ans !== undefined && ans !== null) {
                 // A. Pilihan Ganda Tunggal / Benar Salah / Textarea (Isian/Essay)
                 if (typeof ans === 'string' || typeof ans === 'number') {
                     var $radio = $('#soal-container .answer-input[type="radio"][value="' + ans + '"]');
@@ -638,9 +656,12 @@ $exam_package_json = json_encode([
                             $select.find('.matching-input').val(matchVal);
                             var $matchedOpt = null;
                             $select.find('.matching-option').each(function() {
-                                if ($(this).data('idx') >= 0 && $(this).attr('data-val') === matchVal) {
-                                    $matchedOpt = $(this);
-                                    return false;
+                                if ($(this).data('idx') >= 0) {
+                                    var optVal = $(this).attr('data-val') !== undefined ? $(this).attr('data-val') : $(this).text().trim();
+                                    if (String(optVal).trim() === String(matchVal).trim()) {
+                                        $matchedOpt = $(this);
+                                        return false;
+                                    }
                                 }
                             });
 
@@ -649,7 +670,7 @@ $exam_package_json = json_encode([
                                 $select.find('.matching-option').removeClass('bg-primary-subtle fw-semibold');
                                 $matchedOpt.addClass('bg-primary-subtle fw-semibold');
                             } else if (matchVal !== '') {
-                                $select.find('.selected-content').text(matchVal);
+                                $select.find('.selected-content').html(matchVal);
                             } else {
                                 $select.find('.selected-content').html('<span class="text-muted">-- Pilih Jawaban --</span>');
                                 $select.find('.matching-option').removeClass('bg-primary-subtle fw-semibold');
