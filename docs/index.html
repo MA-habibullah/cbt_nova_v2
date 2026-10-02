@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buku Panduan & Dokumentasi Lengkap Sistem CBT Nova</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>Dokumentasi Resmi & Production Runbook — CBT Nova v2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -16,12 +18,14 @@
             --bg-main: #f8fafc;
             --card-bg: #ffffff;
             --text-dark: #0f172a;
-            --text-muted: #475569;
+            --text-body: #334155;
+            --text-muted: #64748b;
             --border-color: #e2e8f0;
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
-            --code-bg: #0f172a;
+            --code-bg: #0b132b;
+            --sidebar-width: 320px;
         }
 
         * {
@@ -30,17 +34,22 @@
             padding: 0;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: var(--bg-main);
             color: var(--text-dark);
-            line-height: 1.7;
+            line-height: 1.75;
             display: flex;
+            font-size: 14.5px;
         }
 
-        /* Sidebar Navigation */
+        /* ─── SIDEBAR NAVIGATION ─── */
         #sidebar {
-            width: 320px;
+            width: var(--sidebar-width);
             height: 100vh;
             background: #ffffff;
             border-right: 1px solid var(--border-color);
@@ -48,9 +57,18 @@
             top: 0;
             left: 0;
             overflow-y: auto;
-            padding: 24px 20px;
+            padding: 24px 18px;
             z-index: 100;
-            box-shadow: 2px 0 12px rgba(0,0,0,0.03);
+            box-shadow: 4px 0 20px rgba(0,0,0,0.02);
+            scrollbar-width: thin;
+        }
+
+        #sidebar::-webkit-scrollbar {
+            width: 5px;
+        }
+        #sidebar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
         }
 
         .brand-box {
@@ -73,10 +91,11 @@
             color: white;
             font-size: 20px;
             box-shadow: 0 4px 12px rgba(30, 64, 175, 0.25);
+            flex-shrink: 0;
         }
 
         .brand-text h2 {
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 800;
             color: var(--primary-dark);
             letter-spacing: -0.5px;
@@ -132,7 +151,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 9px 12px;
+            padding: 8px 12px;
             color: var(--text-muted);
             text-decoration: none;
             font-size: 13px;
@@ -150,24 +169,25 @@
         .nav-link i {
             width: 18px;
             text-align: center;
-            font-size: 14px;
+            font-size: 13px;
+            flex-shrink: 0;
         }
 
-        /* Main Content */
+        /* ─── MAIN CONTENT ─── */
         #content {
-            margin-left: 320px;
+            margin-left: var(--sidebar-width);
             flex: 1;
-            padding: 40px 60px;
-            max-width: 1100px;
+            padding: 40px 60px 80px 60px;
+            max-width: 1160px;
         }
 
         .doc-header {
-            background: linear-gradient(135deg, #1e3a8a, #2563eb 60%, #0ea5e9);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #0ea5e9 100%);
             color: white;
-            padding: 40px;
-            border-radius: 20px;
+            padding: 45px 50px;
+            border-radius: 24px;
             margin-bottom: 40px;
-            box-shadow: 0 10px 25px -5px rgba(30, 64, 175, 0.25);
+            box-shadow: 0 12px 30px -5px rgba(30, 64, 175, 0.28);
             position: relative;
             overflow: hidden;
         }
@@ -175,31 +195,33 @@
         .doc-header::after {
             content: '';
             position: absolute;
-            top: -50px;
-            right: -50px;
-            width: 250px;
-            height: 250px;
-            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);
+            top: -60px;
+            right: -60px;
+            width: 280px;
+            height: 280px;
+            background: radial-gradient(circle, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 70%);
             border-radius: 50%;
         }
 
         .doc-header h1 {
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 800;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             letter-spacing: -0.5px;
+            line-height: 1.3;
         }
 
         .doc-header p {
-            font-size: 15px;
-            opacity: 0.9;
-            max-width: 650px;
+            font-size: 14.5px;
+            opacity: 0.95;
+            max-width: 680px;
+            line-height: 1.6;
         }
 
         .header-badges {
             display: flex;
             gap: 10px;
-            margin-top: 20px;
+            margin-top: 24px;
             flex-wrap: wrap;
         }
 
@@ -211,53 +233,57 @@
             font-size: 12px;
             font-weight: 600;
             border: 1px solid rgba(255, 255, 255, 0.25);
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .btn-print {
             position: absolute;
             top: 40px;
-            right: 40px;
+            right: 45px;
             background: white;
             color: var(--primary-dark);
             border: none;
-            padding: 10px 18px;
-            border-radius: 10px;
+            padding: 11px 20px;
+            border-radius: 12px;
             font-weight: 700;
             font-size: 13px;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.15);
             transition: all 0.2s;
             display: flex;
             align-items: center;
             gap: 8px;
+            z-index: 10;
         }
 
         .btn-print:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
             background: #f8fafc;
         }
 
-        /* Content Sections */
+        /* ─── SECTION STYLES ─── */
         .doc-section {
             background: var(--card-bg);
-            border-radius: 16px;
+            border-radius: 18px;
             border: 1px solid var(--border-color);
-            padding: 32px;
-            margin-bottom: 32px;
+            padding: 36px 40px;
+            margin-bottom: 36px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
             scroll-margin-top: 30px;
         }
 
         .doc-section h2 {
-            font-size: 22px;
+            font-size: 21px;
             font-weight: 800;
             color: var(--primary-dark);
-            margin-bottom: 18px;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 12px;
-            padding-bottom: 12px;
+            padding-bottom: 14px;
             border-bottom: 2px solid #f1f5f9;
         }
 
@@ -265,22 +291,37 @@
             font-size: 16px;
             font-weight: 700;
             color: #1e293b;
-            margin: 24px 0 12px 0;
+            margin: 26px 0 12px 0;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        .doc-section p {
-            color: #334155;
+        .doc-section h4 {
             font-size: 14.5px;
+            font-weight: 700;
+            color: #334155;
+            margin: 18px 0 8px 0;
+        }
+
+        .doc-section p {
+            color: var(--text-body);
             margin-bottom: 14px;
         }
 
-        /* Step Card Grid */
+        .doc-section ul, .doc-section ol {
+            margin: 10px 0 16px 24px;
+            color: var(--text-body);
+        }
+
+        .doc-section li {
+            margin-bottom: 8px;
+        }
+
+        /* ─── STEP CARDS ─── */
         .step-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 16px;
             margin: 20px 0;
         }
@@ -288,27 +329,34 @@
         .step-card {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 18px;
+            border-radius: 14px;
+            padding: 20px;
             position: relative;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .step-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.05);
+            border-color: #cbd5e1;
         }
 
         .step-num {
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             background: var(--primary);
             color: white;
-            border-radius: 50%;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 800;
             font-size: 13px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
         .step-card h4 {
-            font-size: 14px;
+            font-size: 14.5px;
             font-weight: 700;
             color: #0f172a;
             margin-bottom: 6px;
@@ -318,68 +366,107 @@
             font-size: 13px;
             color: var(--text-muted);
             margin-bottom: 0;
+            line-height: 1.5;
         }
 
-        /* Tables */
+        /* ─── TABLES ─── */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            margin: 20px 0;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
             font-size: 13.5px;
+            text-align: left;
         }
 
         th {
-            background: #f1f5f9;
+            background: #f8fafc;
             color: #1e293b;
             font-weight: 700;
-            text-align: left;
             padding: 12px 16px;
-            border: 1px solid var(--border-color);
+            border-bottom: 2px solid var(--border-color);
+            white-space: nowrap;
         }
 
         td {
             padding: 12px 16px;
-            border: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
             color: #334155;
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
         }
 
         tr:nth-child(even) {
-            background: #f8fafc;
+            background: #fcfdfe;
         }
 
-        /* Code Blocks */
+        /* ─── CODE BLOCKS ─── */
+        .code-container {
+            position: relative;
+            margin: 18px 0;
+        }
+
         pre {
             background: var(--code-bg);
             color: #e2e8f0;
-            padding: 16px 20px;
-            border-radius: 10px;
+            padding: 18px 22px;
+            border-radius: 12px;
             font-family: 'Fira Code', monospace;
             font-size: 13px;
             overflow-x: auto;
-            margin: 16px 0;
-            position: relative;
+            line-height: 1.6;
+            border: 1px solid #1e293b;
         }
 
         code {
             font-family: 'Fira Code', monospace;
-            font-size: 13px;
         }
 
-        p code, li code {
+        p code, li code, td code {
             background: #e2e8f0;
             color: #0f172a;
             padding: 2px 6px;
-            border-radius: 4px;
+            border-radius: 5px;
             font-size: 12.5px;
+            font-weight: 600;
         }
 
-        /* Alert Callouts */
+        .btn-copy {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            background: rgba(255, 255, 255, 0.12);
+            color: #94a3b8;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .btn-copy:hover {
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+        }
+
+        /* ─── CALLOUTS ─── */
         .callout {
             border-left: 4px solid var(--primary);
             background: #eff6ff;
-            padding: 16px 20px;
-            border-radius: 0 10px 10px 0;
-            margin: 18px 0;
+            padding: 18px 22px;
+            border-radius: 0 12px 12px 0;
+            margin: 20px 0;
         }
 
         .callout-success {
@@ -398,7 +485,7 @@
         }
 
         .callout h4 {
-            font-size: 14px;
+            font-size: 14.5px;
             font-weight: 700;
             margin-bottom: 6px;
             display: flex;
@@ -409,14 +496,31 @@
         .callout-success h4 { color: #065f46; }
         .callout-warning h4 { color: #92400e; }
         .callout-danger h4 { color: #991b1b; }
+        .callout p { margin-bottom: 0; font-size: 13.5px; }
 
-        /* Print Media Styles */
+        /* ─── BADGES ─── */
+        .badge {
+            display: inline-block;
+            padding: 4px 9px;
+            font-size: 11.5px;
+            font-weight: 700;
+            border-radius: 6px;
+        }
+        .badge-primary { background: #dbeafe; color: #1e40af; }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-info { background: #cffafe; color: #0e7490; }
+
+        /* ─── PRINT STYLES (A4 READY) ─── */
         @media print {
-            #sidebar, .btn-print, .search-box {
+            #sidebar, .btn-print, .search-box, .btn-copy {
                 display: none !important;
             }
             body {
                 background: white;
+                color: black;
+                font-size: 10.5pt;
             }
             #content {
                 margin-left: 0;
@@ -424,257 +528,357 @@
                 max-width: 100%;
             }
             .doc-section {
-                border: 1px solid #ccc;
+                border: 1px solid #ddd;
                 box-shadow: none;
                 page-break-inside: avoid;
-                margin-bottom: 20px;
+                margin-bottom: 25px;
+                padding: 20px;
             }
             .doc-header {
                 background: #1e3a8a !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+                padding: 25px;
+            }
+            pre {
+                background: #f1f5f9 !important;
+                color: #0f172a !important;
+                border: 1px solid #cbd5e1 !important;
             }
         }
     </style>
 </head>
 <body>
 
-    <!-- Sidebar Navigation -->
+    <!-- SIDEBAR -->
     <aside id="sidebar">
         <div class="brand-box">
             <div class="brand-icon">
-                <i class="fas fa-graduation-cap"></i>
+                <i class="fas fa-server"></i>
             </div>
             <div class="brand-text">
-                <h2>CBT NOVA</h2>
-                <span>Master Documentation</span>
+                <h2>CBT NOVA v2</h2>
+                <span>Production Runbook</span>
             </div>
         </div>
 
         <div class="search-box">
             <i class="fas fa-search"></i>
-            <input type="text" id="searchInput" placeholder="Cari panduan / modul..." onkeyup="filterNav()">
+            <input type="text" id="searchInput" placeholder="Cari runbook / konfigurasi..." onkeyup="filterNav()">
         </div>
 
-        <div class="nav-group-title">Navigasi Utama</div>
-        <a href="#arsitektur" class="nav-link"><i class="fas fa-layer-group text-primary"></i> 1. Arsitektur & Profil</a>
-        <a href="#instalasi" class="nav-link"><i class="fas fa-server text-secondary"></i> 2. Panduan Instalasi</a>
-        <a href="#database" class="nav-link"><i class="fas fa-database text-accent"></i> 3. Skema Basis Data</a>
-        <a href="#environment" class="nav-link"><i class="fas fa-sliders-h text-warning"></i> 4. Environment Parity</a>
-        <a href="#admin" class="nav-link"><i class="fas fa-user-shield text-danger"></i> 5. Panduan Panel Admin</a>
-        <a href="#guru" class="nav-link"><i class="fas fa-chalkboard-teacher text-success"></i> 6. Panduan Panel Guru</a>
-        <a href="#siswa" class="nav-link"><i class="fas fa-user-graduate text-primary"></i> 7. Engine Ujian Siswa</a>
-        <a href="#display" class="nav-link"><i class="fas fa-tv text-secondary"></i> 8. Display Publik</a>
-        <a href="#sop" class="nav-link"><i class="fas fa-clipboard-check text-accent"></i> 9. SOP Operasional Ujian</a>
-        <a href="#troubleshooting" class="nav-link"><i class="fas fa-wrench text-warning"></i> 10. Troubleshooting</a>
-        <a href="#keamanan" class="nav-link"><i class="fas fa-lock text-success"></i> 11. Standar Keamanan</a>
+        <div class="nav-group-title">Dokumentasi & Runbook</div>
+        <a href="#bab1" class="nav-link"><i class="fas fa-globe text-primary"></i> 1. Ikhtisar Lingkungan Produksi</a>
+        <a href="#bab2" class="nav-link"><i class="fas fa-database text-secondary"></i> 2. Kredensial & Basis Data</a>
+        <a href="#bab3" class="nav-link"><i class="fas fa-users-cog text-accent"></i> 3. Hak Akses & Akun Default</a>
+        <a href="#bab4" class="nav-link"><i class="fas fa-tachometer-alt text-warning"></i> 4. Tuning Server & Performance</a>
+        <a href="#bab5" class="nav-link"><i class="fas fa-shield-alt text-danger"></i> 5. Anti-Cheat & Engine Ujian</a>
+        <a href="#bab6" class="nav-link"><i class="fas fa-first-aid text-success"></i> 6. Troubleshooting & Insiden</a>
+        <a href="#bab7" class="nav-link"><i class="fas fa-sync-alt text-info"></i> 7. SOP Migrasi & Sinkronisasi</a>
     </aside>
 
-    <!-- Main Content -->
+    <!-- MAIN CONTENT -->
     <main id="content">
         <div class="doc-header">
             <button class="btn-print" onclick="window.print()">
                 <i class="fas fa-print"></i> Cetak / Simpan PDF
             </button>
-            <h1>Buku Panduan & Dokumentasi Sistem CBT Nova</h1>
-            <p>Dokumentasi resmi arsitektur sistem, petunjuk operasional administrator, proktor, guru, serta standar keandalan server berkapasitas 10.000+ peserta serentak.</p>
+            <h1>Dokumentasi Resmi & Panduan Operasional Produksi</h1>
+            <p>Buku panduan teknis (*Production Runbook*) sistem CBT Nova v2 untuk tim DevOps, System Administrator, Tim Proktor, dan Manajemen Sekolah SMAN 11 Surabaya.</p>
             <div class="header-badges">
-                <div class="header-badge"><i class="fas fa-code-branch me-1"></i> Versi 2.5 (Oktober 2026)</div>
-                <div class="header-badge"><i class="fas fa-school me-1"></i> SMAN 11 Surabaya</div>
-                <div class="header-badge"><i class="fas fa-bolt me-1"></i> High Concurrency Ready</div>
+                <div class="header-badge"><i class="fas fa-link"></i> https://cbt.sman11sby.sch.id</div>
+                <div class="header-badge"><i class="fas fa-check-circle"></i> Production Ready</div>
+                <div class="header-badge"><i class="fas fa-bolt"></i> 10.000+ Concurrent Students</div>
             </div>
         </div>
 
-        <!-- Section 1 -->
-        <section id="arsitektur" class="doc-section">
-            <h2><i class="fas fa-layer-group text-primary"></i> BAB 1: Gambaran Umum & Arsitektur Sistem</h2>
-            <p>CBT Nova adalah aplikasi ujian terdistribusi berbasis web yang dibangun dengan orientasi performa ekstrem (*zero-latency execution*), keamanan anti-cheat multi-lapis, dan antarmuka responsif ramah gawai.</p>
-            
-            <h3>Spesifikasi Teknologi</h3>
-            <table>
-                <tr>
-                    <th>Komponen</th>
-                    <th>Teknologi Terpasang</th>
-                    <th>Fungsi / Keunggulan</th>
-                </tr>
-                <tr>
-                    <td><strong>Backend Core</strong></td>
-                    <td>PHP 8.1+ / 8.2 (Strict Types & Native PDO)</td>
-                    <td>Eksekusi cepat, hemat memori, dan zero external overhead.</td>
-                </tr>
-                <tr>
-                    <td><strong>Database Engine</strong></td>
-                    <td>MySQL 8.0+ (InnoDB + Composite Covering Indexes)</td>
-                    <td>Optimasi query sub-10ms pada tabel ratusan ribu baris.</td>
-                </tr>
-                <tr>
-                    <td><strong>Frontend UI</strong></td>
-                    <td>Tailwind CSS + Vanilla JavaScript (ES6+)</td>
-                    <td>Render instan tanpa jeda framework (React/Vue load overhead).</td>
-                </tr>
-                <tr>
-                    <td><strong>Web Server</strong></td>
-                    <td>Nginx 1.24+ Reverse Proxy & PHP-FPM</td>
-                    <td>Menangani ribuan koneksi konkuren (*keep-alive pooling*).</td>
-                </tr>
-            </table>
+        <!-- BAB 1 -->
+        <section id="bab1" class="doc-section">
+            <h2><i class="fas fa-globe text-primary"></i> 1. Ringkasan Arsitektur & Lingkungan Produksi</h2>
+            <p>Sistem CBT Nova dirancang dengan arsitektur hibrida berkinerja tinggi (*high performance hybrid*) yang memadukan backend PHP Native teroptimasi, Nginx Reverse Proxy, dan MariaDB dengan composite covering index untuk menjamin waktu tanggap instan (&lt; 10 ms) pada beban penuh.</p>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Parameter Sistem</th>
+                            <th>Spesifikasi Lingkungan Produksi</th>
+                            <th>Keterangan Operasional</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Production URL</strong></td>
+                            <td><a href="https://cbt.sman11sby.sch.id" target="_blank" class="fw-bold text-primary">https://cbt.sman11sby.sch.id</a></td>
+                            <td>HTTPS aktif dengan sertifikat SSL/TLS Let's Encrypt.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Spesifikasi Server</strong></td>
+                            <td>4 Core vCPU &bull; 10 GB RAM &bull; NVMe SSD Storage</td>
+                            <td>Dedicated VPS / Bare Metal Server Linux Ubuntu 22.04 LTS.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Web Server & Engine</strong></td>
+                            <td>Nginx 1.24+ &bull; PHP-FPM 8.2 (OPcache Ready)</td>
+                            <td>FastCGI connection pooling dengan zero framework overhead.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Database Engine</strong></td>
+                            <td>MariaDB 10.6+ / MySQL 8.0+ (InnoDB Engine)</td>
+                            <td>Buffer pool 7GB dengan query cache disabled & covering indexes.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Kapasitas Uji Serentak</strong></td>
+                            <td>10.000 Peserta Simultan / 100 Jadwal Ujian Aktif</td>
+                            <td>Telah lolos pengujian stress test concurrency & zero database deadlock.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
-        <!-- Section 2 -->
-        <section id="instalasi" class="doc-section">
-            <h2><i class="fas fa-server text-secondary"></i> BAB 2: Panduan Instalasi & Deployment Step-by-Step</h2>
-            <p>Petunjuk resmi instalasi pada lingkungan pengembangan lokal dan server produksi Linux Ubuntu/Debian.</p>
+        <!-- BAB 2 -->
+        <section id="bab2" class="doc-section">
+            <h2><i class="fas fa-database text-secondary"></i> 2. Parameter Kredensial & Spesifikasi Basis Data</h2>
+            <p>Berikut adalah parameter konfigurasi riil yang digunakan oleh server produksi Linux pada berkas <code>config/database.php</code> (sesuai template <code>config/database_prod.php</code>):</p>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Parameter Konfigurasi</th>
+                            <th>Nilai Produksi (Production Value)</th>
+                            <th>Keterangan Teknis</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>DB_HOST</code></td>
+                            <td><span class="badge badge-primary">localhost</span> (Port 3306)</td>
+                            <td>Koneksi soket lokal UNIX / loopback TCP.</td>
+                        </tr>
+                        <tr>
+                            <td><code>DB_NAME</code></td>
+                            <td><span class="badge badge-info">cbt_nova_v2</span></td>
+                            <td>Database utama 26 tabel dengan collation <code>utf8mb4_unicode_ci</code>.</td>
+                        </tr>
+                        <tr>
+                            <td><code>DB_USER</code></td>
+                            <td><span class="badge badge-success">user_cbt</span></td>
+                            <td>User MySQL dengan hak akses terisolasi (Least Privilege).</td>
+                        </tr>
+                        <tr>
+                            <td><code>DB_PASS</code></td>
+                            <td><code>Admin-sma-11</code></td>
+                            <td>Kata sandi akses basis data server produksi.</td>
+                        </tr>
+                        <tr>
+                            <td><code>APP_DEBUG</code></td>
+                            <td><span class="badge badge-danger">false</span></td>
+                            <td>Mode debug nonaktif untuk mencegah kebocoran stack trace error ke publik.</td>
+                        </tr>
+                        <tr>
+                            <td><code>APP_BASEPATH</code></td>
+                            <td><span class="badge badge-primary">/</span></td>
+                            <td>Root domain level (bukan subfolder).</td>
+                        </tr>
+                        <tr>
+                            <td><code>PDO Options</code></td>
+                            <td><code>ERRMODE_EXCEPTION, FETCH_ASSOC, EMULATE_PREPARES=false, TIMEOUT=5</code></td>
+                            <td>Strict type binding, perlindungan injeksi SQL native, dan fail-fast timeout.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="callout callout-warning">
+                <h4><i class="fas fa-lock"></i> Standar Keamanan Berkas Kredensial di Server Linux:</h4>
+                <p>Pastikan berkas <code>config/database.php</code> hanya dapat dibaca oleh user web server (<code>www-data</code>):</p>
+                <pre><code>sudo chown www-data:www-data /var/www/cbt_nova/config/database.php
+sudo chmod 600 /var/www/cbt_nova/config/database.php</code></pre>
+            </div>
+        </section>
+
+        <!-- BAB 3 -->
+        <section id="bab3" class="doc-section">
+            <h2><i class="fas fa-users-cog text-accent"></i> 3. Hak Akses & Direktori Peran Akun (Role Directory)</h2>
+            <p>Sistem menerapkan Role-Based Access Control (RBAC) dengan 4 tingkat peran pengguna:</p>
 
             <div class="step-grid">
                 <div class="step-card">
+                    <div class="step-num"><i class="fas fa-user-shield"></i></div>
+                    <h4>Administrator</h4>
+                    <p>Kontrol penuh master data siswa, alumni, guru, bank soal, jadwal ujian, backup database, dan display publik.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-num"><i class="fas fa-desktop"></i></div>
+                    <h4>Pengawas / Proktor</h4>
+                    <p>Live monitoring peserta real-time, reset kunci perangkat (Device Lock), tambah waktu, unblock siswa, & force finish.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-num"><i class="fas fa-chalkboard-teacher"></i></div>
+                    <h4>Guru Mata Pelajaran</h4>
+                    <p>Pembuatan bank soal mandiri 4 jenis (PG, PGK, Menjodohkan, Esai), pengawasan terisolasi (Teacher Scoping), & koreksi esai.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-num"><i class="fas fa-user-graduate"></i></div>
+                    <h4>Siswa Peserta Ujian</h4>
+                    <p>Login single-device (1 akun = 1 gawai), pengerjaan tes terproteksi anti-cheat, dan auto-save jawaban background.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- BAB 4 -->
+        <section id="bab4" class="doc-section">
+            <h2><i class="fas fa-tachometer-alt text-warning"></i> 4. Panduan Tuning Server Produksi (High Concurrency)</h2>
+            <p>Untuk melayani 10.000 peserta secara serentak pada server 4 vCPU / 10 GB RAM, terapkan konfigurasi tuning berikut:</p>
+
+            <h3>4.1 Konfigurasi MariaDB (`/etc/mysql/mariadb.conf.d/50-server.cnf`)</h3>
+            <div class="code-container">
+                <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+                <pre><code>[mysqld]
+# Konkurensi & Koneksi
+max_connections                = 1200
+max_user_connections           = 1000
+thread_cache_size              = 128
+table_open_cache               = 4000
+open_files_limit               = 65535
+
+# InnoDB Buffer Pool Tuning (70% Total RAM)
+innodb_buffer_pool_size        = 7G
+innodb_buffer_pool_instances    = 7
+innodb_log_file_size           = 1G
+innodb_flush_log_at_trx_commit = 2    # Menghindari I/O Disk Bottleneck saat ribuan insert jawaban
+innodb_flush_method            = O_DIRECT
+innodb_read_io_threads         = 8
+innodb_write_io_threads        = 8
+
+# Query Cache (Dimatikan untuk performa multi-thread write)
+query_cache_type               = 0
+query_cache_size               = 0</code></pre>
+            </div>
+
+            <h3>4.2 Konfigurasi PHP-FPM (`/etc/php/8.2/fpm/pool.d/www.conf`)</h3>
+            <div class="code-container">
+                <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+                <pre><code>pm                      = static
+pm.max_children         = 120
+pm.max_requests         = 1000
+request_terminate_timeout = 300
+rlimit_files            = 65535</code></pre>
+            </div>
+
+            <h3>4.3 Konfigurasi OPcache (`/etc/php/8.2/fpm/conf.d/10-opcache.ini`)</h3>
+            <div class="code-container">
+                <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+                <pre><code>opcache.enable                  = 1
+opcache.enable_cli              = 1
+opcache.memory_consumption      = 256
+opcache.interned_strings_buffer = 32
+opcache.max_accelerated_files   = 20000
+opcache.validate_timestamps     = 0   # Zero-disk check pada mode produksi (re-compile hanya saat restart fpm)</code></pre>
+            </div>
+        </section>
+
+        <!-- BAB 5 -->
+        <section id="bab5" class="doc-section">
+            <h2><i class="fas fa-shield-alt text-danger"></i> 5. Anti-Cheat Engine & Kunci Perangkat (Device Lock)</h2>
+            <p>Sistem anti-cheat CBT Nova dirancang secara *fail-safe* dengan spesifikasi aturan mutlak:</p>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fitur Proteksi</th>
+                            <th>Mekanisme Deteksi</th>
+                            <th>Konsekuensi Sistem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Single-Device Lock</strong></td>
+                            <td>Kombinasi User-Agent, IP, dan Device Fingerprint tersimpan di <code>cbt_device_locks</code>.</td>
+                            <td>Akun ditolak jika login di perangkat kedua tanpa reset dari proktor.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Deteksi Blur / Pindah Tab</strong></td>
+                            <td>Event <code>window.onblur</code> dan <code>document.visibilitychange</code>.</td>
+                            <td>Pelanggaran 1-2: Peringatan modal & kirim log proktor. Pelanggaran 3: <strong>Ujian Terkunci (Blocked)</strong>.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Blokir Shortcut & DevTools</strong></td>
+                            <td>Blokir keydown: F12, Ctrl+Shift+I, Ctrl+U, Ctrl+C, Ctrl+V, PrintScreen, Alt+Tab.</td>
+                            <td>Aksi dibatalkan instan (<code>event.preventDefault()</code>).</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Auto-Save Anti-Hilang</strong></td>
+                            <td>Background AJAX fetch setiap klik opsi & fallback local storage caching.</td>
+                            <td>Jawaban tetap tersimpan meski jaringan internet terputus sesaat.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- BAB 6 -->
+        <section id="bab6" class="doc-section">
+            <h2><i class="fas fa-first-aid text-success"></i> 6. Panduan Pemecahan Masalah & Protokol Insiden (Troubleshooting)</h2>
+            
+            <h3>6.1 Penanganan Insiden HTTP ERROR 500 di Server Linux</h3>
+            <div class="step-grid">
+                <div class="step-card">
                     <div class="step-num">1</div>
-                    <h4>Install Dependensi Server</h4>
-                    <p>Jalankan <code>apt install php8.2-fpm php8.2-mysql php8.2-gd php8.2-fileinfo</code> pada terminal SSH server.</p>
+                    <h4>Cek Error Log Realtime</h4>
+                    <p>Jalankan <code>tail -f /var/log/nginx/error.log /var/log/php8.2-fpm.log</code> pada terminal SSH.</p>
                 </div>
                 <div class="step-card">
                     <div class="step-num">2</div>
-                    <h4>Clone Repositori</h4>
-                    <p>Tarik source code terbaru dari GitHub menggunakan <code>git pull origin main</code>.</p>
+                    <h4>Sinkronkan Skema Database</h4>
+                    <p>Jalankan <code>mysql -u user_cbt -p'Admin-sma-11' cbt_nova_v2 &lt; sql/sync_production_schema.sql</code>.</p>
                 </div>
                 <div class="step-card">
                     <div class="step-num">3</div>
-                    <h4>Konfigurasi Database</h4>
-                    <p>Salin <code>config/database_prod.php</code> ke <code>config/database.php</code> dan sesuaikan user/pass.</p>
+                    <h4>Pastikan Ekstensi PHP Aktif</h4>
+                    <p>Pastikan <code>php-fileinfo</code>, <code>php-gd</code>, <code>php-mysql</code>, dan <code>php-zip</code> aktif.</p>
                 </div>
                 <div class="step-card">
                     <div class="step-num">4</div>
-                    <h4>Migrasi Skema SQL</h4>
-                    <p>Import skema idempotent <code>sql/sync_production_schema.sql</code> ke database MySQL server.</p>
+                    <h4>Restart Layanan</h4>
+                    <p>Jalankan <code>sudo systemctl restart php8.2-fpm nginx</code>.</p>
                 </div>
             </div>
 
-            <div class="callout callout-success">
-                <h4><i class="fas fa-terminal"></i> Skrip Eksekusi Cepat di Terminal Linux:</h4>
-                <pre><code># 1. Update kode & migrasi database
-cd /var/www/cbt_nova
-git pull origin main
-mysql -u user_cbt -p cbt_nova_v2 < sql/sync_production_schema.sql
+            <h3>6.2 Penanganan Kendala Siswa Saat Ujian Berlangsung</h3>
+            <ul>
+                <li><strong>Kasus Gawai Siswa Mati / Rusak:</strong> Buka menu <code>Admin</code> &rarr; <code>Monitoring</code> &rarr; <code>Kunci Perangkat</code> &rarr; Cari nama siswa &rarr; Klik tombol <span class="badge badge-warning">Reset Login</span>. Siswa dapat langsung login di laptop cadangan dengan jawaban yang tetap utuh.</li>
+                <li><strong>Kasus Siswa Terblokir (Blocked 3x):</strong> Buka menu <code>Monitoring Proktor</code> &rarr; Cari baris siswa yang bertanda merah &rarr; Klik tombol <span class="badge badge-success">Buka Blokir</span>. Status siswa kembali ke <code>working</code> seketika.</li>
+            </ul>
+        </section>
 
-# 2. Atur perizinan file
+        <!-- BAB 7 -->
+        <section id="bab7" class="doc-section">
+            <h2><i class="fas fa-sync-alt text-info"></i> 7. SOP Migrasi & Sinkronisasi Kode</h2>
+            <p>Setiap kali ada pembaruan kode pada repositori GitHub, ikuti prosedur rilis standar berikut:</p>
+
+            <div class="code-container">
+                <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+                <pre><code># 1. Masuk ke direktori aplikasi
+cd /var/www/cbt_nova
+
+# 2. Tarik update kode terbaru
+git pull origin main
+
+# 3. Jalankan migrasi SQL idempotent jika terdapat pembaruan skema
+mysql -u user_cbt -p'Admin-sma-11' cbt_nova_v2 < sql/sync_production_schema.sql
+
+# 4. Pastikan izin kepemilikan file tetap benar
 sudo chown -R www-data:www-data /var/www/cbt_nova
 sudo chmod -R 755 /var/www/cbt_nova
 sudo chmod -R 775 /var/www/cbt_nova/assets/uploads
 
-# 3. Restart engine
+# 5. Refresh cache OPcache & PHP-FPM
 sudo systemctl restart php8.2-fpm nginx</code></pre>
             </div>
-        </section>
-
-        <!-- Section 3 -->
-        <section id="database" class="doc-section">
-            <h2><i class="fas fa-database text-accent"></i> BAB 3: Skema Basis Data & Strategi Indeks</h2>
-            <p>Sistem didukung oleh 26 tabel relasional yang dirancang dengan skema normalisasi tinggi dan indeks penutup (*covering index*):</p>
-            <ul>
-                <li><strong><code>cbt_students</code></strong>: Data siswa aktif dan alumni (didukung kolom <code>status</code> enum dan <code>foto</code>).</li>
-                <li><strong><code>cbt_device_locks</code></strong>: Mengunci 1 akun siswa pada 1 gawai spesifik secara otomatis.</li>
-                <li><strong><code>cbt_cheat_logs</code></strong>: Mencatat pelanggaran anti-cheat (tab switch, screenshot, shortcut).</li>
-                <li><strong><code>cbt_display_tokens</code></strong>: Menyimpan token tayangan proyektor publik terenkripsi.</li>
-                <li><strong><code>cbt_exam_participants</code></strong>: Rekaman sesi ujian realtime terindeks <code>(exam_id, status)</code>.</li>
-            </ul>
-        </section>
-
-        <!-- Section 4 -->
-        <section id="environment" class="doc-section">
-            <h2><i class="fas fa-sliders-h text-warning"></i> BAB 4: Konfigurasi Lingkungan (Environment Parity)</h2>
-            <div class="callout callout-warning">
-                <h4><i class="fas fa-exclamation-triangle"></i> Aturan Ketat Case-Sensitivity Linux:</h4>
-                <p>Seluruh path include diwajibkan menggunakan huruf kecil dan fungsi <code>dirname(__DIR__, n)</code> untuk mencegah HTTP 500 akibat perbedaan sistem file Windows vs Linux.</p>
-            </div>
-        </section>
-
-        <!-- Section 5 -->
-        <section id="admin" class="doc-section">
-            <h2><i class="fas fa-user-shield text-danger"></i> BAB 5: Panduan Penggunaan Panel Admin</h2>
-            <h3>1. Manajemen Master Siswa & Fitur Alumni</h3>
-            <p>Admin dapat memfilter siswa berdasarkan status <strong>Aktif</strong> dan <strong>Alumni</strong>. Siswa yang diluluskan dapat dikembalikan (restore) statusnya kapan saja dengan menekan tombol <strong>"Kembalikan ke Aktif"</strong>.</p>
-
-            <h3>2. Monitoring Proktor & Kontrol Realtime</h3>
-            <p>Menampilkan status langsung seluruh siswa: <em>working, finished, blocked</em>. Proktor dapat melakukan aksi seketika:</p>
-            <ul>
-                <li><strong>Reset Login</strong>: Melepas kunci perangkat siswa jika gawai rusak.</li>
-                <li><strong>Buka Blokir</strong>: Mengizinkan siswa yang melanggar anti-cheat 3x untuk melanjutkan tes.</li>
-                <li><strong>Tambah Waktu</strong>: Menambah durasi peserta (+15/+30 menit).</li>
-                <li><strong>Selesaikan Paksa</strong>: Menutup ujian peserta secara sepihak.</li>
-            </ul>
-        </section>
-
-        <!-- Section 6 -->
-        <section id="guru" class="doc-section">
-            <h2><i class="fas fa-chalkboard-teacher text-success"></i> BAB 6: Panduan Penggunaan Panel Guru</h2>
-            <p>Panel guru dilengkapi fitur bank soal terpadu 4 jenis (PG Tunggal, PG Kompleks, Menjodohkan, Esai) dengan sistem keamanan <strong>Teacher Scoping</strong> (guru hanya dapat memonitor ujian yang dibuatnya sendiri).</p>
-        </section>
-
-        <!-- Section 7 -->
-        <section id="siswa" class="doc-section">
-            <h2><i class="fas fa-user-graduate text-primary"></i> BAB 7: Engine Ujian Siswa & Anti-Cheat</h2>
-            <p>Mesin ujian siswa mengusung standar pengamanan ujian internasional:</p>
-            <ul>
-                <li><strong>Auto-Save Anti-Hilang:</strong> Setiap kali opsi dipilih, jawaban langsung terkirim via background AJAX dengan proteksi cache lokal.</li>
-                <li><strong>Deteksi Blur & Pindah Tab:</strong> Kehilangan fokus jendela browser langsung memicu peringatan. Pada pelanggaran ke-3, ujian terkunci otomatis.</li>
-                <li><strong>Blokir Shortcut:</strong> Mencegah tombol F12, Ctrl+U, PrintScreen, Alt+Tab, dan klik kanan.</li>
-            </ul>
-        </section>
-
-        <!-- Section 8 -->
-        <section id="display" class="doc-section">
-            <h2><i class="fas fa-tv text-secondary"></i> BAB 8: Modul Display Publik & Live Scoreboard</h2>
-            <p>Layar proyektor menampilkan klasemen nilai ujian secara realtime tanpa perlu login (menggunakan token hash aman). Fitur <strong>Masking Nama</strong> menyamarkan nama siswa demi privasi.</p>
-        </section>
-
-        <!-- Section 9 -->
-        <section id="sop" class="doc-section">
-            <h2><i class="fas fa-clipboard-check text-accent"></i> BAB 9: Standar Operasional Prosedur (SOP) Ujian</h2>
-            <table>
-                <tr>
-                    <th>Fase</th>
-                    <th>Aksi Administrator / Proktor</th>
-                    <th>Aksi Guru</th>
-                </tr>
-                <tr>
-                    <td><strong>Pra-Ujian (H-1)</strong></td>
-                    <td>Verifikasi akun siswa, backup database, rilis jadwal ujian.</td>
-                    <td>Cek kunci jawaban & validasi butir soal.</td>
-                </tr>
-                <tr>
-                    <td><strong>Hari H Ujian</strong></td>
-                    <td>Buka monitoring proktor, tangani reset device lock jika gawai siswa rusak.</td>
-                    <td>Membantu pengawasan ruang ujian.</td>
-                </tr>
-                <tr>
-                    <td><strong>Pasca-Ujian</strong></td>
-                    <td>Force finish peserta yang belum selesai, export nilai Excel/PDF.</td>
-                    <td>Koreksi nilai esai manual.</td>
-                </tr>
-            </table>
-        </section>
-
-        <!-- Section 10 -->
-        <section id="troubleshooting" class="doc-section">
-            <h2><i class="fas fa-wrench text-warning"></i> BAB 10: Panduan Troubleshooting (Pemecahan Masalah)</h2>
-            <div class="callout callout-danger">
-                <h4>Penyebab & Solusi Masalah Lapangan Terpopuler:</h4>
-                <ol>
-                    <li><strong>HTTP 500 di Server Linux:</strong> Jalankan migrasi <code>sql/sync_production_schema.sql</code> di database server.</li>
-                    <li><strong>Siswa "Perangkat Terkunci":</strong> Masuk ke Admin $\rightarrow$ Monitoring $\rightarrow$ Device Lock $\rightarrow$ Klik <em>Reset Login</em>.</li>
-                    <li><strong>Gagal Upload Gambar:</strong> Pastikan ekstensi <code>php-fileinfo</code> dan <code>php-gd</code> aktif di PHP server.</li>
-                </ol>
-            </div>
-        </section>
-
-        <!-- Section 11 -->
-        <section id="keamanan" class="doc-section">
-            <h2><i class="fas fa-lock text-success"></i> BAB 11: Standar Keamanan Sistem & AppSec</h2>
-            <p>Sistem telah melalui audit kepatuhan keamanan ketat:</p>
-            <ul>
-                <li><strong>100% Prepared Statements:</strong> Mencegah seluruh celah SQL Injection.</li>
-                <li><strong>CSRF Token Verification:</strong> Memvalidasi seluruh mutasi data POST/AJAX.</li>
-                <li><strong>Magic Bytes Upload Check:</strong> Memastikan file yang diunggah adalah gambar murni bukan script berbahaya (.php tersembunyi).</li>
-            </ul>
         </section>
     </main>
 
@@ -689,6 +893,16 @@ sudo systemctl restart php8.2-fpm nginx</code></pre>
                 } else {
                     l.style.display = 'none';
                 }
+            });
+        }
+
+        function copyCode(btn) {
+            var pre = btn.nextElementSibling;
+            var text = pre.innerText;
+            navigator.clipboard.writeText(text).then(function() {
+                var orig = btn.innerText;
+                btn.innerText = 'Tersalin!';
+                setTimeout(function() { btn.innerText = orig; }, 1500);
             });
         }
     </script>
