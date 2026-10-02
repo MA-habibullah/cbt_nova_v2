@@ -1,0 +1,163 @@
+:root {
+    --primary: #4e73df;
+    --bg-light: #f4f7fe;
+    --sidebar-bg: #ffffff;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-light);
+    color: #333;
+}
+
+/* Sidebar Styling */
+#sidebar {
+    background: var(--sidebar-bg);
+    min-width: 260px;
+    max-width: 260px;
+    transition: all 0.3s;
+    box-shadow: 4px 0 10px rgba(0,0,0,0.03);
+    z-index: 1000;
+}
+
+.sidebar-heading {
+    padding: 1rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #b7c0cd;
+    margin-top: 10px;
+}
+
+.nav-link {
+    color: #6e7e96;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    border-radius: 10px;
+    margin: 2px 15px;
+    font-weight: 500;
+}
+
+.nav-link i { width: 25px; font-size: 1.1rem; }
+
+.nav-link:hover, .nav-link.active {
+    background: #eef2ff;
+    color: var(--primary);
+}
+
+/* Card Styling (Sesuai Gambar) */
+.stat-card {
+    border: none;
+    border-radius: 15px;
+    transition: transform 0.2s;
+    color: white;
+}
+
+.stat-card.blue { background: linear-gradient(135deg, #6a85f1, #3c56d1); }
+.stat-card.green { background: linear-gradient(135deg, #42d392, #249a62); }
+.stat-card.orange { background: linear-gradient(135deg, #ff9a44, #fc6076); }
+.stat-card.purple { background: linear-gradient(135deg, #a485ff, #7352ff); }
+
+.card-dashboard {
+    background: white;
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+}
+
+/* Rotasi Icon Panah saat Dropdown Aktif */
+.nav-link[aria-expanded="true"] .fa-chevron-right {
+    transform: rotate(90deg);
+}
+
+.fa-chevron-right {
+    transition: transform 0.3s;
+    font-size: 0.8rem;
+}
+
+/* ===========================================
+Styling Sub-menu 
+=============================================*/
+.collapse-inner {
+    background: #f8f9fc;
+    border-radius: 10px;
+    margin: 5px 15px 10px 40px;
+    padding: 5px 0;
+}
+
+.collapse-item {
+    padding: 8px 15px;
+    display: block;
+    color: #6e7e96;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.collapse-item:hover {
+    color: #4e73df;
+    padding-left: 20px;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px; /* Kunci tinggi di sini */
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .chart-container {
+        height: 200px;
+    }
+}
+
+/* ==============================================
+   Responsive Sidebar
+   ============================================== */
+
+/* Desktop: collapsed state via toggled class */
+#wrapper.toggled #sidebar {
+    min-width: 0 !important;
+    max-width: 0 !important;
+    width: 0;
+    overflow: hidden;
+    padding: 0;
+}
+
+/* Mobile / Tablet: sidebar as fixed overlay */
+@media (max-width: 991.98px) {
+    #sidebar {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        height: 100vh !important;
+        z-index: 1050;
+        transform: translateX(-100%);
+        overflow-y: auto !important;
+        transition: transform 0.3s ease !important;
+    }
+
+    #sidebar.sidebar-open {
+        transform: translateX(0) !important;
+        box-shadow: 6px 0 30px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    #sidebar-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 1045;
+        cursor: pointer;
+    }
+
+    #sidebar-backdrop.show {
+        display: block;
+    }
+
+    #content {
+        width: 100% !important;
+        min-width: 0;
+    }
+}

@@ -1,0 +1,36 @@
+# Proteksi Direktori Unggahan Media Soal & Foto Siswa
+# 1. Matikan Directory Listing (Cegah penelusuran file/soal dari URL)
+Options -Indexes -ExecCGI
+
+# 2. Blokir mutlak eksekusi semua jenis skrip dan executable
+<FilesMatch "(?i)\.(php|phtml|php3|php4|php5|php7|php8|phps|pht|phar|cgi|pl|exe|sh|bat|cmd|jsp|asp|aspx|py|shtml)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# 3. Nonaktifkan handler skrip PHP jika modul PHP aktif
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+
+# 4. Hanya izinkan berkas media gambar & audio/video statis
+<FilesMatch "(?i)\.(jpg|jpeg|png|gif|webp|svg|ico|mp3|ogg|wav|mp4|webm|pdf)$">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Deny,Allow
+        Allow from all
+    </IfModule>
+</FilesMatch>

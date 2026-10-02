@@ -1,0 +1,45 @@
+# ============================================================
+#  CBT NOVA — GITIGNORE CONFIGURATION (PRODUCTION SECURITY)
+# ============================================================
+
+# 1. Environment & Database Credentials
+#.env
+#.env.*
+
+# 2. SSL, Security Keys, & Certificates
+*.key
+*.pem
+*.crt
+*.pfx
+
+# 3. Database Dumps & Raw Backups (Mencegah Kebocoran Data Siswa)
+#*.sql
+#*.sql.gz
+#*.dump
+#backups/*
+#database_backup.sql
+
+# 5. Berkas Temporary, Cache, Log, & Scratch Area
+/scratch/
+writable/
+node_modules/
+*.log
+*.bak
+*.tmp
+*.temp
+seed_dummy.php
+.agent/
+
+# 6. Catatan Pengembang Sementara (Internal Notes)
+CLAUDE.md
+improvement.md
+to-do.md
+
+# 7. OS & IDE Metadata
+.DS_Store
+Thumbs.db
+ehthumbs.db
+.idea/
+.vscode/
+*.suo
+*.user

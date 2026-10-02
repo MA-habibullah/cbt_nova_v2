@@ -1,0 +1,17 @@
+<?php
+require_once '../../../config/database.php';
+if (!isset($_SESSION['teacher_id'])) { http_response_code(403); echo json_encode(['status'=>'error']); exit; }
+header('Content-Type: application/json');
+
+$tanggal    = $_POST['tanggal'] ?? date('Y-m-d');
+$teacher_id = (int) $_SESSION['teacher_id'];
+
+$exams = query(
+    "SELECT id, nama_mapel_ujian, mulai_pada, jenjang
+     FROM cbt_exams
+     WHERE DATE(mulai_pada) = ? AND teacher_id = ? AND status != 'draft'
+     ORDER BY mulai_pada ASC",
+    [$tanggal, $teacher_id]
+)->fetchAll();
+
+echo json_encode(['status' => 'success', 'data' => $exams]);
