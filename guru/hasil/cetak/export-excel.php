@@ -75,7 +75,9 @@ if ($class_id) {
     }
 }
 
-// 2. QUERY AMBIL DATA HASIL PESERTA (Hanya ujian guru yang bersangkutan)
+// 2. AUTO-FINALIZE PESERTA EXPIRED & QUERY AMBIL DATA HASIL PESERTA (Hanya ujian guru yang bersangkutan)
+auto_finalize_expired_participants($pdo, $exam_id, $id_bank);
+
 $query = "SELECT
             s.nisn, s.nama_lengkap, s.sesi, k.jenjang, k.nama_kelas, 
             COALESCE(sub.nama_mapel, ?) as nama_mapel,

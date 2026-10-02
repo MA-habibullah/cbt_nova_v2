@@ -90,6 +90,8 @@ if ($class_id) {
 }
 
 // 3. Query Data Peserta
+auto_finalize_expired_participants($pdo, $exam_id, $id_bank);
+
 $query = "SELECT
             p.id as p_id, p.exam_id, p.soal_ids, s.nama_lengkap, s.nisn, s.sesi, k.jenjang, k.nama_kelas,
             COALESCE(sub.nama_mapel, ?) as nama_mapel,

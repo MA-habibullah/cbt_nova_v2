@@ -22,11 +22,18 @@ $query_p = "SELECT p.*, s.nama_lengkap, s.nisn, k.nama_kelas, e.nama_mapel_ujian
 $stmt_p = $pdo->prepare($query_p);
 $stmt_p->execute([$p_id]);
 $data = $stmt_p->fetch();
-$skor_status = $data['skor_status'] ?? 'final';
-
 if (!$data) {
     die("Data peserta tidak ditemukan.");
 }
+
+// Jika peserta berstatus working tetapi waktu/jadwal sudah habis, auto finalize dan refresh data
+if (($data['status'] ?? '') === 'working') {
+    if (auto_finalize_expired_participants($pdo, (int)$data['exam_id']) > 0) {
+        $stmt_p->execute([$p_id]);
+        $data = $stmt_p->fetch();
+    }
+}
+$skor_status = $data['skor_status'] ?? 'final';
 
 // Tentukan daftar ID soal yang resmi dibagikan kepada siswa (soal_ids)
 $soal_ids_json = $data['soal_ids'] ?? null;

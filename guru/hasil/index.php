@@ -61,6 +61,9 @@ $results = [];
 $filter_active = $filter_exam || $filter_kelas || $filter_sesi;
 
 if ($filter_active) {
+    // Auto-Finalize Peserta yang Waktu/Jadwal Ujiannya Telah Habis
+    auto_finalize_expired_participants($pdo, (int)$filter_exam, (int)$filter_bank_id);
+
     $sql    = "SELECT p.*, s.nama_lengkap, s.nisn, s.sesi, k.nama_kelas, k.jenjang, e.nama_mapel_ujian, e.id as exam_id, e.jumlah_soal_limit
                FROM cbt_exam_participants p
                JOIN cbt_students s ON p.student_id = s.id

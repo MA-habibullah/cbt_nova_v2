@@ -613,7 +613,88 @@ function hitung_dan_simpan_nilai_peserta(PDO $pdo, int $participant_id, ?string 
 }
 
 /**
+ * Memaksa/Menyelesaikan status peserta yang masih 'working' tetapi waktu pengerjaannya atau jadwal ujiannya telah habis/selesai.
+ * Peserta yang telah expired akan diubah statusnya menjadi 'finished' dan nilainya dihitung serta disimpan otomatis ke database.
+ * Peserta yang masih 'ready' (belum ujian) tidak akan dipaksa agar tetap berstatus 'ready'.
+ *
+ * @param PDO $pdo
+ * @param int $exam_id       ID Ujian spesifik (opsional)
+ * @param int $bank_soal_id  ID Bank Soal (opsional)
+ * @return int Jumlah peserta yang berhasil di-finalize
+ */
+function auto_finalize_expired_participants(PDO $pdo, int $exam_id = 0, int $bank_soal_id = 0): int {
+    $where = ["p.status = 'working'"];
+    $params = [];
+
+    if ($exam_id > 0) {
+        $where[] = "p.exam_id = ?";
+        $params[] = $exam_id;
+    } elseif ($bank_soal_id > 0) {
+        $where[] = "e.bank_soal_id = ?";
+        $params[] = $bank_soal_id;
+    }
+
+    $whereSql = implode(" AND ", $where);
+    $sql = "
+        SELECT p.id, p.waktu_mulai, p.waktu_selesai, p.tambahan_waktu,
+               e.durasi_menit, e.selesai_pada, e.status AS exam_status,
+               NOW() AS waktu_sekarang_db
+        FROM cbt_exam_participants p
+        JOIN cbt_exams e ON p.exam_id = e.id
+        WHERE {$whereSql}
+    ";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $finalized_count = 0;
+
+    foreach ($rows as $row) {
+        $waktu_mulai    = !empty($row['waktu_mulai']) ? strtotime($row['waktu_mulai']) : 0;
+        $waktu_sekarang = strtotime($row['waktu_sekarang_db']);
+        $tambahan       = (int)($row['tambahan_waktu'] ?? 0);
+        $exam_status    = strtolower((string)($row['exam_status'] ?? ''));
+
+        // Jika status jadwal ujian sudah 'selesai' / 'closed' / 'nonaktif'
+        $is_exam_closed = in_array($exam_status, ['selesai', 'closed', 'nonaktif']);
+
+        // Hitung deadline efektif
+        $deadline = 0;
+        if ($tambahan > 0 && $waktu_mulai > 0) {
+            $deadline = $waktu_mulai + ($tambahan * 60);
+        } else {
+            $waktu_habis_durasi = ($waktu_mulai > 0) ? ($waktu_mulai + ((int)$row['durasi_menit'] * 60)) : 0;
+            $batas_jadwal       = !empty($row['selesai_pada']) ? strtotime($row['selesai_pada']) : 0;
+            if ($batas_jadwal > 0 && $waktu_habis_durasi > 0) {
+                $deadline = min($waktu_habis_durasi, $batas_jadwal);
+            } elseif ($batas_jadwal > 0) {
+                $deadline = $batas_jadwal;
+            } else {
+                $deadline = $waktu_habis_durasi;
+            }
+        }
+
+        $is_expired = $is_exam_closed || ($deadline > 0 && $waktu_sekarang >= $deadline);
+
+        if ($is_expired) {
+            // Tentukan timestamp waktu selesai (gunakan deadline jika wajar, atau waktu sekarang)
+            $waktu_selesai_str = ($deadline > 0 && $deadline <= $waktu_sekarang) ? date('Y-m-d H:i:s', $deadline) : $row['waktu_sekarang_db'];
+            
+            // Finalisasi status menjadi 'finished' dan kalkulasi nilainya
+            $res = hitung_dan_simpan_nilai_peserta($pdo, (int)$row['id'], $waktu_selesai_str, true);
+            if (!empty($res['success'])) {
+                $finalized_count++;
+            }
+        }
+    }
+
+    return $finalized_count;
+}
+
+/**
  * Menghitung ulang seluruh nilai peserta dalam 1 jadwal ujian atau 1 bank soal (Batch Recalculate).
+ * Otomatis memfinalisasi peserta 'working' yang waktu/jadwalnya telah habis sebelum menghitung ulang.
  *
  * @param PDO $pdo
  * @param int $exam_id       ID Ujian (cbt_exams.id)
@@ -621,6 +702,10 @@ function hitung_dan_simpan_nilai_peserta(PDO $pdo, int $participant_id, ?string 
  * @return array{total_peserta:int, berhasil:int, gagal:int, rata_rata:float}
  */
 function hitung_ulang_nilai_ujian(PDO $pdo, int $exam_id = 0, int $bank_soal_id = 0): array {
+    // 1. Auto finalize terlebih dahulu seluruh peserta 'working' yang waktu/jadwalnya sudah habis
+    auto_finalize_expired_participants($pdo, $exam_id, $bank_soal_id);
+
+    // 2. Ambil seluruh peserta yang berstatus 'finished'
     $p_ids = [];
 
     if ($exam_id > 0) {
@@ -668,5 +753,6 @@ function hitung_ulang_nilai_ujian(PDO $pdo, int $exam_id = 0, int $bank_soal_id 
         'rata_rata'     => $avg
     ];
 }
+
 
 

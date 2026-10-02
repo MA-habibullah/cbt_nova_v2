@@ -69,7 +69,10 @@ if ($filter_exam) {
     $listSesi = $pdo->query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER BY id")->fetchAll();
 }
 
-// 5. Query Utama (Mendapatkan ID Peserta)
+// 5. Auto-Finalize Peserta yang Waktu/Jadwal Ujiannya Telah Habis
+auto_finalize_expired_participants($pdo, $filter_exam, $id_bank);
+
+// 6. Query Utama (Mendapatkan ID Peserta)
 $query = "SELECT p.*, s.nama_lengkap, s.nisn, s.sesi, k.jenjang, k.nama_kelas, e.nama_mapel_ujian 
           FROM cbt_exam_participants p
           JOIN cbt_students s ON p.student_id = s.id
