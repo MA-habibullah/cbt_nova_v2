@@ -1,33 +1,46 @@
 # ============================================================
-#  CBT NOVA — GITIGNORE CONFIGURATION (PRODUCTION SECURITY)
+#  CBT NOVA — PRODUCTION GRADE GITIGNORE CONFIGURATION
 # ============================================================
 
-# 1. Environment & Database Credentials
-#.env
-#.env.*
-
-# 2. SSL, Security Keys, & Certificates
+# 1. Credentials & Sensitive Configuration
+config/database.php
+.env
+.env.*
 *.key
 *.pem
 *.crt
 *.pfx
 
-# 3. Database Dumps & Raw Backups (Mencegah Kebocoran Data Siswa)
-#*.sql
-#*.sql.gz
-#*.dump
-#backups/*
-#database_backup.sql
+# 2. Third-Party Dependencies (Build Artifacts)
+/node_modules/
+/vendor/
 
-# 5. Berkas Temporary, Cache, Log, & Scratch Area
+# 3. Database Dumps & Raw Backups (Mencegah Kebocoran Data Siswa)
+*.sql
+*.sql.gz
+*.dump
+/backups/*
+!/backups/.gitkeep
+/sql/db_cbt_backup.sql
+!/sql/cbt_nova_schema_10k.sql
+!/sql/migrate_*.sql
+!/sql/add_*.sql
+!/sql/scoring_*.sql
+!/sql/performance_*.sql
+
+# 4. User Uploads & Media Storage (Hanya pertahankan struktur folder)
+/assets/uploads/foto_siswa/*
+!/assets/uploads/foto_siswa/.gitkeep
+
+# 5. Temporary Files, Cache, Logs, & Scratch Area
 /scratch/
-writable/
+/writable/
+.agent/
 *.log
 *.bak
 *.tmp
 *.temp
 seed_dummy.php
-.agent/
 
 # 6. Catatan Pengembang Sementara (Internal Notes)
 CLAUDE.md
