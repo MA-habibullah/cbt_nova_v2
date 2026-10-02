@@ -7,6 +7,7 @@ if (!isset($_SESSION['admin_id'])) {
     echo "<tr><td colspan='7' class='p-10 text-center text-red-500'>Sesi berakhir. Silakan login ulang.</td></tr>";
     exit;
 }
+session_write_close();
 
 $tanggal  = $_GET['tanggal'] ?? date('Y-m-d');
 $exam_id  = $_GET['exam_id'] ?? '';
@@ -17,6 +18,7 @@ $sesi     = $_GET['sesi'] ?? '';
 $params = [];
 $sql = "SELECT p.id as p_id, s.id as s_id, s.nama_lengkap, s.username, s.sesi, c.nama_kelas,
         e.id as e_id, e.nama_mapel_ujian, e.durasi_menit, e.selesai_pada, p.status, p.tambahan_waktu, p.waktu_mulai,
+        p.soal_ids, e.jumlah_soal_limit,
         NOW() as now_db,
         dl.ip_address, dl.user_agent
         FROM cbt_exam_participants p
@@ -54,7 +56,10 @@ if (!empty($p_ids)) {
     $stmtAns = $pdo->prepare("
         SELECT participant_id, COUNT(*) AS jml_jawab
         FROM cbt_student_answers
-        WHERE participant_id IN ($in_p) AND jawaban_simpan IS NOT NULL AND jawaban_simpan != ''
+        WHERE participant_id IN ($in_p) 
+          AND jawaban_simpan IS NOT NULL 
+          AND TRIM(jawaban_simpan) != '' 
+          AND jawaban_simpan != '[]'
         GROUP BY participant_id
     ");
     $stmtAns->execute($p_ids);
@@ -95,7 +100,26 @@ if (!empty($e_ids)) {
 
 foreach ($data as $row) {
     $row['jml_jawab'] = $ans_map[$row['p_id']] ?? 0;
-    $row['total_soal'] = $eq_map[$row['e_id']] ?? 0;
+    
+    // Logika penentuan total butir soal diujikan ke siswa:
+    // Prioritas 1: Daftar paket butir soal riil siswa (soal_ids)
+    // Prioritas 2: Batas jumlah soal pada jadwal (jumlah_soal_limit)
+    // Prioritas 3: Total butir soal pada bank soal jadwal (fallback)
+    $total_soal = 0;
+    if (!empty($row['soal_ids'])) {
+        $decoded_sids = json_decode($row['soal_ids'], true);
+        if (is_array($decoded_sids) && !empty($decoded_sids)) {
+            $total_soal = count($decoded_sids);
+        }
+    }
+    if ($total_soal === 0 && !empty($row['jumlah_soal_limit']) && (int)$row['jumlah_soal_limit'] > 0) {
+        $total_soal = (int)$row['jumlah_soal_limit'];
+    }
+    if ($total_soal === 0) {
+        $total_soal = $eq_map[$row['e_id']] ?? 0;
+    }
+    $row['total_soal'] = $total_soal;
+
     $row['logs']       = $cl_map[$row['s_id'] . '_' . $row['e_id']] ?? 0;
     $st = $row['status'] ?? 'ready';
     
@@ -114,11 +138,6 @@ foreach ($data as $row) {
         }
         $sisa_detik = $final_deadline - $waktu_sekarang;
 
-        // $mulai = strtotime($row['waktu_mulai']);
-        // $durasi_total = ($row['durasi_menit'] + $row['tambahan_waktu']) * 60;
-        // $seharusnya_selesai = $mulai + $durasi_total;
-        // $sisa_detik = $seharusnya_selesai - time();
-
         if ($sisa_detik > 0) {
             $jam   = floor($sisa_detik / 3600);
             $menit = floor(($sisa_detik % 3600) / 60);
@@ -133,11 +152,8 @@ foreach ($data as $row) {
     }
 
     // --- LOGIKA PROGRESS BAR ---
-    $pct = 0;
-    if($row['total_soal'] > 0) {
-        $pct = round(($row['jml_jawab'] / $row['total_soal']) * 100);
-    }
-    $bar_color = $pct == 100 ? 'bg-success' : 'bg-primary';
+    $pct = $row['total_soal'] > 0 ? min(100, (int)round(($row['jml_jawab'] / $row['total_soal']) * 100)) : 0;
+    $bar_color = ($pct >= 100) ? 'bg-success' : 'bg-primary';
 
     $status_badge = match($st) {
         'working'  => '<span class="badge badge-soft-success rounded-pill px-2.5 py-1 text-uppercase fw-bold"><i class="fas fa-spinner fa-spin me-1"></i>Mengerjakan</span>',
