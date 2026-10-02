@@ -485,7 +485,7 @@ function bsQuery(array $extra = []): string {
                                 <td class="text-center">
                                     <div class="mb-1">
                                         <span class="badge bg-light text-dark border px-2 py-1">
-                                            <i class="fas fa-calendar-alt text-primary me-1"></i><?= (int)$b['total_jadwal'] ?> Ujian
+                                            <i class="fas fa-calendar-alt text-primary me-1"></i><?= (int)$b['total_jadwal'] ?> Jadwal
                                         </span>
                                     </div>
                                     <span class="badge bg-light text-secondary border px-2 py-1" style="font-size:0.75rem;">
