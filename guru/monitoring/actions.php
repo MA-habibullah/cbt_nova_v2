@@ -67,7 +67,7 @@ try {
 
     } elseif ($action === 'finish_exam') {
         foreach ($ids as $pid) {
-            hitung_dan_simpan_nilai_peserta($pdo, (int)$pid);
+            hitung_dan_simpan_nilai_peserta($pdo, (int)$pid, null, true);
         }
         query("DELETE FROM cbt_device_locks WHERE student_id IN (SELECT student_id FROM cbt_exam_participants WHERE id IN ($placeholders))", $ids);
 

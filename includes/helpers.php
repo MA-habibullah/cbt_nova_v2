@@ -205,11 +205,11 @@ if (!function_exists('is_tipe_essay')) {
  * @param string|null $waktu_selesai       Timestamp selesai (opsional)
  * @return array{success:bool, participant_id?:int, nilai_akhir?:float, nilai_objektif?:float, nilai_esai?:float, skor_status?:string, waktu_selesai?:string, error?:string}
  */
-function hitung_dan_simpan_nilai_peserta(PDO $pdo, int $participant_id, ?string $waktu_selesai = null): array {
+function hitung_dan_simpan_nilai_peserta(PDO $pdo, int $participant_id, ?string $waktu_selesai = null, bool $finalize = false): array {
     // 1. Ambil Data Partisipasi & Exam
     $stmtPart = $pdo->prepare("
-        SELECT p.id, p.exam_id, p.student_id, p.soal_ids, p.waktu_selesai,
-               e.bank_soal_id
+        SELECT p.id, p.exam_id, p.student_id, p.status, p.soal_ids, p.waktu_selesai,
+               e.bank_soal_id, e.jumlah_soal_limit, e.distribusi_tipe, e.distribusi_kesulitan
         FROM cbt_exam_participants p
         JOIN cbt_exams e ON p.exam_id = e.id
         WHERE p.id = ?
@@ -221,9 +221,16 @@ function hitung_dan_simpan_nilai_peserta(PDO $pdo, int $participant_id, ?string 
         return ['success' => false, 'error' => 'Data partisipasi tidak ditemukan'];
     }
 
+    $curr_status = $participant['status'] ?? 'ready';
+
+    // Jika peserta belum pernah memulai ujian (status: ready) dan tidak dipaksa finalize, jangan ubah ke finished!
+    if ($curr_status === 'ready' && !$finalize) {
+        return ['success' => false, 'error' => 'Peserta belum memulai ujian (status: ready). Nilai belum dapat dihitung.'];
+    }
+
     $exam_id      = (int)$participant['exam_id'];
     $bank_soal_id = (int)$participant['bank_soal_id'];
-    $final_waktu_selesai = $waktu_selesai ?: ($participant['waktu_selesai'] ?: date('Y-m-d H:i:s'));
+    $final_waktu_selesai = $participant['waktu_selesai'] ?: ($waktu_selesai ?: date('Y-m-d H:i:s'));
 
     // 2. Tentukan daftar ID soal yang resmi dibagikan kepada siswa (soal_ids)
     $soal_ids_json = $participant['soal_ids'] ?? null;
@@ -564,18 +571,24 @@ function hitung_dan_simpan_nilai_peserta(PDO $pdo, int $participant_id, ?string 
             }
         }
 
+        // Tentukan status target partisipasi:
+        // - Jika finalize = true ATAU status sebelumnya sudah 'finished' -> 'finished'
+        // - Jika status sebelumnya 'working' dan finalize = false -> tetap 'working'
+        $target_status = ($finalize || $curr_status === 'finished') ? 'finished' : $curr_status;
+        $target_waktu_selesai = ($target_status === 'finished') ? $final_waktu_selesai : $participant['waktu_selesai'];
+
         $stmtFinish = $pdo->prepare("
             UPDATE cbt_exam_participants
-            SET status = 'finished',
+            SET status = ?,
                 waktu_selesai = ?,
                 skor_akhir = ?,
                 nilai_objektif = ?,
                 nilai_esai = ?,
                 skor_status = ?,
-                tambahan_waktu = 0
+                tambahan_waktu = CASE WHEN ? = 'finished' THEN 0 ELSE tambahan_waktu END
             WHERE id = ?
         ");
-        $stmtFinish->execute([$final_waktu_selesai, $nilai_akhir, $nilai_objektif, $nilai_esai, $skor_status, $participant_id]);
+        $stmtFinish->execute([$target_status, $target_waktu_selesai, $nilai_akhir, $nilai_objektif, $nilai_esai, $skor_status, $target_status, $participant_id]);
 
         if (!$is_nested_trans) {
             $pdo->commit();
@@ -590,11 +603,12 @@ function hitung_dan_simpan_nilai_peserta(PDO $pdo, int $participant_id, ?string 
     return [
         'success'        => true,
         'participant_id' => $participant_id,
+        'status'         => $target_status,
         'nilai_akhir'    => $nilai_akhir,
         'nilai_objektif' => $nilai_objektif,
         'nilai_esai'     => $nilai_esai,
         'skor_status'    => $skor_status,
-        'waktu_selesai'  => $final_waktu_selesai
+        'waktu_selesai'  => $target_waktu_selesai
     ];
 }
 
@@ -610,39 +624,24 @@ function hitung_ulang_nilai_ujian(PDO $pdo, int $exam_id = 0, int $bank_soal_id 
     $p_ids = [];
 
     if ($exam_id > 0) {
-        // Ambil semua peserta di ujian ini (baik yang finished, working, maupun yang memiliki jawaban tersimpan)
+        // HANYA ambil peserta yang statusnya sudah 'finished' pada ujian ini
         $stmt = $pdo->prepare("
-            SELECT DISTINCT p.id 
+            SELECT p.id 
             FROM cbt_exam_participants p 
-            LEFT JOIN cbt_student_answers sa ON sa.participant_id = p.id
-            WHERE p.exam_id = ? AND (p.status IN ('finished', 'working') OR sa.id IS NOT NULL)
+            WHERE p.exam_id = ? AND p.status = 'finished'
         ");
         $stmt->execute([$exam_id]);
         $p_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-        // Fallback: Jika query di atas kosong, ambil seluruh partisipasi di exam_id tersebut
-        if (empty($p_ids)) {
-            $stmtFallback = $pdo->prepare("SELECT id FROM cbt_exam_participants WHERE exam_id = ?");
-            $stmtFallback->execute([$exam_id]);
-            $p_ids = $stmtFallback->fetchAll(PDO::FETCH_COLUMN);
-        }
     } elseif ($bank_soal_id > 0) {
-        // Ambil semua peserta di semua ujian di bawah bank soal ini
+        // HANYA ambil peserta yang statusnya sudah 'finished' di seluruh ujian pada bank soal ini
         $stmt = $pdo->prepare("
-            SELECT DISTINCT p.id 
+            SELECT p.id 
             FROM cbt_exam_participants p 
             JOIN cbt_exams e ON p.exam_id = e.id
-            LEFT JOIN cbt_student_answers sa ON sa.participant_id = p.id
-            WHERE e.bank_soal_id = ? AND (p.status IN ('finished', 'working') OR sa.id IS NOT NULL)
+            WHERE e.bank_soal_id = ? AND p.status = 'finished'
         ");
         $stmt->execute([$bank_soal_id]);
         $p_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-        if (empty($p_ids)) {
-            $stmtFallback = $pdo->prepare("SELECT p.id FROM cbt_exam_participants p JOIN cbt_exams e ON p.exam_id = e.id WHERE e.bank_soal_id = ?");
-            $stmtFallback->execute([$bank_soal_id]);
-            $p_ids = $stmtFallback->fetchAll(PDO::FETCH_COLUMN);
-        }
     }
 
     $total   = count($p_ids);
@@ -651,7 +650,7 @@ function hitung_ulang_nilai_ujian(PDO $pdo, int $exam_id = 0, int $bank_soal_id 
     $total_skor = 0.0;
 
     foreach ($p_ids as $pid) {
-        $res = hitung_dan_simpan_nilai_peserta($pdo, (int)$pid);
+        $res = hitung_dan_simpan_nilai_peserta($pdo, (int)$pid, null, false);
         if (!empty($res['success'])) {
             $berhasil++;
             $total_skor += (float)($res['nilai_akhir'] ?? 0);

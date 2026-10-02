@@ -49,8 +49,8 @@ try {
         }
     }
 
-    // 2. Hitung dan simpan nilai menggunakan Centralized Scoring Engine
-    $hasil_skor = hitung_dan_simpan_nilai_peserta($pdo, $participant_id, $waktu_selesai);
+    // 2. Hitung dan simpan nilai menggunakan Centralized Scoring Engine (finalize = true)
+    $hasil_skor = hitung_dan_simpan_nilai_peserta($pdo, $participant_id, $waktu_selesai, true);
 
     if (empty($hasil_skor['success'])) {
         throw new Exception($hasil_skor['error'] ?? 'Gagal menghitung nilai ujian');

@@ -139,7 +139,7 @@ try {
          * SELESAIKAN UJIAN SECARA PAKSA & HITUNG NILAI OTOMATIS
          */
         foreach ($ids as $pid) {
-            hitung_dan_simpan_nilai_peserta($pdo, (int)$pid);
+            hitung_dan_simpan_nilai_peserta($pdo, (int)$pid, null, true);
         }
         
         // Hapus juga lock perangkatnya agar siswa bisa ikut ujian lain di masa depan tanpa hambatan

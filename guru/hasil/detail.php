@@ -49,18 +49,23 @@ if (!empty($allowed_soal_ids)) {
     $stmt_ans->execute($params);
     $answers = $stmt_ans->fetchAll();
 } else {
-    $query_ans = "SELECT q.id AS question_id, q.konten_soal, q.tipe, q.bobot_skor AS bobot_asli,
-                         a.id AS id, a.jawaban_simpan, COALESCE(a.skor_didapat, 0) AS skor_didapat,
-                         COALESCE(a.is_graded, 0) AS is_graded
-                  FROM cbt_exam_participants p
-                  JOIN cbt_exam_questions eq ON eq.exam_id = p.exam_id
-                  JOIN cbt_questions q ON eq.question_id = q.id
-                  LEFT JOIN cbt_student_answers a ON a.question_id = q.id AND a.participant_id = p.id
-                  WHERE p.id = ?
-                  ORDER BY eq.id ASC";
-    $stmt_ans = $pdo->prepare($query_ans);
-    $stmt_ans->execute([$p_id]);
-    $answers = $stmt_ans->fetchAll();
+    // Jika peserta status 'ready' (belum memulai ujian), jangan tampilkan pool soal sebagai jawaban kosong
+    if (($data['status'] ?? 'ready') === 'ready') {
+        $answers = [];
+    } else {
+        $query_ans = "SELECT q.id AS question_id, q.konten_soal, q.tipe, q.bobot_skor AS bobot_asli,
+                             a.id AS id, a.jawaban_simpan, COALESCE(a.skor_didapat, 0) AS skor_didapat,
+                             COALESCE(a.is_graded, 0) AS is_graded
+                      FROM cbt_exam_participants p
+                      JOIN cbt_exam_questions eq ON eq.exam_id = p.exam_id
+                      JOIN cbt_questions q ON eq.question_id = q.id
+                      LEFT JOIN cbt_student_answers a ON a.question_id = q.id AND a.participant_id = p.id
+                      WHERE p.id = ?
+                      ORDER BY eq.id ASC";
+        $stmt_ans = $pdo->prepare($query_ans);
+        $stmt_ans->execute([$p_id]);
+        $answers = $stmt_ans->fetchAll();
+    }
 }
 
 $total_soal     = count($answers);
@@ -356,6 +361,16 @@ $back_url = $bank_id
                         <div id="emptyFilterAlert" class="alert alert-info d-none text-center py-4">
                             <i class="fas fa-info-circle fa-2x mb-2 d-block text-info"></i>
                             Tidak ada butir soal yang sesuai dengan filter yang dipilih.
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (empty($answers) && (($data['status'] ?? 'ready') === 'ready' || $data['skor_akhir'] === null)): ?>
+                        <div class="card border-0 shadow-sm p-5 text-center">
+                            <div class="bg-secondary-subtle text-secondary rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width: 70px; height: 70px;">
+                                <i class="fas fa-user-clock fa-2x"></i>
+                            </div>
+                            <h5 class="fw-bold">Peserta Belum Memulai Ujian</h5>
+                            <p class="text-muted small mb-0">Peserta ini berstatus <strong>BELUM UJIAN</strong> dan belum menekan tombol Mulai Ujian.<br>Lembar butir soal dan jawaban akan otomatis tersusun setelah peserta memulai pengerjaan ujian.</p>
                         </div>
                     <?php endif; ?>
 

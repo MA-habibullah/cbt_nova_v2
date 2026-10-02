@@ -61,7 +61,7 @@ $results = [];
 $filter_active = $filter_exam || $filter_kelas || $filter_sesi;
 
 if ($filter_active) {
-    $sql    = "SELECT p.*, s.nama_lengkap, s.nisn, s.sesi, k.nama_kelas, k.jenjang, e.nama_mapel_ujian, e.id as exam_id
+    $sql    = "SELECT p.*, s.nama_lengkap, s.nisn, s.sesi, k.nama_kelas, k.jenjang, e.nama_mapel_ujian, e.id as exam_id, e.jumlah_soal_limit
                FROM cbt_exam_participants p
                JOIN cbt_students s ON p.student_id = s.id
                JOIN cbt_exams e ON p.exam_id = e.id
@@ -212,10 +212,15 @@ if ($filter_active) {
                                     $soal_ids_arr = !empty($r['soal_ids']) ? json_decode($r['soal_ids'], true) : null;
                                     if (is_array($soal_ids_arr) && !empty($soal_ids_arr)) {
                                         $total_soal = count($soal_ids_arr);
+                                    } elseif (!empty($r['jumlah_soal_limit']) && (int)$r['jumlah_soal_limit'] > 0) {
+                                        $total_soal = (int)$r['jumlah_soal_limit'];
                                     } else {
-                                        $stmt_q = $pdo->prepare("SELECT COUNT(*) FROM cbt_exam_questions WHERE exam_id = ?");
-                                        $stmt_q->execute([$r['exam_id']]);
-                                        $total_soal = (int)$stmt_q->fetchColumn();
+                                        if (!isset($exam_q_count_cache[$r['exam_id']])) {
+                                            $stmt_q = $pdo->prepare("SELECT COUNT(*) FROM cbt_exam_questions WHERE exam_id = ?");
+                                            $stmt_q->execute([$r['exam_id']]);
+                                            $exam_q_count_cache[$r['exam_id']] = (int)$stmt_q->fetchColumn();
+                                        }
+                                        $total_soal = $exam_q_count_cache[$r['exam_id']];
                                     }
 
                                     $stmt_ans = $pdo->prepare("SELECT COUNT(*) FROM cbt_student_answers WHERE participant_id = ? AND skor_didapat > 0");
@@ -257,6 +262,8 @@ if ($filter_active) {
                                             $nilai_akhir = 0.0;
                                         }
                                     }
+
+                                    $status_p = $r['status'] ?? 'ready';
                                 ?>
                                 <tr>
                                     <td class="ps-4 text-muted"><?= $n++ ?></td>
@@ -267,27 +274,41 @@ if ($filter_active) {
                                     <td><span class="badge bg-secondary-subtle text-secondary"><?= !empty($r['jenjang']) ? 'Kelas ' . htmlspecialchars($r['jenjang']) . ' - ' : '' ?><?= htmlspecialchars($r['nama_kelas'] ?? '-') ?></span></td>
                                     <td><small class="text-muted"><?= htmlspecialchars($r['nama_mapel_ujian']) ?></small></td>
                                     <td class="text-center">
-                                        <span class="badge <?= $r['status'] == 'finished' ? 'bg-success' : 'bg-warning text-dark' ?>">
-                                            <?= strtoupper($r['status']) ?>
-                                        </span>
+                                        <?php if ($status_p === 'finished'): ?>
+                                            <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1"><i class="fas fa-check-circle me-1"></i>SELESAI</span>
+                                        <?php elseif ($status_p === 'working'): ?>
+                                            <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-2 py-1"><i class="fas fa-spinner fa-spin me-1"></i>MENGERJAKAN</span>
+                                        <?php elseif ($status_p === 'blocked'): ?>
+                                            <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1"><i class="fas fa-lock me-1"></i>TERKUNCI</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-1"><i class="fas fa-user-clock me-1"></i>BELUM UJIAN</span>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="text-center">
-                                        <?php if (($r['skor_status'] ?? 'final') === 'pending'): ?>
+                                        <?php if ($status_p === 'ready'): ?>
+                                            <span class="text-muted">-</span>
+                                        <?php elseif (($r['skor_status'] ?? 'final') === 'pending'): ?>
                                             <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Belum Final</span>
                                         <?php else: ?>
                                             <span class="badge bg-success"><i class="fas fa-check me-1"></i>Final</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td class="text-center fw-bold text-dark"><?= $jml_benar ?> / <?= $total_soal ?></td>
+                                    <td class="text-center fw-bold text-dark">
+                                        <?php if ($status_p === 'ready'): ?>
+                                            <span class="text-muted">-</span>
+                                        <?php else: ?>
+                                            <?= $jml_benar ?> / <?= $total_soal ?>
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="text-center">
-                                        <?php if (!$has_obj_r): ?>
+                                        <?php if ($status_p === 'ready' || !$has_obj_r): ?>
                                             <span class="text-muted">-</span>
                                         <?php else: ?>
                                             <span class="fw-bold"><?= number_format($nilai_obj_row, 2) ?></span>
                                         <?php endif; ?>
                                     </td>
                                     <td class="text-center">
-                                        <?php if (!$has_esai_r): ?>
+                                        <?php if ($status_p === 'ready' || !$has_esai_r): ?>
                                             <span class="text-muted">-</span>
                                         <?php elseif (($r['skor_status'] ?? 'final') === 'pending' && $nilai_esai_row == 0): ?>
                                             <span class="text-warning fw-bold">0.00 <small>*</small></span>
@@ -296,18 +317,26 @@ if ($filter_active) {
                                         <?php endif; ?>
                                     </td>
                                     <td class="text-center">
-                                        <h5 class="fw-bold mb-0 <?= $nilai_akhir >= 75 ? 'text-success' : 'text-danger' ?>">
-                                            <?= $nilai_akhir ?>
-                                        </h5>
+                                        <?php if ($status_p === 'ready'): ?>
+                                            <span class="badge bg-secondary-subtle text-secondary py-2 px-3 fw-semibold">Belum Mengerjakan</span>
+                                        <?php elseif ($status_p === 'working'): ?>
+                                            <span class="badge bg-warning-subtle text-warning-emphasis py-2 px-3 fw-semibold"><i class="fas fa-clock me-1"></i>Sedang Mengerjakan</span>
+                                        <?php else: ?>
+                                            <h5 class="fw-bold mb-0 <?= $nilai_akhir >= 75 ? 'text-success' : 'text-danger' ?>">
+                                                <?= number_format($nilai_akhir, 2) ?>
+                                            </h5>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="text-center">
                                         <div class="btn-group btn-group-sm">
                                             <a href="detail.php?p_id=<?= esc($r['id']) ?>" class="btn btn-info text-white px-2 shadow-sm" title="Lihat Detail">
                                                 <i class="fas fa-eye"></i> Detail
                                             </a>
+                                            <?php if ($status_p === 'finished'): ?>
                                             <button type="button" class="btn btn-outline-warning btn-recalc-single px-2 shadow-sm" data-id="<?= esc($r['id']) ?>" data-name="<?= esc($r['nama_lengkap']) ?>" title="Hitung Ulang Nilai Siswa Ini">
                                                 <i class="fas fa-sync-alt"></i>
                                             </button>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
