@@ -1,5 +1,5 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once '../../config/database.php';
 
 // Proteksi Admin
@@ -137,7 +137,7 @@ $results = $stmt->fetchAll();
                             <select name="class_id" class="form-select" onchange="this.form.submit()" <?= esc(!$filter_exam ? 'disabled' : '') ?>>
                                 <option value=""><?= esc(!$filter_exam ? '-- Pilih jadwal dulu --' : '-- Semua Kelas --') ?></option>
                                 <?php foreach($classes as $cl): ?>
-                                    <option value="<?= esc($cl['id']) ?>" <?= esc($filter_kelas == $cl['id'] ? 'selected' : '') ?>><?= esc($cl['jenjang']) ?> - <?= esc($cl['nama_kelas']) ?></option>
+                                    <option value="<?= esc($cl['id']) ?>" <?= esc($filter_kelas == $cl['id'] ? 'selected' : '') ?>>Kelas <?= esc($cl['jenjang']) ?> - <?= esc($cl['nama_kelas']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -230,27 +230,27 @@ $results = $stmt->fetchAll();
                                 $nilai_obj_row  = (float)($r['nilai_objektif'] ?? 0);
                                 $nilai_esai_row = (float)($r['nilai_esai']     ?? 0);
 
+                                // Cache bobot per exam_id untuk komposisi soal & formula 50:50
+                                if (!isset($exam_bobot_cache[$r['exam_id']])) {
+                                    $stmtEB = $pdo->prepare("
+                                        SELECT
+                                            SUM(CASE WHEN q.tipe != 'essay' THEN q.bobot_skor ELSE 0 END) AS bobot_obj,
+                                            SUM(CASE WHEN q.tipe  = 'essay' THEN q.bobot_skor ELSE 0 END) AS bobot_essay
+                                        FROM cbt_exam_questions eq
+                                        JOIN cbt_questions q ON eq.question_id = q.id
+                                        WHERE eq.exam_id = ?
+                                    ");
+                                    $stmtEB->execute([$r['exam_id']]);
+                                    $exam_bobot_cache[$r['exam_id']] = $stmtEB->fetch() ?: ['bobot_obj' => 0, 'bobot_essay' => 0];
+                                }
+                                $eb = $exam_bobot_cache[$r['exam_id']];
+                                $has_obj_r  = (float)($eb['bobot_obj']   ?? 0) > 0;
+                                $has_esai_r = (float)($eb['bobot_essay'] ?? 0) > 0;
+
                                 // 4. Prioritaskan skor_akhir dari database
                                 if (isset($r['skor_akhir']) && $r['skor_akhir'] !== null) {
                                     $nilai_akhir = (float)$r['skor_akhir'];
                                 } else {
-                                    // Cache bobot per exam_id untuk formula 50:50 jika skor_akhir belum ada
-                                    if (!isset($exam_bobot_cache[$r['exam_id']])) {
-                                        $stmtEB = $pdo->prepare("
-                                            SELECT
-                                                SUM(CASE WHEN q.tipe != 'essay' THEN q.bobot_skor ELSE 0 END) AS bobot_obj,
-                                                SUM(CASE WHEN q.tipe  = 'essay' THEN q.bobot_skor ELSE 0 END) AS bobot_essay
-                                            FROM cbt_exam_questions eq
-                                            JOIN cbt_questions q ON eq.question_id = q.id
-                                            WHERE eq.exam_id = ?
-                                        ");
-                                        $stmtEB->execute([$r['exam_id']]);
-                                        $exam_bobot_cache[$r['exam_id']] = $stmtEB->fetch();
-                                    }
-                                    $eb = $exam_bobot_cache[$r['exam_id']];
-                                    $has_obj_r  = (float)($eb['bobot_obj']   ?? 0) > 0;
-                                    $has_esai_r = (float)($eb['bobot_essay'] ?? 0) > 0;
-
                                     if ($has_obj_r && $has_esai_r) {
                                         $nilai_akhir = round(($nilai_obj_row * 0.5) + ($nilai_esai_row * 0.5), 2);
                                     } elseif ($has_obj_r) {
