@@ -23,6 +23,14 @@ function seeded_shuffle(array &$array, int $seed): void {
 }
 
 /**
+ * Render input field hidden untuk proteksi CSRF.
+ */
+function csrf_field(): string {
+    $token = function_exists('csrf_token') ? csrf_token() : ($_SESSION['csrf_token'] ?? '');
+    return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">';
+}
+
+/**
  * Escape karakter wildcard LIKE MySQL (%, _, \).
  * Gunakan sebelum menyisipkan input user ke parameter LIKE.
  *

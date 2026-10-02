@@ -19,11 +19,11 @@ $teacher_id = (int)$_SESSION['teacher_id'];
 $exam_id    = (int)($_POST['exam_id'] ?? 0);
 $mode       = $_POST['mode'] ?? '';
 
-$exam = $pdo->prepare("SELECT id, bank_soal_id FROM cbt_exams WHERE id = ? AND teacher_id = ?");
-$exam->execute([$exam_id, $teacher_id]);
+$exam = $pdo->prepare("SELECT id, bank_soal_id FROM cbt_exams WHERE id = ?");
+$exam->execute([$exam_id]);
 $exam = $exam->fetch();
 if (!$exam) {
-    echo json_encode(['success' => false, 'message' => 'Ujian tidak ditemukan atau bukan milik Anda']); 
+    echo json_encode(['success' => false, 'message' => 'Ujian tidak ditemukan']); 
     exit;
 }
 
@@ -78,8 +78,8 @@ if ($mode === 'total') {
 }
 
 $pdo->prepare(
-    "UPDATE cbt_exams SET jumlah_soal_limit = ?, distribusi_tipe = ?, distribusi_kesulitan = ? WHERE id = ? AND teacher_id = ?"
-)->execute([$jumlah_soal_limit, $distribusi_tipe, $distribusi_kesulitan, $exam_id, $teacher_id]);
+    "UPDATE cbt_exams SET jumlah_soal_limit = ?, distribusi_tipe = ?, distribusi_kesulitan = ? WHERE id = ?"
+)->execute([$jumlah_soal_limit, $distribusi_tipe, $distribusi_kesulitan, $exam_id]);
 
 log_activity("Guru set distribusi soal ujian ID $exam_id: mode=$mode, limit=$jumlah_soal_limit", $teacher_id, 'guru', null, 'ujian');
 

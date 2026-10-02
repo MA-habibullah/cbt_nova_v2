@@ -14,14 +14,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $teacher_id = (int)$_SESSION['teacher_id'];
 $id_bank    = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-// Ambil info bank soal & Mapel milik guru
+// Ambil info bank soal & Mapel
 $stmt_bank = $pdo->prepare("
     SELECT b.*, s.nama_mapel, s.id as subject_id 
     FROM cbt_bank_soal b 
-    JOIN cbt_subjects s ON b.subject_id = s.id 
-    WHERE b.id = ? AND b.teacher_id = ?
+    LEFT JOIN cbt_subjects s ON b.subject_id = s.id 
+    WHERE b.id = ?
 ");
-$stmt_bank->execute([$id_bank, $teacher_id]);
+$stmt_bank->execute([$id_bank]);
 $bank = $stmt_bank->fetch();
 
 if (!$bank) { 
@@ -107,8 +107,8 @@ if (isset($_POST['edit_test'])) {
 }
 
 // Ambil list Ujian untuk Bank Soal ini
-$exams = $pdo->prepare("SELECT * FROM cbt_exams WHERE bank_soal_id = ? AND teacher_id = ? ORDER BY id DESC");
-$exams->execute([$id_bank, $teacher_id]);
+$exams = $pdo->prepare("SELECT * FROM cbt_exams WHERE bank_soal_id = ? ORDER BY id DESC");
+$exams->execute([$id_bank]);
 $listExams = $exams->fetchAll();
 ?>
 
@@ -271,7 +271,7 @@ $listExams = $exams->fetchAll();
 <div class="modal fade" id="modalTambahTest" tabindex="-1">
     <div class="modal-dialog">
         <form action="" method="POST" class="modal-content border-0">
-            <?= csrf_field() ?>
+            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title fw-bold"><i class="fas fa-calendar-plus me-2"></i>Buat Jadwal Ujian Baru</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -345,7 +345,7 @@ $listExams = $exams->fetchAll();
 <div class="modal fade" id="modalEditTest" tabindex="-1">
     <div class="modal-dialog">
         <form action="" method="POST" class="modal-content border-0">
-            <?= csrf_field() ?>
+            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="modal-header bg-warning text-dark">
                 <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i>Edit Jadwal Ujian</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

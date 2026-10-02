@@ -16,27 +16,32 @@ $teacher_id = (int)$_SESSION['teacher_id'];
 $exam_id    = isset($_GET['exam_id']) ? (int)$_GET['exam_id'] : 0;
 $id_bank    = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-// 1. Ambil Detail Ujian milik Guru
+// 1. Ambil Detail Ujian (Gunakan LEFT JOIN agar tidak blank jika subject/bank tidak ada)
 $stmt_exam = $pdo->prepare("
     SELECT e.*, s.nama_mapel, b.nama_bank_soal 
     FROM cbt_exams e 
-    JOIN cbt_subjects s ON e.subject_id = s.id 
-    JOIN cbt_bank_soal b ON e.bank_soal_id = b.id
-    WHERE e.id = ? AND e.teacher_id = ?
+    LEFT JOIN cbt_subjects s ON e.subject_id = s.id 
+    LEFT JOIN cbt_bank_soal b ON e.bank_soal_id = b.id
+    WHERE e.id = ?
 ");
-$stmt_exam->execute([$exam_id, $teacher_id]);
+$stmt_exam->execute([$exam_id]);
 $exam = $stmt_exam->fetch();
 
 if (!$exam) { 
-    header("Location: test.php?id=$id_bank"); 
+    header("Location: test.php" . ($id_bank ? "?id=$id_bank" : "")); 
     exit; 
+}
+
+// Fallback jika id_bank dari URL kosong, ambil dari bank_soal_id di exam
+if (!$id_bank && !empty($exam['bank_soal_id'])) {
+    $id_bank = (int)$exam['bank_soal_id'];
 }
 
 // 2. PROSES UPDATE SETTING UJIAN (Toggle Token)
 if (isset($_POST['update_setting'])) {
     $is_token = isset($_POST['is_token_aktif']) ? 1 : 0;
-    $pdo->prepare("UPDATE cbt_exams SET is_token_aktif = ?, updated_at = NOW() WHERE id = ? AND teacher_id = ?")
-        ->execute([$is_token, $exam_id, $teacher_id]);
+    $pdo->prepare("UPDATE cbt_exams SET is_token_aktif = ?, updated_at = NOW() WHERE id = ?")
+        ->execute([$is_token, $exam_id]);
     header("Location: test-kelola.php?exam_id=$exam_id&id=$id_bank&msg=updated"); 
     exit;
 }
@@ -194,7 +199,7 @@ $participantMap      = array_column($participants_raw, null, 'student_id');
                     </div>
                 </div>
                 <form action="" method="POST" class="d-flex align-items-center bg-light p-1.5 p-md-2 rounded border ms-auto">
-                    <?= csrf_field() ?>
+                    <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                     <div class="form-check form-switch mb-0 me-2 me-md-3">
                         <input class="form-check-input" type="checkbox" name="is_token_aktif" id="tokenSwitch" <?= $exam['is_token_aktif'] ? 'checked' : '' ?>>
                         <label class="form-check-label fw-bold small" for="tokenSwitch">
@@ -334,7 +339,7 @@ $participantMap      = array_column($participants_raw, null, 'student_id');
                 <!-- TAB 1: PILIH SOAL & DISTRIBUSI -->
                 <div class="tab-pane fade show active" id="tabSoal">
                     <form action="" method="POST" class="card border-0 shadow-sm overflow-hidden rounded-3">
-                        <?= csrf_field() ?>
+                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <input type="text" id="searchSoal" class="form-control form-control-sm border-primary" style="max-width:220px;" placeholder="Cari konten soal...">
                             <div class="d-flex gap-2">
@@ -387,7 +392,7 @@ $participantMap      = array_column($participants_raw, null, 'student_id');
                 <!-- TAB 2: PILIH PESERTA (SESI, KELAS, JENJANG) -->
                 <div class="tab-pane fade" id="tabPeserta">
                     <form action="" method="POST" class="card border-0 shadow-sm rounded-3 overflow-hidden">
-                        <?= csrf_field() ?>
+                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                         <div class="card-header bg-white py-3 border-0">
                             <div class="row g-2 align-items-end">
                                 <div class="col-6 col-md-2">
