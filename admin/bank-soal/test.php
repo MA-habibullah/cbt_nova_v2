@@ -331,6 +331,7 @@ $listExams = $exams->fetchAll();
 <div class="modal fade" id="modalEditTest" tabindex="-1">
     <div class="modal-dialog">
         <form action="" method="POST" class="modal-content border-0">
+            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title">Edit Jadwal Ujian</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -398,6 +399,7 @@ $listExams = $exams->fetchAll();
 <div class="modal fade" id="modalTambahTest" tabindex="-1">
     <div class="modal-dialog">
         <form action="" method="POST" class="modal-content border-0">
+            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title">Buat Jadwal Ujian</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -460,6 +462,7 @@ $listExams = $exams->fetchAll();
 <div class="modal fade" id="modalSalinTest" tabindex="-1">
     <div class="modal-dialog">
         <form action="" method="POST" class="modal-content border-0 shadow">
+            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="modal-header bg-success text-white">
                 <h5 class="modal-title"><i class="fas fa-copy me-2"></i>Salin Jadwal / Ujian Susulan</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>

@@ -175,6 +175,7 @@ $participantMap      = array_column($participants_raw, null, 'student_id');
                         <i class="fas fa-copy me-1"></i> Duplikasi / Ujian Susulan
                     </button>
                     <form action="" method="POST" class="d-flex align-items-center bg-light p-2 rounded border">
+                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                         <div class="form-check form-switch mb-0 me-3">
                             <input class="form-check-input" type="checkbox" name="is_token_aktif" id="tokenSwitch" <?= $exam['is_token_aktif'] ? 'checked' : '' ?>>
                             <label class="form-check-label fw-bold small" for="tokenSwitch">
@@ -214,6 +215,11 @@ $participantMap      = array_column($participants_raw, null, 'student_id');
             <?php elseif($flash === 'updated'): ?>
                 <div class="alert alert-info border-0 shadow-sm mb-4 alert-dismissible fade show">
                     <i class="fas fa-check-circle me-2"></i> Pengaturan token berhasil diperbarui!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php elseif($flash === 'date_invalid'): ?>
+                <div class="alert alert-danger border-0 shadow-sm mb-4 alert-dismissible fade show">
+                    <i class="fas fa-exclamation-triangle me-2"></i> <strong>Gagal:</strong> Tanggal selesai tidak boleh lebih dulu atau sama dengan tanggal mulai!
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php elseif($flash === 'error'): ?>
@@ -324,6 +330,7 @@ $participantMap      = array_column($participants_raw, null, 'student_id');
             <div class="tab-content">
                 <div class="tab-pane fade show active" id="tabSoal">
                     <form action="" method="POST" class="card border-0 shadow-sm overflow-hidden">
+                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <input type="text" id="searchSoal" class="form-control form-control-sm border-primary" style="max-width:220px;" placeholder="Cari konten soal...">
                             <div class="d-flex gap-2">
@@ -373,6 +380,7 @@ $participantMap      = array_column($participants_raw, null, 'student_id');
 
                 <div class="tab-pane fade" id="tabPeserta">
                     <form action="" method="POST" class="card border-0 shadow-sm">
+                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                         <div class="card-header bg-white py-4 border-0">
                             <div class="row g-3 align-items-end">
                                 <div class="col-md-2">
@@ -759,7 +767,7 @@ $(document).ready(function() {
 
     $('#btnTerapkan').on('click', function() {
         const mode    = $('input[name="distribusiMode"]:checked').val();
-        const data    = { exam_id: <?= $exam_id ?>, mode: mode };
+        const data    = { exam_id: <?= $exam_id ?>, mode: mode, csrf_token: '<?= $_SESSION['csrf_token'] ?? '' ?>' };
         const total   = parseInt($('#inputTotal').val()) || 0;
         const maxBank = <?= $totalSoalBank ?>;
         let errors    = [];
@@ -902,6 +910,7 @@ $(document).ready(function() {
 <div class="modal fade" id="modalSalinTest" tabindex="-1">
     <div class="modal-dialog">
         <form action="test.php?id=<?= esc($id_bank) ?>" method="POST" class="modal-content border-0 shadow">
+            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="modal-header bg-success text-white">
                 <h5 class="modal-title"><i class="fas fa-copy me-2"></i>Salin Jadwal / Ujian Susulan</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>

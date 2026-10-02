@@ -252,6 +252,11 @@ $participantMap      = array_column($participants_raw, null, 'student_id');
                     <i class="fas fa-check-circle me-2"></i> Status token berhasil diperbarui!
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
+            <?php elseif($flash === 'date_invalid'): ?>
+                <div class="alert alert-danger border-0 shadow-sm mb-3 alert-dismissible fade show">
+                    <i class="fas fa-exclamation-triangle me-2"></i> <strong>Gagal:</strong> Tanggal selesai tidak boleh lebih dulu atau sama dengan tanggal mulai!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
             <?php elseif($flash === 'error'): ?>
                 <div class="alert alert-danger border-0 shadow-sm mb-3 alert-dismissible fade show">
                     <i class="fas fa-times-circle me-2"></i> Terjadi kesalahan teknis, perubahan tidak disimpan.
