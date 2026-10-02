@@ -137,6 +137,27 @@ $disk_total_gb = ($disk_total) ? round($disk_total / 1073741824, 1) : 0;
         border-radius: 50%;
         pointer-events: none;
     }
+    .hero-glass-box {
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-radius: 12px;
+        padding: 0.65rem 1rem;
+        display: inline-block;
+    }
+    .hero-badge-glass {
+        background: rgba(255, 255, 255, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        color: #ffffff;
+        font-weight: 500;
+    }
+    .hero-badge-online {
+        background: rgba(16, 185, 129, 0.25);
+        border: 1px solid rgba(52, 211, 153, 0.4);
+        color: #ffffff;
+        font-weight: 500;
+    }
     .dash-card {
         border: 1px solid rgba(0,0,0,0.04);
         border-radius: var(--card-radius);
@@ -238,23 +259,23 @@ $disk_total_gb = ($disk_total) ? round($disk_total / 1073741824, 1) : 0;
                 <div class="row align-items-center position-relative" style="z-index: 1;">
                     <div class="col-lg-8">
                         <div class="d-flex align-items-center gap-2 mb-2">
-                            <span class="badge bg-primary bg-opacity-75 text-white px-3 py-1 rounded-pill">
+                            <span class="badge hero-badge-glass px-3 py-1 rounded-pill">
                                 <i class="fas <?= $greeting_icon ?> me-1"></i> <?= $greeting ?>
                             </span>
-                            <span class="badge bg-success bg-opacity-75 text-white px-2.5 py-1 rounded-pill d-inline-flex align-items-center gap-1">
+                            <span class="badge hero-badge-online px-2.5 py-1 rounded-pill d-inline-flex align-items-center gap-1">
                                 <span class="live-dot" style="background-color:#4ade80;"></span> Server Online
                             </span>
                         </div>
                         <h4 class="fw-bold mb-1 text-white">Selamat Datang di Portal CBT Nova</h4>
-                        <p class="text-white-50 mb-0 small">
+                        <p class="mb-0 small" style="color: rgba(255, 255, 255, 0.85);">
                             Kelola jadwal ujian, bank soal, dan pantau aktivitas peserta ujian secara real-time untuk <strong><?= htmlspecialchars($nama_sekolah) ?></strong>.
                         </p>
                     </div>
                     <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
-                        <div class="d-inline-block bg-white bg-opacity-10 backdrop-blur rounded-3 px-3 py-2 border border-white border-opacity-10 text-start">
-                            <div class="text-white-50 small" style="font-size: 0.72rem;">Waktu Server (WIB)</div>
-                            <div class="fw-bold text-white" id="live-clock" style="font-size: 1rem;">--:--:--</div>
-                            <div class="text-white-50" id="live-date" style="font-size: 0.75rem;">--</div>
+                        <div class="hero-glass-box text-start">
+                            <div style="color: rgba(255, 255, 255, 0.75); font-size: 0.72rem; font-weight: 500;">Waktu Server (WIB)</div>
+                            <div class="fw-bold text-white" id="live-clock" style="font-size: 1.05rem; letter-spacing: 0.5px;">--:--:--</div>
+                            <div style="color: rgba(255, 255, 255, 0.75); font-size: 0.75rem;" id="live-date">--</div>
                         </div>
                     </div>
                 </div>

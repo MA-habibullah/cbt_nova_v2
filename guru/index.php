@@ -124,6 +124,21 @@ $nama_sekolah = $setting_row['nama_sekolah'] ?? 'CBT Nova';
         border-radius: 50%;
         pointer-events: none;
     }
+    .hero-glass-box {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-radius: 12px;
+        padding: 0.65rem 1rem;
+        display: inline-block;
+    }
+    .hero-badge-glass {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #ffffff;
+        font-weight: 500;
+    }
     .dash-card {
         border: 1px solid rgba(0,0,0,0.04);
         border-radius: var(--card-radius);
@@ -213,23 +228,23 @@ $nama_sekolah = $setting_row['nama_sekolah'] ?? 'CBT Nova';
                 <div class="row align-items-center position-relative" style="z-index: 1;">
                     <div class="col-lg-8">
                         <div class="d-flex align-items-center gap-2 mb-2">
-                            <span class="badge bg-white bg-opacity-25 text-white px-3 py-1 rounded-pill">
+                            <span class="badge hero-badge-glass px-3 py-1 rounded-pill">
                                 <i class="fas <?= $greeting_icon ?> me-1"></i> <?= $greeting ?>
                             </span>
-                            <span class="badge bg-white bg-opacity-25 text-white px-2.5 py-1 rounded-pill">
+                            <span class="badge hero-badge-glass px-2.5 py-1 rounded-pill">
                                 <i class="fas fa-chalkboard-teacher me-1"></i> Panel Pengajar
                             </span>
                         </div>
                         <h4 class="fw-bold mb-1 text-white">Selamat Datang, <?= htmlspecialchars($_SESSION['nama'] ?? 'Bapak/Ibu Guru') ?></h4>
-                        <p class="text-white-50 mb-0 small">
+                        <p class="mb-0 small" style="color: rgba(255, 255, 255, 0.85);">
                             Kelola bank soal, publikasikan jadwal ujian, dan pantau hasil evaluasi belajar siswa dengan cepat dan akurat.
                         </p>
                     </div>
                     <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
-                        <div class="d-inline-block bg-white bg-opacity-15 backdrop-blur rounded-3 px-3 py-2 border border-white border-opacity-20 text-start">
-                            <div class="text-white-50 small" style="font-size: 0.72rem;">Hari &amp; Tanggal</div>
-                            <div class="fw-bold text-white" id="live-time" style="font-size: 0.95rem;">--:--:-- WIB</div>
-                            <div class="text-white-50" id="live-date" style="font-size: 0.75rem;">--</div>
+                        <div class="hero-glass-box text-start">
+                            <div style="color: rgba(255, 255, 255, 0.75); font-size: 0.72rem; font-weight: 500;">Hari &amp; Tanggal</div>
+                            <div class="fw-bold text-white" id="live-time" style="font-size: 1.05rem; letter-spacing: 0.5px;">--:--:-- WIB</div>
+                            <div style="color: rgba(255, 255, 255, 0.75); font-size: 0.75rem;" id="live-date">--</div>
                         </div>
                     </div>
                 </div>
