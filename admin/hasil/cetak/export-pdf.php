@@ -16,11 +16,22 @@ $exam_id  = isset($_GET['exam_id']) ? (int)$_GET['exam_id'] : 0;
 $class_id = isset($_GET['class_id']) ? (int)$_GET['class_id'] : 0;
 
 // 2. Ambil Info Bank Soal & Mapel
-$stmt_info = $pdo->prepare("SELECT b.nama_bank_soal, s.nama_mapel FROM cbt_bank_soal b JOIN cbt_subjects s ON b.subject_id = s.id WHERE b.id = ?");
-$stmt_info->execute([$id_bank]);
-$info = $stmt_info->fetch();
+$info = null;
+if ($id_bank) {
+    $stmt_info = $pdo->prepare("SELECT b.nama_bank_soal, s.nama_mapel FROM cbt_bank_soal b LEFT JOIN cbt_subjects s ON b.subject_id = s.id WHERE b.id = ?");
+    $stmt_info->execute([$id_bank]);
+    $info = $stmt_info->fetch(PDO::FETCH_ASSOC);
+}
 
-if (!$info) { die("Data bank soal tidak ditemukan."); }
+if (!$info && $exam_id) {
+    $stmt_info_ex = $pdo->prepare("SELECT e.nama_mapel_ujian as nama_bank_soal, s.nama_mapel FROM cbt_exams e LEFT JOIN cbt_subjects s ON e.subject_id = s.id WHERE e.id = ?");
+    $stmt_info_ex->execute([$exam_id]);
+    $info = $stmt_info_ex->fetch(PDO::FETCH_ASSOC);
+}
+
+if (!$info) {
+    $info = ['nama_bank_soal' => 'Ujian CBT', 'nama_mapel' => '-'];
+}
 
 // 3. Query Optimasi: Ambil data peserta sekaligus hitung total & benar dalam 1 query
 $query = "SELECT
