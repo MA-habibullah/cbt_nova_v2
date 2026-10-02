@@ -75,7 +75,7 @@ function proses_upload_foto_siswa(?array $file): ?string {
 
     $dst = imagecreatetruecolor($new_w, $new_h);
 
-    // Isi background putih (JPEG tidak support transparansi)
+    // Background putih
     $white = imagecolorallocate($dst, 255, 255, 255);
     imagefilledrectangle($dst, 0, 0, $new_w, $new_h, $white);
 
@@ -100,16 +100,16 @@ function proses_upload_foto_siswa(?array $file): ?string {
 }
 
 // --- CONFIGURATION: FILTER, SEARCH, PAGINATION ---
-$limit  = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
-$page   = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$limit  = isset($_GET['limit']) ? max(10, min(500, (int)$_GET['limit'])) : 50;
+$page   = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $offset = ($page - 1) * $limit;
 
-$search = $_GET['search'] ?? '';
-$f_kelas = $_GET['f_kelas'] ?? '';
-$f_jenjang = $_GET['f_jenjang'] ?? '';
-$f_sesi = $_GET['f_sesi'] ?? '';
-$f_agama = $_GET['f_agama'] ?? '';
-// Default filter status aktif (1), atau alumni (0), atau semua ('all')
+$search   = trim($_GET['search'] ?? '');
+$f_kelas  = $_GET['f_kelas'] ?? '';
+$f_jenjang= $_GET['f_jenjang'] ?? '';
+$f_sesi   = $_GET['f_sesi'] ?? '';
+$f_agama  = $_GET['f_agama'] ?? '';
+// Default filter status: '1' (Aktif), '0' (Non-Aktif & Alumni), atau 'all' (Semua)
 $f_status = isset($_GET['f_status']) ? $_GET['f_status'] : '1'; 
 
 // Membangun Query
@@ -117,15 +117,15 @@ $query_str = "SELECT s.*, k.nama_kelas, k.jenjang FROM cbt_students s
               LEFT JOIN cbt_classes k ON s.class_id = k.id WHERE 1=1";
 $params = [];
 
-if ($search) {
+if ($search !== '') {
     $query_str .= " AND (s.nama_lengkap LIKE ? OR s.nisn LIKE ? OR s.username LIKE ?)";
     $s = like_escape($search);
     $params = array_merge($params, ["%$s%", "%$s%", "%$s%"]);
 }
-if ($f_kelas) { $query_str .= " AND s.class_id = ?"; $params[] = $f_kelas; }
-if ($f_jenjang) { $query_str .= " AND k.jenjang = ?"; $params[] = $f_jenjang; }
-if ($f_sesi)  { $query_str .= " AND s.sesi = ?"; $params[] = $f_sesi; }
-if ($f_agama) { $query_str .= " AND s.agama = ?"; $params[] = $f_agama; }
+if ($f_kelas !== '')   { $query_str .= " AND s.class_id = ?"; $params[] = $f_kelas; }
+if ($f_jenjang !== '') { $query_str .= " AND k.jenjang = ?"; $params[] = $f_jenjang; }
+if ($f_sesi !== '')    { $query_str .= " AND s.sesi = ?"; $params[] = $f_sesi; }
+if ($f_agama !== '')   { $query_str .= " AND s.agama = ?"; $params[] = $f_agama; }
 if ($f_status !== '' && $f_status !== 'all') { 
     $query_str .= " AND s.is_aktif = ?"; 
     $params[] = (int)$f_status; 
@@ -134,8 +134,12 @@ if ($f_status !== '' && $f_status !== 'all') {
 // Total Data untuk Pagination
 $stmt_count = $pdo->prepare(str_replace("s.*, k.nama_kelas, k.jenjang", "COUNT(*)", $query_str));
 $stmt_count->execute($params);
-$totalData = $stmt_count->fetchColumn();
-$pages = ceil($totalData / $limit);
+$totalData = (int)$stmt_count->fetchColumn();
+$pages = max(1, (int)ceil($totalData / $limit));
+if ($page > $pages) {
+    $page = $pages;
+    $offset = ($page - 1) * $limit;
+}
 
 // Ambil Data Akhir
 $query_str .= " ORDER BY s.nama_lengkap ASC LIMIT $limit OFFSET $offset";
@@ -152,47 +156,38 @@ $listAgama = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Budha', 'Konghucu'];
 
 // Counter Statistik Status Siswa (Menggunakan Indeks idx_student_aktif)
 $count_aktif  = (int)$pdo->query("SELECT COUNT(*) FROM cbt_students WHERE is_aktif = 1")->fetchColumn();
-$count_alumni = (int)$pdo->query("SELECT COUNT(*) FROM cbt_students WHERE is_aktif = 0")->fetchColumn();
-$count_all    = $count_aktif + $count_alumni;
+$count_nonaktif = (int)$pdo->query("SELECT COUNT(*) FROM cbt_students WHERE is_aktif = 0")->fetchColumn();
+$count_all    = $count_aktif + $count_nonaktif;
 
-// --- PROSES SIMPAN ---
+// --- PROSES SIMPAN SISWA BARU ---
 if (isset($_POST['simpan'])) {
-    // 1. Tentukan password asli (dari input atau default NISN)
     $pass_input = !empty($_POST['password']) ? $_POST['password'] : $_POST['nisn'];
-
-    // 2. Hash password untuk keamanan login
     $password_hash = password_hash($pass_input, PASSWORD_BCRYPT);
-
-    // 3. Proses upload foto (opsional, finfo_file / getimagesize verified)
     $foto = proses_upload_foto_siswa($_FILES['foto'] ?? null);
 
-    // 4. Simpan ke database (password = hash, kartu = teks asli)
     $stmt = $pdo->prepare("INSERT INTO cbt_students (nisn, nama_lengkap, username, password, kartu, class_id, sesi, agama, foto, is_aktif, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())");
     $stmt->execute([
         $_POST['nisn'],
         $_POST['nama_lengkap'],
         $_POST['username'],
-        $password_hash, // Kolom password
-        $pass_input,    // Kolom kartu (baru)
+        $password_hash,
+        $pass_input,
         $_POST['class_id'],
-        $_POST['sesi'],
-        $_POST['agama'],
-        $foto,          // Kolom foto (null jika tidak diupload)
+        $_POST['sesi'] ?? 1,
+        $_POST['agama'] ?? 'Islam',
+        $foto,
     ]);
     
     log_activity("Tambah siswa baru: " . $_POST['nama_lengkap'] . " (NISN: " . $_POST['nisn'] . ")", null, null, null, 'master');
-    header("Location: siswa.php?msg=disimpan");
+    header("Location: siswa.php?f_status=1&msg=disimpan");
     exit;
 }
 
-// --- PROSES UPDATE ---
+// --- PROSES UPDATE SISWA ---
 if (isset($_POST['update'])) {
-    $id = $_POST['id'];
-
-    // Proses upload foto baru (opsional, finfo_file / getimagesize verified)
+    $id = (int)$_POST['id'];
     $foto_baru = proses_upload_foto_siswa($_FILES['foto'] ?? null);
 
-    // Jika ada foto baru: ambil foto lama untuk dihapus, lalu tentukan nilai foto untuk disimpan
     if ($foto_baru !== null) {
         $stmt_old = $pdo->prepare("SELECT foto FROM cbt_students WHERE id = ?");
         $stmt_old->execute([$id]);
@@ -200,13 +195,12 @@ if (isset($_POST['update'])) {
         if ($old_foto) {
             $old_foto_path = dirname(__FILE__, 3) . '/assets/uploads/foto_siswa/' . $old_foto;
             if (file_exists($old_foto_path)) {
-                unlink($old_foto_path);
+                @unlink($old_foto_path);
             }
         }
     }
 
     if (!empty($_POST['password'])) {
-        // Jika admin mengisi password baru: Update hash dan plain text
         $pass_baru = $_POST['password'];
         $password_hash = password_hash($pass_baru, PASSWORD_BCRYPT);
 
@@ -218,11 +212,11 @@ if (isset($_POST['update'])) {
                 $_POST['nama_lengkap'],
                 $_POST['username'],
                 $_POST['class_id'],
-                $_POST['sesi'],
-                $_POST['agama'],
+                $_POST['sesi'] ?? 1,
+                $_POST['agama'] ?? 'Islam',
                 $_POST['is_aktif'],
                 $password_hash,
-                $pass_baru, // Update kolom kartu
+                $pass_baru,
                 $foto_baru,
                 $id,
             ]);
@@ -234,16 +228,15 @@ if (isset($_POST['update'])) {
                 $_POST['nama_lengkap'],
                 $_POST['username'],
                 $_POST['class_id'],
-                $_POST['sesi'],
-                $_POST['agama'],
+                $_POST['sesi'] ?? 1,
+                $_POST['agama'] ?? 'Islam',
                 $_POST['is_aktif'],
                 $password_hash,
-                $pass_baru, // Update kolom kartu
+                $pass_baru,
                 $id,
             ]);
         }
     } else {
-        // Jika password dikosongkan (tidak diubah)
         if ($foto_baru !== null) {
             $sql = "UPDATE cbt_students SET nisn=?, nama_lengkap=?, username=?, class_id=?, sesi=?, agama=?, is_aktif=?, foto=?, updated_at=NOW() WHERE id=?";
             $stmt = $pdo->prepare($sql);
@@ -252,8 +245,8 @@ if (isset($_POST['update'])) {
                 $_POST['nama_lengkap'],
                 $_POST['username'],
                 $_POST['class_id'],
-                $_POST['sesi'],
-                $_POST['agama'],
+                $_POST['sesi'] ?? 1,
+                $_POST['agama'] ?? 'Islam',
                 $_POST['is_aktif'],
                 $foto_baru,
                 $id,
@@ -266,8 +259,8 @@ if (isset($_POST['update'])) {
                 $_POST['nama_lengkap'],
                 $_POST['username'],
                 $_POST['class_id'],
-                $_POST['sesi'],
-                $_POST['agama'],
+                $_POST['sesi'] ?? 1,
+                $_POST['agama'] ?? 'Islam',
                 $_POST['is_aktif'],
                 $id,
             ]);
@@ -275,8 +268,40 @@ if (isset($_POST['update'])) {
     }
     
     log_activity("Update data siswa ID $id: " . $_POST['nama_lengkap'] . " (NISN: " . $_POST['nisn'] . ")", null, null, null, 'master');
-    header("Location: siswa.php?msg=updated");
+    header("Location: siswa.php?f_status=" . urlencode($f_status) . "&msg=updated");
     exit;
+}
+
+// --- PROSES NONAKTIFKAN SISWA (PENGGANTI HAPUS PERMANEN) ---
+if (isset($_POST['action']) && $_POST['action'] === 'nonaktifkan') {
+    $nonaktif_id = (int)($_POST['student_id'] ?? 0);
+    if ($nonaktif_id > 0) {
+        $st = $pdo->prepare("SELECT nama_lengkap, nisn FROM cbt_students WHERE id = ?");
+        $st->execute([$nonaktif_id]);
+        $sdata = $st->fetch();
+
+        $stmt_nonaktif = $pdo->prepare("UPDATE cbt_students SET is_aktif = 0, updated_at = NOW() WHERE id = ?");
+        $stmt_nonaktif->execute([$nonaktif_id]);
+
+        log_activity("Nonaktifkan siswa: " . ($sdata['nama_lengkap'] ?? '-') . " (NISN: " . ($sdata['nisn'] ?? '-') . ")", null, null, null, 'master');
+        header("Location: siswa.php?f_status=0&msg=nonaktif");
+        exit;
+    }
+}
+if (isset($_GET['nonaktifkan'])) {
+    $nonaktif_id = (int)$_GET['nonaktifkan'];
+    if ($nonaktif_id > 0) {
+        $st = $pdo->prepare("SELECT nama_lengkap, nisn FROM cbt_students WHERE id = ?");
+        $st->execute([$nonaktif_id]);
+        $sdata = $st->fetch();
+
+        $stmt_nonaktif = $pdo->prepare("UPDATE cbt_students SET is_aktif = 0, updated_at = NOW() WHERE id = ?");
+        $stmt_nonaktif->execute([$nonaktif_id]);
+
+        log_activity("Nonaktifkan siswa: " . ($sdata['nama_lengkap'] ?? '-') . " (NISN: " . ($sdata['nisn'] ?? '-') . ")", null, null, null, 'master');
+        header("Location: siswa.php?f_status=0&msg=nonaktif");
+        exit;
+    }
 }
 
 // --- PROSES RESTORE / AKTIFKAN KEMBALI SISWA ---
@@ -286,7 +311,6 @@ if (isset($_POST['restore_siswa'])) {
     $new_sesi     = (int)($_POST['sesi'] ?? 1);
 
     if ($restore_id > 0 && $new_class_id > 0) {
-        // Validasi kelas target valid dan aktif
         $chk = $pdo->prepare("SELECT id, nama_kelas, jenjang FROM cbt_classes WHERE id = ? AND is_aktif = 1");
         $chk->execute([$new_class_id]);
         $target_kelas = $chk->fetch();
@@ -307,31 +331,10 @@ if (isset($_POST['restore_siswa'])) {
     header("Location: siswa.php?f_status=0&msg=restore_failed");
     exit;
 }
-
-// --- PROSES HAPUS ---
-if (isset($_GET['hapus'])) {
-    $hapus_id = (int)$_GET['hapus'];
-    $row_del = $pdo->prepare("SELECT nama_lengkap, nisn, foto FROM cbt_students WHERE id = ?");
-    $row_del->execute([$hapus_id]);
-    $del = $row_del->fetch();
-    $pdo->prepare("DELETE FROM cbt_students WHERE id = ?")->execute([$hapus_id]);
-    // Hapus file foto dari disk jika ada
-    if (!empty($del['foto'])) {
-        $foto_path = dirname(__FILE__, 3) . '/assets/uploads/foto_siswa/' . $del['foto'];
-        if (file_exists($foto_path)) {
-            unlink($foto_path);
-        }
-    }
-    log_activity("Hapus siswa: " . ($del['nama_lengkap'] ?? '-') . " (NISN: " . ($del['nisn'] ?? '-') . ")", null, null, null, 'master');
-    header("Location: siswa.php?msg=dihapus");
-    exit;
-}
-
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
-    <?php include '../../includes/header.php'; ?>
+<?php include '../../includes/header.php'; ?>
 
 <body class="bg-light">
 
@@ -339,229 +342,278 @@ if (isset($_GET['hapus'])) {
     <?php include '../../includes/sidebar.php'; ?>
 
     <div id="content" class="w-100">
-        <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm">
+        <!-- Top Navbar -->
+        <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm border-bottom">
             <button class="btn btn-light border" id="menu-toggle"><i class="fas fa-bars"></i></button>
-            <h5 class="ms-3 mb-0 fw-bold">Manajemen Data Siswa</h5>
+            <div class="ms-3 d-flex align-items-center">
+                <i class="fas fa-user-graduate text-primary fs-5 me-2"></i>
+                <div>
+                    <h5 class="mb-0 fw-bold">Manajemen Data Siswa</h5>
+                    <small class="text-muted">Kelola data induk siswa, foto profil, sesi ujian, dan status keaktifan</small>
+                </div>
+            </div>
         </nav>
-        <?php $flash = $_GET['msg'] ?? ''; ?>
-        <?php if ($flash === 'disimpan'): ?>
-            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-0" role="alert">
-                <i class="fas fa-check-circle me-2"></i> Data siswa baru berhasil ditambahkan.
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php elseif ($flash === 'updated'): ?>
-            <div class="alert alert-info alert-dismissible fade show border-0 shadow-sm mb-0" role="alert">
-                <i class="fas fa-check-circle me-2"></i> Data siswa berhasil diperbarui.
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php elseif ($flash === 'restored'): ?>
-            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-0" role="alert">
-                <i class="fas fa-user-check me-2"></i> <strong>Berhasil!</strong> Status siswa berhasil dipulihkan menjadi aktif dan ditempatkan pada kelas baru.
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php elseif ($flash === 'restore_failed'): ?>
-            <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-0" role="alert">
-                <i class="fas fa-exclamation-circle me-2"></i> Gagal memulihkan status siswa. Pastikan kelas baru yang dipilih valid.
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php elseif ($flash === 'dihapus'): ?>
-            <div class="alert alert-warning alert-dismissible fade show border-0 shadow-sm mb-0" role="alert">
-                <i class="fas fa-trash me-2"></i> Data siswa berhasil dihapus.
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php elseif ($flash === 'pilih_file'): ?>
-            <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-0" role="alert">
-                <i class="fas fa-exclamation-triangle me-2"></i> Harap pilih file Excel terlebih dahulu.
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-        <?php if ($flash === 'import_done'): ?>
-            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-check-circle fa-2x me-3"></i>
-                    <div>
-                        <h6 class="fw-bold mb-1">Proses Import Siswa Selesai</h6>
-                        <span>Berhasil menambahkan <strong><?= $_GET['success'] ?? 0 ?></strong> siswa baru.</span>
-                        <?php if (isset($_GET['skipped']) && $_GET['skipped'] > 0): ?>
-                            <div class="text-danger small mt-1">
-                                <i class="fas fa-exclamation-triangle me-1"></i>
-                                <strong><?= $_GET['skipped'] ?></strong> data dilewati karena NISN atau Username sudah ada di database.
-                            </div>
-                        <?php endif; ?>
+
+        <!-- Flash Messages -->
+        <div class="px-4 pt-3">
+            <?php $flash = $_GET['msg'] ?? ''; ?>
+            <?php if ($flash === 'disimpan'): ?>
+                <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert">
+                    <i class="fas fa-check-circle me-2"></i> <strong>Berhasil!</strong> Data siswa baru berhasil ditambahkan.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php elseif ($flash === 'updated'): ?>
+                <div class="alert alert-info alert-dismissible fade show border-0 shadow-sm" role="alert">
+                    <i class="fas fa-check-circle me-2"></i> <strong>Berhasil!</strong> Data siswa berhasil diperbarui.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php elseif ($flash === 'nonaktif'): ?>
+                <div class="alert alert-warning alert-dismissible fade show border-0 shadow-sm" role="alert">
+                    <i class="fas fa-user-slash me-2"></i> <strong>Siswa Dinonaktifkan:</strong> Siswa berhasil dipindahkan ke daftar <strong>Siswa Non-Aktif</strong>. Seluruh data nilai dan riwayat ujian tetap aman dan dapat dipulihkan kapan saja.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php elseif ($flash === 'restored'): ?>
+                <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert">
+                    <i class="fas fa-user-check me-2"></i> <strong>Berhasil Dipulihkan!</strong> Status siswa telah aktif kembali dan ditempatkan pada kelas baru.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php elseif ($flash === 'restore_failed'): ?>
+                <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i> Gagal memulihkan status siswa. Pastikan kelas aktif yang dipilih valid.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php elseif ($flash === 'pilih_file'): ?>
+                <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Harap pilih file Excel terlebih dahulu.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php elseif ($flash === 'import_done'): ?>
+                <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-check-circle fa-2x me-3"></i>
+                        <div>
+                            <h6 class="fw-bold mb-1">Proses Import Siswa Selesai</h6>
+                            <span>Berhasil menambahkan <strong><?= (int)($_GET['success'] ?? 0) ?></strong> siswa baru.</span>
+                            <?php if (isset($_GET['skipped']) && (int)$_GET['skipped'] > 0): ?>
+                                <div class="text-danger small mt-1">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    <strong><?= (int)$_GET['skipped'] ?></strong> data dilewati karena NISN atau Username sudah terdaftar.
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php elseif ($flash === 'error'): ?>
+                <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" role="alert">
+                    <i class="fas fa-times-circle me-2"></i> <strong>Gagal:</strong> <?= htmlspecialchars($_GET['detail'] ?? 'Terjadi kesalahan sistem.') ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <div class="container-fluid px-4 py-2">
+
+            <!-- Navigasi Tab Status Siswa (Card Navigation) -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-body p-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="?f_status=1<?= !empty($search) ? '&search='.urlencode($search) : '' ?><?= !empty($f_kelas) ? '&f_kelas='.urlencode($f_kelas) : '' ?><?= !empty($f_jenjang) ? '&f_jenjang='.urlencode($f_jenjang) : '' ?>" 
+                           class="btn btn-sm <?= $f_status === '1' ? 'btn-primary shadow-sm text-white fw-bold' : 'btn-light border text-secondary' ?> px-3 py-2 rounded-2">
+                            <i class="fas fa-user-check me-1"></i> Siswa Aktif
+                            <span class="badge <?= $f_status === '1' ? 'bg-white text-primary' : 'bg-primary-subtle text-primary' ?> ms-2"><?= number_format($count_aktif, 0, ',', '.') ?></span>
+                        </a>
+                        <a href="?f_status=0<?= !empty($search) ? '&search='.urlencode($search) : '' ?><?= !empty($f_kelas) ? '&f_kelas='.urlencode($f_kelas) : '' ?><?= !empty($f_jenjang) ? '&f_jenjang='.urlencode($f_jenjang) : '' ?>" 
+                           class="btn btn-sm <?= $f_status === '0' ? 'btn-secondary shadow-sm text-white fw-bold' : 'btn-light border text-secondary' ?> px-3 py-2 rounded-2">
+                            <i class="fas fa-user-slash me-1"></i> Siswa Non-Aktif & Alumni
+                            <span class="badge <?= $f_status === '0' ? 'bg-white text-secondary' : 'bg-secondary-subtle text-secondary' ?> ms-2"><?= number_format($count_nonaktif, 0, ',', '.') ?></span>
+                        </a>
+                        <a href="?f_status=all<?= !empty($search) ? '&search='.urlencode($search) : '' ?><?= !empty($f_kelas) ? '&f_kelas='.urlencode($f_kelas) : '' ?><?= !empty($f_jenjang) ? '&f_jenjang='.urlencode($f_jenjang) : '' ?>" 
+                           class="btn btn-sm <?= $f_status === 'all' ? 'btn-dark shadow-sm text-white fw-bold' : 'btn-light border text-secondary' ?> px-3 py-2 rounded-2">
+                            <i class="fas fa-users me-1"></i> Semua Siswa
+                            <span class="badge <?= $f_status === 'all' ? 'bg-white text-dark' : 'bg-light text-dark border' ?> ms-2"><?= number_format($count_all, 0, ',', '.') ?></span>
+                        </a>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-primary shadow-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#modalTambah">
+                            <i class="fas fa-plus me-1"></i> Tambah Siswa
+                        </button>
+                        <button class="btn btn-sm btn-success shadow-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#modalImport">
+                            <i class="fas fa-file-excel me-1"></i> Import
+                        </button>
+                        <a href="<?= esc(BASE_URL) ?>admin/master-io/export_siswa.php" class="btn btn-sm btn-outline-primary shadow-sm fw-semibold">
+                            <i class="fas fa-file-export me-1"></i> Export
+                        </a>
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-
-        <?php if ($flash === 'error'): ?>
-            <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
-                <i class="fas fa-times-circle me-2"></i> <strong>Gagal Import:</strong> <?= htmlspecialchars($_GET['detail'] ?? 'Terjadi kesalahan.') ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-        <div class="container-fluid px-4 pt-4">
-
-            <!-- Navigasi Tab Status Siswa -->
-            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-                <a href="?f_status=1<?= !empty($search) ? '&search='.urlencode($search) : '' ?>" class="btn btn-sm <?= $f_status === '1' ? 'btn-primary shadow-sm' : 'btn-white border text-secondary' ?> fw-semibold px-3 py-2 rounded-3">
-                    <i class="fas fa-user-check me-1"></i> Siswa Aktif
-                    <span class="badge <?= $f_status === '1' ? 'bg-white text-primary' : 'bg-primary-subtle text-primary' ?> ms-2"><?= $count_aktif ?></span>
-                </a>
-                <a href="?f_status=0<?= !empty($search) ? '&search='.urlencode($search) : '' ?>" class="btn btn-sm <?= $f_status === '0' ? 'btn-dark shadow-sm' : 'btn-white border text-secondary' ?> fw-semibold px-3 py-2 rounded-3">
-                    <i class="fas fa-graduation-cap me-1"></i> Siswa Alumni / Lulus
-                    <span class="badge <?= $f_status === '0' ? 'bg-white text-dark' : 'bg-secondary-subtle text-secondary' ?> ms-2"><?= $count_alumni ?></span>
-                </a>
-                <a href="?f_status=all<?= !empty($search) ? '&search='.urlencode($search) : '' ?>" class="btn btn-sm <?= $f_status === 'all' ? 'btn-secondary shadow-sm' : 'btn-white border text-secondary' ?> fw-semibold px-3 py-2 rounded-3">
-                    <i class="fas fa-users me-1"></i> Semua Siswa
-                    <span class="badge <?= $f_status === 'all' ? 'bg-white text-dark' : 'bg-light text-dark border' ?> ms-2"><?= $count_all ?></span>
-                </a>
             </div>
             
-            <div class="card border-0 shadow-sm mb-4">
+            <!-- Filter Bar Box -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
                 <div class="card-body p-3">
-                    <form action="" method="GET" class="row g-3 align-items-end">
-                        <div class="col-lg-2 col-md-4">
-                            <label class="small fw-bold">Pencarian</label>
-                            <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari Nama/NISN..." value="<?= esc($search) ?>" onchange="this.form.submit()">
+                    <form action="" method="GET" class="row g-2 align-items-end">
+                        <input type="hidden" name="f_status" value="<?= esc($f_status) ?>">
+                        <input type="hidden" name="limit" value="<?= esc($limit) ?>">
+
+                        <div class="col-lg-3 col-md-6">
+                            <label class="form-label small fw-bold text-muted mb-1"><i class="fas fa-search me-1"></i>Pencarian Siswa</label>
+                            <input type="text" name="search" class="form-control form-control-sm" placeholder="Ketik Nama, NISN, atau Username..." value="<?= esc($search) ?>">
                         </div>
-                        <div class="col-lg-2 col-md-4">
-                            <label class="small fw-bold">Jenjang</label>
+                        <div class="col-lg-2 col-md-3 col-6">
+                            <label class="form-label small fw-bold text-muted mb-1"><i class="fas fa-layer-group me-1"></i>Jenjang</label>
                             <select name="f_jenjang" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">Semua Jenjang</option>
                                 <?php foreach($allJenjang as $j): ?>
-                                    <option value="<?= esc($j) ?>" <?= esc($f_jenjang == $j ? 'selected' : '') ?>><?= esc($j) ?></option>
+                                    <option value="<?= esc($j) ?>" <?= ($f_jenjang == $j ? 'selected' : '') ?>><?= esc($j) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-lg-2 col-md-4">
-                            <label class="small fw-bold">Kelas</label>
+                        <div class="col-lg-2 col-md-3 col-6">
+                            <label class="form-label small fw-bold text-muted mb-1"><i class="fas fa-school me-1"></i>Kelas</label>
                             <select name="f_kelas" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">Semua Kelas</option>
                                 <?php foreach($allKelas as $k): ?>
-                                    <option value="<?= esc($k['id']) ?>" <?= esc($f_kelas == $k['id']?'selected':'') ?>><?= esc($k['jenjang']) ?>-<?= esc($k['nama_kelas']) ?></option>
+                                    <option value="<?= esc($k['id']) ?>" <?= ($f_kelas == $k['id'] ? 'selected' : '') ?>><?= esc($k['jenjang']) ?> - <?= esc($k['nama_kelas']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-lg-1 col-md-2">
-                            <label class="small fw-bold">Agama</label>
+                        <div class="col-lg-2 col-md-3 col-6">
+                            <label class="form-label small fw-bold text-muted mb-1"><i class="fas fa-pray me-1"></i>Agama</label>
                             <select name="f_agama" class="form-select form-select-sm" onchange="this.form.submit()">
-                                <option value="">Semua</option>
+                                <option value="">Semua Agama</option>
                                 <?php foreach($listAgama as $a): ?>
-                                    <option value="<?= esc($a) ?>" <?= esc($f_agama == $a ? 'selected' : '') ?>><?= esc($a) ?></option>
+                                    <option value="<?= esc($a) ?>" <?= ($f_agama == $a ? 'selected' : '') ?>><?= esc($a) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-lg-1 col-md-2">
-                            <label class="small fw-bold">Sesi</label>
+                        <div class="col-lg-1 col-md-3 col-6">
+                            <label class="form-label small fw-bold text-muted mb-1"><i class="fas fa-clock me-1"></i>Sesi</label>
                             <select name="f_sesi" class="form-select form-select-sm" onchange="this.form.submit()">
-                                <option value="">Sesi</option>
+                                <option value="">Semua</option>
                                 <?php foreach($allSesi as $s): ?>
-                                    <option value="<?= esc($s['id']) ?>" <?= esc($f_sesi == $s['id']?'selected':'') ?>><?= esc($s['nama_sesi']) ?></option>
+                                    <option value="<?= esc($s['id']) ?>" <?= ($f_sesi == $s['id'] ? 'selected' : '') ?>><?= esc($s['nama_sesi']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-lg-2 col-md-4">
-                            <label class="small fw-bold">Status Siswa</label>
-                            <select name="f_status" class="form-select form-select-sm fw-bold <?= $f_status === '0' ? 'bg-dark text-white' : ($f_status === 'all' ? 'bg-secondary-subtle' : 'bg-primary-subtle text-primary') ?>" onchange="this.form.submit()">
-                                <option value="1" <?= esc($f_status == '1'?'selected':'') ?>>Siswa Aktif (<?= $count_aktif ?>)</option>
-                                <option value="0" <?= esc($f_status == '0'?'selected':'') ?>>Alumni / Lulus (<?= $count_alumni ?>)</option>
-                                <option value="all" <?= esc($f_status == 'all'?'selected':'') ?>>Semua Siswa (<?= $count_all ?>)</option>
-                            </select>
-                        </div>
-                        <div class="col-lg-2 col-md-4 d-flex gap-1">
-                            <button type="submit" class="btn btn-primary btn-sm flex-grow-1 fw-bold"><i class="fas fa-filter me-1"></i> Filter</button>
-                            <a href="siswa.php" class="btn btn-light border" title="Reset Filter"><i class="fas fa-sync"></i></a>
+                        <div class="col-lg-2 col-md-6 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary btn-sm flex-grow-1 fw-bold">
+                                <i class="fas fa-filter me-1"></i> Terapkan
+                            </button>
+                            <a href="siswa.php?f_status=<?= urlencode($f_status) ?>" class="btn btn-light border btn-sm text-secondary" title="Reset Filter">
+                                <i class="fas fa-redo"></i>
+                            </a>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <div class="d-flex justify-content-between mb-3">
-                <div class="d-flex gap-2">
-                    <button class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambah">
-                        <i class="fas fa-plus me-2"></i> Tambah
-                    </button>
-                    <button class="btn btn-outline-success shadow-sm" data-bs-toggle="modal" data-bs-target="#modalImport">
-                        <i class="fas fa-file-import me-2"></i> Import
-                    </button>
-                    <a href="<?= esc(BASE_URL) ?>admin/master-io/export_siswa.php" class="btn btn-outline-primary shadow-sm">
-                        <i class="fas fa-file-export me-2"></i> Export
-                    </a>
+            <!-- Main Table Card -->
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                <div class="card-header bg-white py-3 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-list-ul text-primary me-2"></i>Daftar Siswa Terdaftar</h6>
+                        <span class="badge bg-light text-secondary border px-2 py-1"><?= number_format($totalData, 0, ',', '.') ?> siswa ditemukan</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="small text-muted mb-0 fw-medium">Tampilkan per halaman:</label>
+                        <select class="form-select form-select-sm shadow-none" style="width: 85px;" onchange="changeLimit(this.value)" id="limitSelect">
+                            <option value="25" <?= ($limit==25 ? 'selected' : '') ?>>25</option>
+                            <option value="50" <?= ($limit==50 ? 'selected' : '') ?>>50</option>
+                            <option value="100" <?= ($limit==100 ? 'selected' : '') ?>>100</option>
+                            <option value="200" <?= ($limit==200 ? 'selected' : '') ?>>200</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="small text-muted">Baris:</span>
-                    <select class="form-select form-select-sm" style="width: 75px;" onchange="changeLimit(this.value)" id="limitSelect">
-                        <option value="10" <?= esc($limit==10?'selected':'') ?>>10</option>
-                        <option value="50" <?= esc($limit==50?'selected':'') ?>>50</option>
-                        <option value="100" <?= esc($limit==100?'selected':'') ?>>100</option>
-                    </select>
-                </div>
-            </div>
 
-            <div class="card border-0 shadow-sm p-3">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="bg-light">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-secondary small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">
                             <tr>
-                                <th width="50">No</th>
-                                <th width="70">Foto</th>
-                                <th>Nama Siswa</th>
-                                <th>Agama</th>
-                                <th>NISN / Username</th>
-                                <th>Kelas & Status</th>
-                                <th>Sesi</th>
-                                <th class="text-center" width="180">Aksi</th>
+                                <th class="text-center py-3" width="50">#</th>
+                                <th class="text-center py-3" width="70">Foto</th>
+                                <th class="py-3">Nama Lengkap & Identitas</th>
+                                <th class="py-3">Kelas & Jenjang</th>
+                                <th class="py-3">Sesi Ujian</th>
+                                <th class="py-3">Agama</th>
+                                <th class="py-3">Status</th>
+                                <th class="text-center py-3" width="180">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($listSiswa)): ?>
                             <tr>
-                                <td colspan="8" class="text-center py-4 text-muted">
-                                    <i class="fas fa-user-graduate fa-3x mb-2 text-secondary opacity-50 d-block"></i>
-                                    Tidak ada data siswa ditemukan untuk kriteria ini.
+                                <td colspan="8" class="text-center py-5 text-muted">
+                                    <div class="py-4">
+                                        <i class="fas fa-user-graduate fa-3x mb-3 text-secondary opacity-25 d-block"></i>
+                                        <h6 class="fw-bold text-secondary mb-1">Tidak Ada Data Siswa</h6>
+                                        <p class="small text-muted mb-0">Tidak ditemukan siswa yang cocok dengan kriteria pencarian atau filter yang dipilih.</p>
+                                    </div>
                                 </td>
                             </tr>
                             <?php else: ?>
-                            <?php $no=$offset+1; foreach($listSiswa as $row): ?>
+                            <?php $no = $offset + 1; foreach($listSiswa as $row): ?>
                             <tr>
-                                <td><?= $no++ ?></td>
+                                <td class="text-center text-muted fw-bold small"><?= $no++ ?></td>
                                 <td class="text-center">
                                     <?php if (!empty($row['foto'])): ?>
-                                        <img src="<?= esc(BASE_URL) ?>assets/uploads/foto_siswa/<?= htmlspecialchars($row['foto']) ?>" class="rounded-circle border" style="width:40px;height:40px;object-fit:cover;" alt="Foto">
+                                        <img src="<?= esc(BASE_URL) ?>assets/uploads/foto_siswa/<?= htmlspecialchars($row['foto']) ?>" 
+                                             class="rounded-circle border shadow-sm" 
+                                             style="width:42px;height:42px;object-fit:cover;" 
+                                             alt="<?= esc($row['nama_lengkap']) ?>"
+                                             onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=<?= urlencode($row['nama_lengkap']) ?>&background=random';">
                                     <?php else: ?>
-                                        <i class="fas fa-user-circle fa-2x text-secondary"></i>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <div class="fw-bold text-dark"><?= esc($row['nama_lengkap']) ?></div>
-                                </td>
-                                <td>
-                                    <span class="badge bg-light text-dark border"><?= esc($row['agama'] ?? '-') ?></span>
-                                </td>
-                                <td>
-                                    <div class="small fw-bold text-primary"><?= esc($row['nisn']) ?></div>
-                                    <div class="small text-muted"><?= esc($row['username']) ?></div>
-                                </td>
-                                <td>
-                                    <?php if ((int)$row['is_aktif'] === 1): ?>
-                                        <span class="badge bg-info-subtle text-info border border-info-subtle">
-                                            <?= esc($row['jenjang'] ?? '-') ?>-<?= esc($row['nama_kelas'] ?? 'Tanpa Kelas') ?>
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="badge bg-secondary text-white">
-                                            <i class="fas fa-graduation-cap me-1"></i><?= esc($row['nama_kelas'] === 'LULUS' ? 'Alumni (Lulus)' : (($row['jenjang'] ? $row['jenjang'].'-' : '') . ($row['nama_kelas'] ?? 'Alumni'))) ?>
-                                        </span>
-                                        <div class="mt-1">
-                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size:0.68rem;">Non-Aktif</span>
+                                        <div class="avatar-placeholder rounded-circle d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary fw-bold" style="width:42px;height:42px;font-size:14px;">
+                                            <?= strtoupper(mb_substr($row['nama_lengkap'], 0, 2)) ?>
                                         </div>
                                     <?php endif; ?>
                                 </td>
-                                <td><span class="badge bg-secondary">Sesi <?= esc($row['sesi']) ?></span></td>
+                                <td>
+                                    <div class="fw-bold text-dark fs-6"><?= esc($row['nama_lengkap']) ?></div>
+                                    <div class="d-flex flex-wrap align-items-center gap-2 mt-1 small">
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace">
+                                            <i class="fas fa-id-card me-1"></i><?= esc($row['nisn']) ?>
+                                        </span>
+                                        <span class="text-muted font-monospace">
+                                            <i class="fas fa-user text-secondary me-1"></i><?= esc($row['username']) ?>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <?php if ((int)$row['is_aktif'] === 1): ?>
+                                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1 rounded-2 fw-semibold">
+                                            <i class="fas fa-graduation-cap me-1"></i><?= esc($row['jenjang'] ?? '-') ?> - <?= esc($row['nama_kelas'] ?? 'Tanpa Kelas') ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 rounded-2 fw-semibold">
+                                            <i class="fas fa-graduation-cap me-1"></i><?= esc($row['nama_kelas'] === 'LULUS' ? 'Alumni (Lulus)' : (($row['jenjang'] ? $row['jenjang'].'-' : '') . ($row['nama_kelas'] ?? 'Alumni'))) ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border px-2 py-1">
+                                        <i class="fas fa-clock text-secondary me-1"></i>Sesi <?= esc($row['sesi']) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-secondary border px-2 py-1">
+                                        <?= esc($row['agama'] ?? '-') ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?php if ((int)$row['is_aktif'] === 1): ?>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">
+                                            <i class="fas fa-check-circle me-1"></i>Aktif
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary-subtle text-danger border border-secondary-subtle px-2 py-1 rounded-pill">
+                                            <i class="fas fa-ban me-1"></i>Non-Aktif
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="text-center">
-                                    <div class="btn-group shadow-sm">
+                                    <div class="btn-group btn-group-sm shadow-sm" role="group">
                                         <?php if ((int)$row['is_aktif'] === 0): ?>
-                                            <button type="button" class="btn btn-sm btn-success btn-restore-siswa" 
+                                            <button type="button" class="btn btn-success btn-restore-siswa" 
                                                     data-bs-toggle="modal" data-bs-target="#modalRestore"
                                                     data-id="<?= (int)$row['id'] ?>"
                                                     data-nama="<?= esc($row['nama_lengkap']) ?>"
@@ -573,19 +625,31 @@ if (isset($_GET['hapus'])) {
                                                 <i class="fas fa-undo me-1"></i> Pulihkan
                                             </button>
                                         <?php endif; ?>
-                                        <button type="button" class="btn btn-sm btn-white border btn-edit-siswa" 
+
+                                        <button type="button" class="btn btn-outline-primary btn-edit-siswa" 
                                                 data-bs-toggle="modal" data-bs-target="#modalEdit"
-                                                data-id="<?= esc($row['id']) ?>" data-nama="<?= esc($row['nama_lengkap']) ?>"
-                                                data-nisn="<?= esc($row['nisn']) ?>" data-user="<?= esc($row['username']) ?>"
-                                                data-kelas="<?= esc($row['class_id']) ?>" data-sesi="<?= esc($row['sesi']) ?>"
-                                                data-agama="<?= esc($row['agama']) ?>" data-status="<?= esc($row['is_aktif']) ?>"
+                                                data-id="<?= esc($row['id']) ?>" 
+                                                data-nama="<?= esc($row['nama_lengkap']) ?>"
+                                                data-nisn="<?= esc($row['nisn']) ?>" 
+                                                data-user="<?= esc($row['username']) ?>"
+                                                data-kelas="<?= esc($row['class_id']) ?>" 
+                                                data-sesi="<?= esc($row['sesi']) ?>"
+                                                data-agama="<?= esc($row['agama']) ?>" 
+                                                data-status="<?= esc($row['is_aktif']) ?>"
                                                 data-foto="<?= htmlspecialchars($row['foto'] ?? '') ?>"
-                                                title="Edit Siswa">
-                                            <i class="fas fa-edit text-primary"></i>
+                                                title="Edit Data Siswa">
+                                            <i class="fas fa-edit"></i> Edit
                                         </button>
-                                        <a href="?hapus=<?= esc($row['id']) ?>" class="btn btn-sm btn-white border text-danger" onclick="return confirm('Hapus siswa ini?')" title="Hapus Siswa">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
+
+                                        <?php if ((int)$row['is_aktif'] === 1): ?>
+                                            <button type="button" class="btn btn-outline-warning text-dark btn-nonaktifkan"
+                                                    data-id="<?= (int)$row['id'] ?>"
+                                                    data-nama="<?= esc($row['nama_lengkap']) ?>"
+                                                    data-nisn="<?= esc($row['nisn']) ?>"
+                                                    title="Nonaktifkan Siswa (Pindahkan ke Siswa Non-Aktif)">
+                                                <i class="fas fa-user-slash text-warning"></i> Nonaktifkan
+                                            </button>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>
@@ -595,52 +659,61 @@ if (isset($_GET['hapus'])) {
                     </table>
                 </div>
                 
-                <nav class="mt-3 d-flex justify-content-between align-items-center">
-    <div class="small text-muted">
-        Menampilkan <?= count($listSiswa) ?> dari <?= $totalData ?> total data
-    </div>
-    <ul class="pagination pagination-sm mb-0">
-        <?php
-        $base_params = http_build_query([
-            'limit'    => $limit,
-            'search'   => $search,
-            'f_kelas'  => $f_kelas,
-            'f_sesi'   => $f_sesi,
-            'f_jenjang' => $f_jenjang,
-            'f_agama'  => $f_agama,
-            'f_status' => $f_status,
-        ]);
+                <!-- Bottom Pagination Bar -->
+                <div class="card-footer bg-white py-3 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2 border-top">
+                    <div class="small text-muted">
+                        Menampilkan <strong><?= count($listSiswa) ?></strong> dari <strong><?= number_format($totalData, 0, ',', '.') ?></strong> total data siswa
+                        <?php if ($pages > 1): ?> (Halaman <?= $page ?> dari <?= $pages ?>)<?php endif; ?>
+                    </div>
+                    <?php if ($pages > 1): ?>
+                    <ul class="pagination pagination-sm mb-0">
+                        <?php
+                        $base_params = http_build_query([
+                            'limit'    => $limit,
+                            'search'   => $search,
+                            'f_kelas'  => $f_kelas,
+                            'f_sesi'   => $f_sesi,
+                            'f_jenjang' => $f_jenjang,
+                            'f_agama'  => $f_agama,
+                            'f_status' => $f_status,
+                        ]);
 
-        // Tombol Previous
-        $prevDisabled = ($page <= 1) ? 'disabled' : '';
-        echo "<li class='page-item $prevDisabled'><a class='page-link' href='?page=".($page-1)."&$base_params'>&laquo;</a></li>";
+                        // Previous button
+                        $prevDisabled = ($page <= 1) ? 'disabled' : '';
+                        $prevPage = max(1, $page - 1);
+                        echo "<li class='page-item $prevDisabled'><a class='page-link' href='?page={$prevPage}&{$base_params}'><i class='fas fa-chevron-left'></i></a></li>";
 
-        // Batasi tampilan nomor halaman (misal: 2 sebelum dan 2 sesudah halaman aktif)
-        $start_number = ($page > 3) ? $page - 2 : 1;
-        $end_number = ($page < ($pages - 2)) ? $page + 2 : $pages;
+                        $start_number = ($page > 3) ? $page - 2 : 1;
+                        $end_number = ($page < ($pages - 2)) ? $page + 2 : $pages;
 
-        if ($start_number > 1) {
-            echo "<li class='page-item'><a class='page-link' href='?page=1&$base_params'>1</a></li>";
-            echo "<li class='page-item disabled'><span class='page-link'>...</span></li>";
-        }
+                        if ($start_number > 1) {
+                            echo "<li class='page-item'><a class='page-link' href='?page=1&{$base_params}'>1</a></li>";
+                            if ($start_number > 2) {
+                                echo "<li class='page-item disabled'><span class='page-link'>...</span></li>";
+                            }
+                        }
 
-        for ($i = $start_number; $i <= $end_number; $i++): ?>
-            <li class="page-item <?= ($page == $i) ? 'active' : '' ?>">
-                <a class="page-link" href="?page=<?= esc($i) ?>&<?= esc($base_params) ?>"><?= esc($i) ?></a>
-            </li>
-        <?php endfor;
+                        for ($i = $start_number; $i <= $end_number; $i++): ?>
+                            <li class="page-item <?= ($page == $i) ? 'active' : '' ?>">
+                                <a class="page-link" href="?page=<?= esc($i) ?>&<?= esc($base_params) ?>"><?= esc($i) ?></a>
+                            </li>
+                        <?php endfor;
 
-        if ($end_number < $pages) {
-            echo "<li class='page-item disabled'><span class='page-link'>...</span></li>";
-            echo "<li class='page-item'><a class='page-link' href='?page=$pages&$base_params'>$pages</a></li>";
-        }
+                        if ($end_number < $pages) {
+                            if ($end_number < $pages - 1) {
+                                echo "<li class='page-item disabled'><span class='page-link'>...</span></li>";
+                            }
+                            echo "<li class='page-item'><a class='page-link' href='?page={$pages}&{$base_params}'>{$pages}</a></li>";
+                        }
 
-        // Tombol Next
-        $nextDisabled = ($page >= $pages) ? 'disabled' : '';
-        echo "<li class='page-item $nextDisabled'><a class='page-link' href='?page=".($page+1)."&$base_params'>&raquo;</a></li>";
-        ?>
-    </ul>
-</nav>
+                        // Next button
+                        $nextDisabled = ($page >= $pages) ? 'disabled' : '';
+                        $nextPage = min($pages, $page + 1);
+                        echo "<li class='page-item $nextDisabled'><a class='page-link' href='?page={$nextPage}&{$base_params}'><i class='fas fa-chevron-right'></i></a></li>";
+                        ?>
+                    </ul>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>
@@ -660,21 +733,21 @@ if (isset($_GET['hapus'])) {
             </div>
             <div class="modal-body">
                 <div class="alert alert-info border-0 shadow-sm small mb-3">
-                    <i class="fas fa-info-circle me-1"></i> Siswa yang dipulihkan akan kembali berstatus <strong>Aktif</strong>. Seluruh riwayat ujian, jawaban, dan akun login lama siswa tetap utuh dan aman.
+                    <i class="fas fa-info-circle me-1"></i> Siswa yang dipulihkan akan kembali berstatus <strong>Aktif</strong>. Seluruh riwayat ujian, jawaban, nilai, dan akun login lama siswa tetap utuh dan aman.
                 </div>
                 
                 <div class="mb-3">
-                    <label class="form-label fw-bold small">Nama Siswa</label>
+                    <label class="form-label fw-bold small text-muted">Nama Siswa</label>
                     <input type="text" id="restore-nama" class="form-control bg-light" readonly>
                 </div>
                 
                 <div class="row g-2 mb-3">
                     <div class="col-6">
-                        <label class="form-label fw-bold small">NISN</label>
+                        <label class="form-label fw-bold small text-muted">NISN</label>
                         <input type="text" id="restore-nisn" class="form-control bg-light" readonly>
                     </div>
                     <div class="col-6">
-                        <label class="form-label fw-bold small">Username</label>
+                        <label class="form-label fw-bold small text-muted">Username</label>
                         <input type="text" id="restore-user" class="form-control bg-light" readonly>
                     </div>
                 </div>
@@ -691,7 +764,7 @@ if (isset($_GET['hapus'])) {
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-bold small">Pilih Sesi Ujian</label>
+                    <label class="form-label fw-bold small text-muted">Pilih Sesi Ujian</label>
                     <select name="sesi" id="restore-sesi" class="form-select">
                         <?php foreach($allSesi as $s): ?>
                             <option value="<?= (int)$s['id'] ?>"><?= esc($s['nama_sesi']) ?></option>
@@ -709,6 +782,7 @@ if (isset($_GET['hapus'])) {
     </div>
 </div>
 
+<!-- MODAL EDIT SISWA -->
 <div class="modal fade" id="modalEdit" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <form action="" method="POST" enctype="multipart/form-data" class="modal-content border-0 shadow">
@@ -721,19 +795,19 @@ if (isset($_GET['hapus'])) {
                 <input type="hidden" name="id" id="edit-id">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label fw-bold small">Nama Lengkap</label>
+                        <label class="form-label fw-bold small">Nama Lengkap <span class="text-danger">*</span></label>
                         <input type="text" name="nama_lengkap" id="edit-nama" class="form-control" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-bold small">NISN</label>
+                        <label class="form-label fw-bold small">NISN <span class="text-danger">*</span></label>
                         <input type="text" name="nisn" id="edit-nisn" class="form-control" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-bold small">Username</label>
+                        <label class="form-label fw-bold small">Username Login <span class="text-danger">*</span></label>
                         <input type="text" name="username" id="edit-user" class="form-control" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-bold small text-danger">Ganti Password</label>
+                        <label class="form-label fw-bold small text-danger">Ganti Password (Opsional)</label>
                         <input type="password" name="password" class="form-control" placeholder="Kosongkan jika tidak diubah" autocomplete="new-password">
                     </div>
                     <div class="col-md-4">
@@ -745,7 +819,7 @@ if (isset($_GET['hapus'])) {
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label fw-bold small">Sesi</label>
+                        <label class="form-label fw-bold small">Sesi Ujian</label>
                         <select name="sesi" id="edit-sesi" class="form-select">
                             <?php foreach($allSesi as $s): ?>
                                 <option value="<?= esc($s['id']) ?>"><?= esc($s['nama_sesi']) ?></option>
@@ -753,7 +827,7 @@ if (isset($_GET['hapus'])) {
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label fw-bold small">Status</label>
+                        <label class="form-label fw-bold small">Status Keaktifan</label>
                         <select name="is_aktif" id="edit-status" class="form-select">
                             <option value="1">Aktif</option>
                             <option value="0">Non-Aktif / Alumni</option>
@@ -775,46 +849,52 @@ if (isset($_GET['hapus'])) {
                     <div class="col-12">
                         <label class="form-label fw-bold small">Foto Profil</label>
                         <div class="d-flex align-items-center gap-3 mb-2">
-                            <img id="edit-foto-preview" src="" alt="Foto" class="rounded-circle border" style="width:72px;height:72px;object-fit:cover;display:none;">
-                            <i id="edit-foto-placeholder" class="fas fa-user-circle fa-4x text-secondary"></i>
+                            <img id="edit-foto-preview" src="" alt="Foto" class="rounded-circle border" style="width:64px;height:64px;object-fit:cover;display:none;">
+                            <div id="edit-foto-placeholder" class="avatar-placeholder rounded-circle d-inline-flex align-items-center justify-content-center bg-secondary-subtle text-secondary fw-bold" style="width:64px;height:64px;font-size:20px;">
+                                <i class="fas fa-user"></i>
+                            </div>
                         </div>
                         <input type="file" name="foto" id="edit-foto-input" class="form-control form-control-sm" accept="image/jpeg,image/png,image/webp">
-                        <div class="form-text">Biarkan kosong jika tidak ingin mengubah foto. Maks. 5 MB · Otomatis dikompres & diresize ke 400×400px</div>
+                        <div class="form-text">Biarkan kosong jika tidak ingin mengubah foto. Format: JPG, PNG, WEBP (Maks. 5 MB)</div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                <button type="submit" name="update" class="btn btn-primary px-4 shadow-sm">Simpan Perubahan</button>
+                <button type="submit" name="update" class="btn btn-primary px-4 shadow-sm fw-bold">Simpan Perubahan</button>
             </div>
         </form>
     </div>
 </div>
 
+<!-- MODAL IMPORT SISWA -->
 <div class="modal fade" id="modalImport" tabindex="-1">
     <div class="modal-dialog">
         <form action="../master-io/import_siswa.php" method="POST" enctype="multipart/form-data" class="modal-content border-0 shadow">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="modal-header bg-success text-white">
-                <h5 class="modal-title fw-bold">Import dari Excel</h5>
+                <h5 class="modal-title fw-bold"><i class="fas fa-file-excel me-2"></i>Import Siswa dari Excel</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <a href="<?= esc(BASE_URL) ?>admin/master-io/download_template.php" class="btn btn-sm btn-outline-info w-100 mb-3">
-                        <i class="fas fa-download me-1"></i> Download Format Excel
+                    <a href="<?= esc(BASE_URL) ?>admin/master-io/download_template.php" class="btn btn-sm btn-outline-success w-100 mb-3 fw-semibold">
+                        <i class="fas fa-download me-1"></i> Download Format Template Excel
                     </a>
-                    <label class="form-label fw-bold small">Pilih File (.xlsx)</label>
-                    <input type="file" name="file_excel" class="form-control" accept=".xlsx" required>
+                    <label class="form-label fw-bold small">Pilih File (.xlsx / .xls)</label>
+                    <input type="file" name="file_excel" class="form-control" accept=".xlsx,.xls" required>
+                    <div class="form-text mt-2">Pastikan NISN dan Username tidak ganda dengan data yang sudah ada.</div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="submit" name="import" class="btn btn-success px-4">Mulai Import</button>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" name="import" class="btn btn-success px-4 fw-bold">Mulai Import</button>
             </div>
         </form>
     </div>
 </div>
 
+<!-- MODAL TAMBAH SISWA -->
 <div class="modal fade" id="modalTambah" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <form action="" method="POST" enctype="multipart/form-data" class="modal-content border-0 shadow">
@@ -826,23 +906,23 @@ if (isset($_GET['hapus'])) {
             <div class="modal-body">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label fw-bold small">Nama Lengkap</label>
-                        <input type="text" name="nama_lengkap" class="form-control" placeholder="Masukkan nama sesuai ijazah" required>
+                        <label class="form-label fw-bold small">Nama Lengkap <span class="text-danger">*</span></label>
+                        <input type="text" name="nama_lengkap" class="form-control" placeholder="Masukkan nama sesuai raport/ijazah" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-bold small">NISN</label>
+                        <label class="form-label fw-bold small">NISN <span class="text-danger">*</span></label>
                         <input type="text" name="nisn" class="form-control" placeholder="Contoh: 0012345678" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-bold small">Username</label>
-                        <input type="text" name="username" class="form-control" placeholder="Username untuk login" required>
+                        <label class="form-label fw-bold small">Username Login <span class="text-danger">*</span></label>
+                        <input type="text" name="username" class="form-control" placeholder="Username untuk login siswa" required>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold small text-primary">Password (Opsional)</label>
-                        <input type="password" name="password" class="form-control" placeholder="Default: NISN">
+                        <input type="password" name="password" class="form-control" placeholder="Default: sama dengan NISN">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-bold small">Kelas</label>
+                        <label class="form-label fw-bold small">Kelas <span class="text-danger">*</span></label>
                         <select name="class_id" class="form-select" required>
                             <option value="">-- Pilih Kelas --</option>
                             <?php foreach($allKelas as $k): ?>
@@ -851,7 +931,7 @@ if (isset($_GET['hapus'])) {
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label fw-bold small">Sesi</label>
+                        <label class="form-label fw-bold small">Sesi Ujian</label>
                         <select name="sesi" class="form-select">
                             <?php foreach($allSesi as $s): ?>
                                 <option value="<?= esc($s['id']) ?>"><?= esc($s['nama_sesi']) ?></option>
@@ -874,16 +954,16 @@ if (isset($_GET['hapus'])) {
                     <div class="col-12">
                         <label class="form-label fw-bold small">Foto Profil <span class="text-muted fw-normal">(Opsional)</span></label>
                         <div class="mb-2" id="tambah-foto-preview-wrap" style="display:none;">
-                            <img id="tambah-foto-preview" src="" alt="" class="rounded-circle border" style="width:72px;height:72px;object-fit:cover;">
+                            <img id="tambah-foto-preview" src="" alt="" class="rounded-circle border" style="width:64px;height:64px;object-fit:cover;">
                         </div>
                         <input type="file" name="foto" id="tambah-foto-input" class="form-control form-control-sm" accept="image/jpeg,image/png,image/webp">
-                        <div class="form-text">Maks. 5 MB · Otomatis dikompres & diresize ke 400×400px</div>
+                        <div class="form-text">Maks. 5 MB · Format didukung: JPG, PNG, WEBP</div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                <button type="submit" name="simpan" class="btn btn-primary px-4 shadow-sm">Simpan Siswa</button>
+                <button type="submit" name="simpan" class="btn btn-primary px-4 shadow-sm fw-bold">Simpan Siswa</button>
             </div>
         </form>
     </div>
@@ -910,7 +990,6 @@ $(document).ready(function() {
         $('#restore-user').val(user);
         $('#restore-sesi').val(sesi || 1);
         
-        // Cek jika option kelas lama ada di dropdown kelas aktif
         if (kelas && $('#restore-kelas option[value="' + kelas + '"]').length > 0) {
             $('#restore-kelas').val(kelas);
         } else {
@@ -929,10 +1008,8 @@ $(document).ready(function() {
         $('#edit-status').val($(this).data('status'));
         $('#edit-agama').val($(this).data('agama'));
 
-        // Reset file input
         $('#edit-foto-input').val('');
 
-        // Show current photo or placeholder
         var foto = $(this).data('foto');
         if (foto) {
             $('#edit-foto-preview').attr('src', baseUrl + 'assets/uploads/foto_siswa/' + foto).show();
@@ -943,7 +1020,57 @@ $(document).ready(function() {
         }
     });
 
-    // Preview new photo in edit modal
+    // Handle SweetAlert2 confirmation for Nonaktifkan Siswa (replacing permanent delete)
+    $(document).on('click', '.btn-nonaktifkan', function(e) {
+        e.preventDefault();
+        var id = $(this).data('id');
+        var nama = $(this).data('nama');
+        var nisn = $(this).data('nisn');
+
+        Swal.fire({
+            title: 'Nonaktifkan Siswa?',
+            html: 'Siswa <b>' + $('<div>').text(nama).html() + '</b> (NISN: ' + $('<div>').text(nisn).html() + ') akan dipindahkan ke daftar <b>Siswa Non-Aktif</b>.<br><small class="text-muted mt-2 d-block">Seluruh riwayat ujian, jawaban, dan nilai tetap aman dan dapat diaktifkan kembali kapan saja.</small>',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ffc107',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-user-slash me-1"></i> Ya, Nonaktifkan',
+            cancelButtonText: 'Batal',
+            customClass: {
+                confirmButton: 'btn btn-warning text-dark fw-bold px-3',
+                cancelButton: 'btn btn-secondary px-3'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'siswa.php';
+
+                var inputCsrf = document.createElement('input');
+                inputCsrf.type = 'hidden';
+                inputCsrf.name = 'csrf_token';
+                inputCsrf.value = typeof CSRF_TOKEN !== 'undefined' ? CSRF_TOKEN : '';
+                form.appendChild(inputCsrf);
+
+                var inputAction = document.createElement('input');
+                inputAction.type = 'hidden';
+                inputAction.name = 'action';
+                inputAction.value = 'nonaktifkan';
+                form.appendChild(inputAction);
+
+                var inputId = document.createElement('input');
+                inputId.type = 'hidden';
+                inputId.name = 'student_id';
+                inputId.value = id;
+                form.appendChild(inputId);
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    });
+
+    // Preview photo in edit modal
     $('#edit-foto-input').on('change', function() {
         if (this.files && this.files[0]) {
             var reader = new FileReader();
@@ -968,7 +1095,7 @@ $(document).ready(function() {
     });
 });
 
-// Ganti jumlah baris sambil mempertahankan semua filter aktif
+// Ganti limit sambil mempertahankan query filter
 function changeLimit(val) {
     var url = new URL(window.location.href);
     url.searchParams.set('limit', val);
