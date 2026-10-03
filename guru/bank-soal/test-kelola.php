@@ -199,10 +199,15 @@ $participantMap      = array_column($participants_raw, null, 'student_id');
         <nav class="navbar navbar-expand bg-white px-3 px-md-4 py-3 sticky-top shadow-sm">
             <div class="d-flex align-items-center w-100 justify-content-between flex-wrap gap-2">
                 <div class="d-flex align-items-center">
-                    <a href="<?= esc(BASE_URL) ?>guru/bank-soal/test.php?id=<?= esc($id_bank) ?>" class="btn btn-light border me-2 me-md-3"><i class="fas fa-arrow-left"></i></a>
+                    <button class="btn btn-light border rounded-3 me-2 shadow-sm" id="menu-toggle" title="Buka/Tutup Sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <a href="<?= esc(BASE_URL) ?>guru/bank-soal/test.php?id=<?= esc($id_bank) ?>" class="btn btn-light border rounded-circle me-3 d-flex align-items-center justify-content-center shadow-sm" style="width:40px; height:40px;" title="Kembali ke Daftar Jadwal Bank Soal">
+                        <i class="fas fa-arrow-left text-secondary"></i>
+                    </a>
                     <div>
-                        <h5 class="mb-0 fw-bold text-truncate" style="max-width: 260px;">Kelola Ujian: <?= htmlspecialchars($exam['nama_mapel_ujian']) ?></h5>
-                        <small class="text-muted d-none d-sm-inline">Mapel: <?= htmlspecialchars($exam['nama_mapel']) ?> | Jenjang: Kelas <?= esc($exam['jenjang']) ?></small>
+                        <h5 class="mb-0 fw-bold text-dark text-truncate" style="max-width: 280px;">Kelola Ujian: <?= htmlspecialchars($exam['nama_mapel_ujian']) ?></h5>
+                        <small class="text-muted d-none d-sm-inline">Mapel: <?= htmlspecialchars($exam['nama_mapel']) ?> &bull; Kelas <?= esc($exam['jenjang']) ?></small>
                     </div>
                 </div>
                 <div class="d-flex align-items-center ms-auto gap-2">
@@ -705,6 +710,8 @@ $participantMap      = array_column($participants_raw, null, 'student_id');
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 $(document).ready(function() {
+    $("#menu-toggle").click(function(e) { e.preventDefault(); $("#wrapper").toggleClass("toggled"); });
+
     // --- 1. Pencarian Real-time Soal ---
     $("#searchSoal").on("keyup", function() {
         var value = $(this).val().toLowerCase();

@@ -206,11 +206,14 @@ $back_url = $bank_id
         <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm">
             <div class="d-flex align-items-center justify-content-between w-100">
                 <div class="d-flex align-items-center">
-                    <a href="<?= esc($back_url) ?>" class="btn btn-light border me-3 btn-back">
-                        <i class="fas fa-arrow-left"></i>
+                    <button class="btn btn-light border rounded-3 me-2 shadow-sm no-print" id="menu-toggle" title="Buka/Tutup Sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <a href="<?= esc($back_url) ?>" class="btn btn-light border rounded-circle me-3 d-flex align-items-center justify-content-center shadow-sm btn-back" style="width:40px; height:40px;" title="Kembali">
+                        <i class="fas fa-arrow-left text-secondary"></i>
                     </a>
                     <div>
-                        <h5 class="mb-0 fw-bold text-primary">Lembar Jawaban Siswa</h5>
+                        <h5 class="mb-0 fw-bold text-dark">Lembar Jawaban Siswa</h5>
                         <small class="text-muted"><?= htmlspecialchars($data['nama_mapel_ujian']) ?></small>
                     </div>
                 </div>
@@ -748,8 +751,8 @@ $('#selectFilterTipe').on('change', function() {
     applyFilterTipe($(this).val());
 });
 
-// Auto activate filter if specified in URL param (?tipe=essay) or hash (#essay)
 $(document).ready(function() {
+    $("#menu-toggle").click(function(e) { e.preventDefault(); $("#wrapper").toggleClass("toggled"); });
     const urlParams = new URLSearchParams(window.location.search);
     const filterParam = urlParams.get('tipe') || urlParams.get('filter') || window.location.hash.replace('#', '');
     if (filterParam) {

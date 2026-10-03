@@ -67,17 +67,29 @@ $listSoal = $stmt_list->fetchAll();
 
     <div id="content" class="w-100">
         <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm">
-            <div class="d-flex align-items-center">
-                <a href="detail.php?id=<?= esc($id_bank) ?>" class="btn btn-light border me-3 shadow-sm">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-                <div>
-                    <h5 class="mb-0 fw-bold text-primary">Data Soal: <?= htmlspecialchars($bank['nama_mapel']) ?></h5>
-                    <small class="text-muted"><?= htmlspecialchars($bank['nama_bank_soal'] ?? '') ?></small>
+            <div class="d-flex align-items-center justify-content-between w-100">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-light border rounded-3 me-2 shadow-sm" id="menu-toggle" title="Buka/Tutup Sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <a href="detail.php?id=<?= esc($id_bank) ?>" class="btn btn-light border rounded-circle me-3 d-flex align-items-center justify-content-center shadow-sm" style="width:40px; height:40px;" title="Kembali ke Detail Bank Soal">
+                        <i class="fas fa-arrow-left text-secondary"></i>
+                    </a>
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="mb-0 fw-bold text-dark">Data Soal: <?= htmlspecialchars($bank['nama_mapel']) ?></h5>
+                            <span class="badge bg-primary-subtle text-primary font-monospace px-2 py-1"><?= esc($bank['kode_bank_soal']) ?></span>
+                        </div>
+                        <small class="text-muted"><?= htmlspecialchars($bank['nama_bank_soal'] ?? '') ?> <?= !empty($bank['jenjang']) ? '&bull; Kelas ' . esc($bank['jenjang']) : '' ?></small>
+                    </div>
                 </div>
-                <?php if ($locked): ?>
-                    <span class="badge bg-danger ms-3 py-2 px-3"><i class="fas fa-lock me-1"></i> Dikunci Admin</span>
-                <?php endif; ?>
+                <div>
+                    <?php if ($locked): ?>
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-2 fw-semibold">
+                            <i class="fas fa-lock me-1"></i> Dikunci Admin
+                        </span>
+                    <?php endif; ?>
+                </div>
             </div>
         </nav>
 

@@ -82,7 +82,10 @@ if ($filter_active) {
         <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm">
             <div class="d-flex align-items-center justify-content-between w-100">
                 <div class="d-flex align-items-center">
-                    <a href="detail.php?id=<?= esc($id_bank) ?>" class="btn btn-light border rounded-circle me-3 d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                    <button class="btn btn-light border rounded-3 me-2 shadow-sm" id="menu-toggle" title="Buka/Tutup Sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <a href="detail.php?id=<?= esc($id_bank) ?>" class="btn btn-light border rounded-circle me-3 d-flex align-items-center justify-content-center shadow-sm" style="width:40px; height:40px;" title="Kembali ke Detail Bank Soal">
                         <i class="fas fa-arrow-left text-secondary"></i>
                     </a>
                     <div>

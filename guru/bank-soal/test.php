@@ -226,13 +226,21 @@ $listExams = $exams->fetchAll();
         <nav class="navbar navbar-expand bg-white px-3 px-md-4 py-3 sticky-top shadow-sm">
             <div class="d-flex align-items-center w-100 justify-content-between">
                 <div class="d-flex align-items-center">
-                    <a href="<?= esc(BASE_URL) ?>guru/bank-soal/detail.php?id=<?= esc($id_bank) ?>" class="btn btn-light border me-2 me-md-3"><i class="fas fa-arrow-left"></i></a>
+                    <button class="btn btn-light border rounded-3 me-2 shadow-sm" id="menu-toggle" title="Buka/Tutup Sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <a href="<?= esc(BASE_URL) ?>guru/bank-soal/detail.php?id=<?= esc($id_bank) ?>" class="btn btn-light border rounded-circle me-3 d-flex align-items-center justify-content-center shadow-sm" style="width:40px; height:40px;" title="Kembali ke Detail Bank Soal">
+                        <i class="fas fa-arrow-left text-secondary"></i>
+                    </a>
                     <div>
-                        <h5 class="mb-0 fw-bold text-truncate" style="max-width: 250px;"><?= htmlspecialchars($bank['nama_bank_soal']) ?></h5>
-                        <small class="text-muted d-none d-sm-inline">Mapel: <?= htmlspecialchars($bank['nama_mapel']) ?></small>
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="mb-0 fw-bold text-dark text-truncate" style="max-width: 320px;"><?= htmlspecialchars($bank['nama_bank_soal']) ?></h5>
+                            <span class="badge bg-primary-subtle text-primary font-monospace px-2 py-1"><?= esc($bank['kode_bank_soal']) ?></span>
+                        </div>
+                        <small class="text-muted d-none d-sm-inline">Mapel: <?= htmlspecialchars($bank['nama_mapel']) ?> <?= !empty($bank['jenjang']) ? '&bull; Kelas ' . esc($bank['jenjang']) : '' ?></small>
                     </div>
                 </div>
-                <button class="btn btn-primary btn-sm px-3 shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#modalTambahTest">
+                <button class="btn btn-primary btn-sm px-3 shadow-sm fw-bold rounded-3" data-bs-toggle="modal" data-bs-target="#modalTambahTest">
                     <i class="fas fa-calendar-plus me-1"></i> <span class="d-none d-sm-inline">Buat </span>Jadwal
                 </button>
             </div>
@@ -702,6 +710,7 @@ $(document).ready(function() {
         $('#modalEditTest').modal('show');
     });
 
+    $("#menu-toggle").click(function(e) { e.preventDefault(); $("#wrapper").toggleClass("toggled"); });
     $('#modalEditTest, #modalSalinTest').on('hidden.bs.modal', function () {
         $(this).find('form').trigger('reset');
     });
