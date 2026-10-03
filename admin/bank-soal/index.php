@@ -537,16 +537,16 @@ function bsQuery(array $extra = []): string {
                                     </span>
                                 </td>
                                 <td class="text-center">
-                                    <div class="d-flex align-items-center justify-content-center gap-1">
-                                        <a href="detail.php?id=<?= esc($b['id']) ?>" class="btn btn-sm btn-primary fw-semibold px-2" title="Kelola Butir Soal">
-                                            <i class="fas fa-list-check me-1"></i> Kelola Soal
+                                    <div class="d-flex align-items-center justify-content-center gap-2">
+                                        <a href="detail.php?id=<?= esc($b['id']) ?>" class="btn btn-sm btn-primary rounded-3 fw-semibold px-2.5 py-1.5 shadow-sm d-inline-flex align-items-center gap-1" title="Kelola Butir Soal">
+                                            <i class="fas fa-list-check"></i> Kelola Soal
                                         </a>
                                         
                                         <div class="dropdown">
-                                            <button class="btn btn-sm btn-light border dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Menu Aksi Lainnya">
+                                            <button class="btn btn-action-more" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Menu Aksi Lainnya">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
-                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 py-2">
                                                 <li>
                                                     <button type="button" class="dropdown-item btn-edit" 
                                                             data-bs-toggle="modal" data-bs-target="#modalEdit"

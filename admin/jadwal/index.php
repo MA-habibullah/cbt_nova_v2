@@ -587,28 +587,28 @@ function build_pagination_url($targetPage) {
                                         </select>
                                     </td>
                                     <td class="text-center">
-                                        <div class="d-flex align-items-center justify-content-center gap-1">
+                                        <div class="d-flex align-items-center justify-content-center gap-1.5 flex-nowrap">
                                             <a href="<?= esc(BASE_URL) ?>admin/bank-soal/test-kelola.php?exam_id=<?= (int)$e['id'] ?>&id=<?= (int)$e['bank_soal_id'] ?>" 
-                                               class="btn btn-sm btn-info text-white fw-semibold px-2" 
+                                               class="btn btn-sm btn-info text-white rounded-3 fw-semibold px-2.5 py-1.5 shadow-sm d-inline-flex align-items-center gap-1" 
                                                title="Atur Konfigurasi Soal & Peserta Siswa">
-                                                <i class="fas fa-users-cog me-1"></i> Kelola
+                                                <i class="fas fa-users-cog"></i> Kelola
                                             </a>
                                             <a href="<?= esc(BASE_URL) ?>admin/monitoring/index.php" 
-                                               class="btn btn-sm btn-primary fw-semibold px-2" 
+                                               class="btn btn-sm btn-primary rounded-3 fw-semibold px-2.5 py-1.5 shadow-sm d-inline-flex align-items-center gap-1" 
                                                title="Pantau Peserta Ujian Live">
-                                                <i class="fas fa-desktop me-1"></i> Proktor
+                                                <i class="fas fa-desktop"></i> Proktor
                                             </a>
                                             <a href="<?= esc(BASE_URL) ?>admin/hasil/index.php?id=<?= (int)$e['bank_soal_id'] ?>&exam_id=<?= (int)$e['id'] ?>" 
-                                               class="btn btn-sm btn-outline-success fw-semibold px-2" 
+                                               class="btn btn-sm btn-outline-success rounded-3 fw-semibold px-2.5 py-1.5 shadow-sm d-inline-flex align-items-center gap-1" 
                                                title="Lihat Rekap Hasil & Unduh Nilai">
-                                                <i class="fas fa-chart-bar me-1"></i> Hasil
+                                                <i class="fas fa-chart-bar"></i> Hasil
                                             </a>
                                             
                                             <div class="dropdown">
-                                                <button class="btn btn-sm btn-light border dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <button class="btn btn-action-more" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Menu Opsi Lainnya">
                                                     <i class="fas fa-ellipsis-v"></i>
                                                 </button>
-                                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 py-2">
                                                     <li>
                                                         <a href="<?= esc(BASE_URL) ?>admin/bank-soal/test-kelola.php?exam_id=<?= (int)$e['id'] ?>&id=<?= (int)$e['bank_soal_id'] ?>" class="dropdown-item fw-semibold text-primary">
                                                             <i class="fas fa-users-cog me-2 text-primary"></i> Atur Soal &amp; Siswa (Kelola)

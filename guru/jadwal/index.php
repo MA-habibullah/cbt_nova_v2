@@ -683,26 +683,26 @@ function gJadwalQuery(array $extra = []): string {
                                         <?php endif; ?>
                                     </td>
                                     <td class="text-center">
-                                        <div class="d-flex align-items-center justify-content-center gap-1">
+                                        <div class="d-flex align-items-center justify-content-center gap-1.5 flex-nowrap">
                                             <a href="<?= esc(BASE_URL) ?>guru/bank-soal/test-kelola.php?exam_id=<?= (int)$e['id'] ?>&id=<?= (int)$e['bank_soal_id'] ?>" 
-                                               class="btn btn-sm btn-info text-white fw-semibold px-2" 
+                                               class="btn btn-sm btn-info text-white rounded-3 fw-semibold px-2.5 py-1.5" 
                                                title="Atur Konfigurasi Soal & Peserta Siswa (Sesi)">
                                                 <i class="fas fa-users-cog me-1"></i> Kelola
                                             </a>
                                             <a href="<?= esc(BASE_URL) ?>guru/monitoring/index.php" 
-                                               class="btn btn-sm btn-primary fw-semibold px-2" 
+                                               class="btn btn-sm btn-primary rounded-3 fw-semibold px-2.5 py-1.5" 
                                                title="Monitoring Peserta Ujian">
                                                 <i class="fas fa-desktop me-1"></i> Proktor
                                             </a>
                                             <a href="<?= esc(BASE_URL) ?>guru/hasil/index.php?exam_id=<?= (int)$e['id'] ?>" 
-                                               class="btn btn-sm btn-outline-success fw-semibold px-2" 
+                                               class="btn btn-sm btn-outline-success rounded-3 fw-semibold px-2.5 py-1.5" 
                                                title="Lihat Rekap Hasil & Unduh Nilai">
                                                 <i class="fas fa-chart-bar me-1"></i> Hasil
                                             </a>
                                             
                                             <?php if (!$is_bank_locked): ?>
                                             <div class="dropdown">
-                                                <button class="btn btn-sm btn-light border dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <button class="btn btn-action-more" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Menu Opsi Lainnya">
                                                     <i class="fas fa-ellipsis-v"></i>
                                                 </button>
                                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">

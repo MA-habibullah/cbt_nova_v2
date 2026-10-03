@@ -531,14 +531,14 @@ function gbsQ(array $extra = []): string {
                                     </span>
                                 </td>
                                 <td class="text-center">
-                                    <div class="d-flex align-items-center justify-content-center gap-1">
-                                        <a href="detail.php?id=<?= esc($b['id']) ?>" class="btn btn-sm btn-primary fw-semibold px-2" title="Kelola Butir Soal">
+                                    <div class="d-flex align-items-center justify-content-center gap-1.5 flex-nowrap">
+                                        <a href="detail.php?id=<?= esc($b['id']) ?>" class="btn btn-sm btn-primary rounded-3 fw-semibold px-2.5 py-1.5" title="Kelola Butir Soal">
                                             <i class="fas fa-list-check me-1"></i> Kelola Soal
                                         </a>
                                         
                                         <?php if ($b['status'] === 'aktif'): ?>
                                         <div class="dropdown">
-                                            <button class="btn btn-sm btn-light border dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Menu Aksi">
+                                            <button class="btn btn-action-more" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Menu Aksi Tambahan">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
