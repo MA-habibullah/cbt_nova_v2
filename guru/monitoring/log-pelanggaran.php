@@ -52,17 +52,18 @@ $classes = query("SELECT id, nama_kelas, jenjang FROM cbt_classes WHERE is_aktif
             <div class="card border-0 shadow-sm rounded-3 mb-4">
                 <div class="card-body p-4">
                     <form id="filterLogForm" class="row g-3">
-                        <div class="col-md-3">
+                        <input type="hidden" name="page" id="log-page" value="1">
+                        <div class="col-12 col-sm-6 col-lg-3">
                             <label class="form-label-sm">Tanggal Kejadian</label>
                             <input type="date" name="tanggal" id="log-tanggal" value="<?= esc(date('Y-m-d')) ?>" class="form-control rounded-3">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-12 col-sm-6 col-lg-3">
                             <label class="form-label-sm">Ujian / Mapel</label>
                             <select name="exam_id" id="log-exam" class="form-select rounded-3">
                                 <option value="">-- Pilih Tanggal Dulu --</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-12 col-sm-6 col-lg-2">
                             <label class="form-label-sm">Kelas Target</label>
                             <select name="class_id" id="log-class" class="form-select rounded-3">
                                 <option value="">Semua Kelas</option>
@@ -71,8 +72,17 @@ $classes = query("SELECT id, nama_kelas, jenjang FROM cbt_classes WHERE is_aktif
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-2 d-flex align-items-end">
-                            <button type="button" onclick="loadLogs()" class="btn btn-primary w-100 rounded-3 fw-bold py-2 shadow-sm">
+                        <div class="col-12 col-sm-6 col-lg-2">
+                            <label class="form-label-sm">Limit</label>
+                            <select name="limit" id="log-limit" class="form-select rounded-3">
+                                <option value="25">25 Baris</option>
+                                <option value="50" selected>50 Baris</option>
+                                <option value="100">100 Baris</option>
+                                <option value="250">250 Baris</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-lg-2 d-flex align-items-end">
+                            <button type="button" onclick="loadLogs(1)" class="btn btn-primary w-100 rounded-3 fw-bold py-2 shadow-sm">
                                 <i class="fas fa-filter me-1"></i> Filter
                             </button>
                         </div>
@@ -87,6 +97,7 @@ $classes = query("SELECT id, nama_kelas, jenjang FROM cbt_classes WHERE is_aktif
                 
                 <div class="p-4" id="log-table-body">
                 </div>
+                <div id="log-pagination"></div>
             </div>
         </div>
     </div>
@@ -101,24 +112,42 @@ $classes = query("SELECT id, nama_kelas, jenjang FROM cbt_classes WHERE is_aktif
         let tgl = $('#log-tanggal').val();
         $.get('fetch_mapel.php', { tanggal: tgl }, function(res) {
             $('#log-exam').html(res);
-            loadLogs();
+            loadLogs(1);
         });
     }
 
-    function loadLogs() {
+    function goToLogPage(p) {
+        loadLogs(p);
+    }
+
+    function loadLogs(targetPage) {
+        if (typeof targetPage !== 'undefined' && targetPage > 0) {
+            $('#log-page').val(targetPage);
+        }
         const formData = $('#filterLogForm').serialize();
         $.ajax({
             url: 'log_pelanggaran_data.php',
             type: 'GET',
             data: formData,
+            dataType: 'json',
             beforeSend: function() { 
                 $('#log-loader').css('display', 'flex'); 
             },
-            success: function(html) {
-                $('#log-table-body').html(html);
+            success: function(res) {
+                if (res && res.status === 'success') {
+                    $('#log-table-body').html(res.html);
+                    $('#log-pagination').html(res.pagination || '');
+                } else if (typeof res === 'string') {
+                    $('#log-table-body').html(res);
+                }
             },
-            error: function() {
-                $('#log-table-body').html('<div class="p-4 text-center text-danger fw-semibold"><i class="fas fa-exclamation-circle me-1"></i> Gagal memuat log pelanggaran.</div>');
+            error: function(xhr) {
+                if (xhr.responseText && xhr.responseText.indexOf('accordion-item') !== -1) {
+                    $('#log-table-body').html(xhr.responseText);
+                } else {
+                    $('#log-table-body').html('<div class="p-4 text-center text-danger fw-semibold"><i class="fas fa-exclamation-circle me-1"></i> Gagal memuat log pelanggaran.</div>');
+                    $('#log-pagination').empty();
+                }
             },
             complete: function() {
                 $('#log-loader').hide();
@@ -129,8 +158,14 @@ $classes = query("SELECT id, nama_kelas, jenjang FROM cbt_classes WHERE is_aktif
     $(document).ready(function() {
         $("#menu-toggle").click(function(e) { e.preventDefault(); $("#wrapper").toggleClass("toggled"); });
         updateExamList();
-        $('#log-tanggal').on('change', updateExamList);
-        $('#log-class, #log-exam').on('change', loadLogs);
+        $('#log-tanggal').on('change', function() {
+            $('#log-page').val(1);
+            updateExamList();
+        });
+        $('#log-class, #log-exam, #log-limit').on('change', function() {
+            $('#log-page').val(1);
+            loadLogs(1);
+        });
     });
 </script>
 </body>
