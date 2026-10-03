@@ -1,7 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
-require_once '../../config/database.php';
-require_once '../../includes/helpers.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
+require_once dirname(__DIR__, 2) . '/includes/helpers.php';
 
 if (!isset($_SESSION['teacher_id']) || ($_SESSION['role'] ?? '') !== 'guru') {
     header("Location: " . BASE_URL . "index.php"); exit;
