@@ -7,10 +7,11 @@
  *
  *  Fungsi:
  *  1. Sinkronisasi kode: git pull origin main dari GitHub.
- *  2. Menghubungkan ke database aktif (config/database.php).
- *  3. Menjalankan skema DDL & migrasi kolom/tabel secara 100% kompatibel.
- *  4. Memverifikasi struktur folder uploads, logs, dan perizinan file.
- *  5. Membersihkan OPcache & menjalankan uji diagnostik kesehatan sistem.
+ *  2. Menginstal / memperbarui dependensi vendor via Composer.
+ *  3. Menghubungkan ke database aktif (config/database.php).
+ *  4. Menjalankan skema DDL & migrasi kolom/tabel secara 100% kompatibel.
+ *  5. Memverifikasi struktur folder uploads, logs, dan perizinan file.
+ *  6. Membersihkan OPcache & menjalankan uji diagnostik kesehatan sistem.
  * ============================================================================
  */
 
@@ -79,9 +80,51 @@ if (!$isGitRepo) {
 }
 
 // ============================================================================
-// STEP 2: KONEKSI BASIS DATA
+// STEP 2: DEPENDENSI PHP COMPOSER
 // ============================================================================
-out_step(2, "MEMERIKSA KONEKSI BASIS DATA (PDO)");
+out_step(2, "MEMERIKSA DEPENDENSI PHP (COMPOSER INSTALL)");
+
+$composerJson = CLI_ROOT . '/composer.json';
+$autoloadPhp = CLI_ROOT . '/vendor/autoload.php';
+
+if (!file_exists($composerJson)) {
+    out("[-] composer.json tidak ditemukan. Melewati instalasi dependensi.", COLOR_YELLOW);
+} else {
+    out("[*] Menjalankan: composer install --no-dev --optimize-autoloader...", COLOR_BLUE);
+    
+    // Coba eksekusi composer CLI
+    $composerCmd = 'composer install --no-dev --optimize-autoloader --no-interaction 2>&1';
+    $composerOutput = shell_exec($composerCmd);
+    
+    if ($composerOutput !== null && !str_contains($composerOutput, 'is not recognized') && !str_contains($composerOutput, 'not found')) {
+        $cLines = explode("\n", trim($composerOutput));
+        foreach ($cLines as $cLine) {
+            $cLine = trim($cLine);
+            if (empty($cLine)) continue;
+            if (str_contains($cLine, 'Nothing to install') || str_contains($cLine, 'Generating optimized autoload files') || str_contains($cLine, 'Generated optimized autoload')) {
+                out("  -> " . $cLine, COLOR_GREEN);
+            } elseif (str_contains($cLine, 'Installing') || str_contains($cLine, 'Upgrading') || str_contains($cLine, 'Loading composer')) {
+                out("  -> " . $cLine, COLOR_CYAN);
+            } else {
+                out("  -> " . $cLine, COLOR_RESET);
+            }
+        }
+        out("[✓] Dependensi library PHP (vendor/) telah mutakhir dan siap.", COLOR_GREEN);
+    } else {
+        // Fallback jika composer CLI tidak ada di PATH
+        if (file_exists($autoloadPhp)) {
+            out("[✓] Folder vendor/autoload.php sudah tersedia (Composer CLI tidak terdeteksi di PATH sistem).", COLOR_GREEN);
+        } else {
+            out("[!] PERINGATAN: Perintah 'composer' tidak terdeteksi dan folder vendor/autoload.php belum ada!", COLOR_RED);
+            out("    Silakan jalankan secara manual: composer install --no-dev --optimize-autoloader", COLOR_YELLOW);
+        }
+    }
+}
+
+// ============================================================================
+// STEP 3: KONEKSI BASIS DATA
+// ============================================================================
+out_step(3, "MEMERIKSA KONEKSI BASIS DATA (PDO)");
 
 $configFile = CLI_ROOT . '/config/database.php';
 $configProd = CLI_ROOT . '/config/database_prod.php';
@@ -144,9 +187,9 @@ function table_exists(PDO $pdo, string $table): bool {
 }
 
 // ============================================================================
-// STEP 3: EKSEKUSI MIGRASI BASIS DATA
+// STEP 4: EKSEKUSI MIGRASI BASIS DATA
 // ============================================================================
-out_step(3, "MENJALANKAN MIGRASI & PEMBARUAN SKEMA BASIS DATA");
+out_step(4, "MENJALANKAN MIGRASI & PEMBARUAN SKEMA BASIS DATA");
 
 $appliedMigrations = 0;
 
@@ -429,9 +472,9 @@ if (table_exists($pdo, 'cbt_exam_participants') && column_exists($pdo, 'cbt_exam
 }
 
 // ============================================================================
-// STEP 4: VERIFIKASI FOLDER & PERIZINAN FILE
+// STEP 5: VERIFIKASI FOLDER & PERIZINAN FILE
 // ============================================================================
-out_step(4, "VERIFIKASI DIREKTORI & PERIZINAN PENYIMPANAN");
+out_step(5, "VERIFIKASI DIREKTORI & PERIZINAN PENYIMPANAN");
 
 $requiredDirs = [
     CLI_ROOT . '/assets/uploads',
@@ -460,9 +503,9 @@ foreach ($requiredDirs as $dir) {
 }
 
 // ============================================================================
-// STEP 5: PEMBERSIHAN CACHE & VERIFIKASI KESEHATAN SISTEM
+// STEP 6: PEMBERSIHAN CACHE & VERIFIKASI KESEHATAN SISTEM
 // ============================================================================
-out_step(5, "PEMBERSIHAN CACHE & DIAGNOSTIK KESEHATAN SISTEM");
+out_step(6, "PEMBERSIHAN CACHE & DIAGNOSTIK KESEHATAN SISTEM");
 
 if (function_exists('opcache_reset')) {
     if (@opcache_reset()) {

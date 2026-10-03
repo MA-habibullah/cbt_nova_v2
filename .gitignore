@@ -12,8 +12,8 @@ config/database.php
 *.pfx
 
 # 2. Third-Party Dependencies (Build Artifacts)
-/node_modules/
-/vendor/
+node_modules/
+vendor/
 
 # 3. Database Dumps & Raw Backups (Mencegah Kebocoran Data Siswa)
 *.sql
