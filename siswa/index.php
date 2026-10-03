@@ -11,7 +11,11 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'siswa') {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AXON CBT">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>CBT Online</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -21,7 +25,25 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'siswa') {
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8f9fc; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8f9fc; -webkit-touch-callout: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+        
+        /* Universal Anti-Screenshot Shield & Print Blocker */
+        @media print {
+            html, body { display: none !important; visibility: hidden !important; background: #ffffff !important; }
+        }
+        #screenshot-shield, #privacy-screen {
+            position: fixed; inset: 0; width: 100vw; height: 100vh;
+            background-color: #ffffff !important; z-index: 2147483647; display: none;
+            pointer-events: all;
+        }
+
+        /* iOS Simulated Fullscreen Lock */
+        html.ios-simulated-fullscreen, body.ios-simulated-fullscreen {
+            position: fixed; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none;
+        }
+        body.ios-simulated-fullscreen #app-content {
+            height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch;
+        }
 
         /* Dashboard */
         .navbar-siswa { background: white; border-bottom: 1px solid #e3e6f0; }
@@ -242,8 +264,9 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'siswa') {
         }
     </style>
 </head>
-<body oncontextmenu="return false;" onselectstart="return false;">
+<body oncontextmenu="return false;" onselectstart="return false;" ondragstart="return false;" ondrop="return false;">
 
+<div id="screenshot-shield"></div>
 <?php include 'fs_overlay.php'; ?>
 
 <div id="app-content">
@@ -279,12 +302,121 @@ var CSRF_TOKEN      = '<?= csrf_token() ?>';
 // Kirim CSRF token pada semua AJAX POST siswa
 $.ajaxSetup({ headers: { 'X-CSRF-Token': CSRF_TOKEN } });
 
+// Proteksi global context menu, drag & drop
+$(document).on('contextmenu dragstart drop selectstart', function(e) {
+    if ($(e.target).is('input, textarea')) return true;
+    e.preventDefault();
+    return false;
+});
+
+// Universal Screen Wake Lock Manager (Modern W3C API + Fallback Silent Video Loop untuk iOS/Android Lawas)
+window.CBT_WakeLock = (function() {
+    var _wakeLockSentinel = null;
+    var _videoElement = null;
+    var _isActive = false;
+
+    // Silent 1x1 MP4 video Base64 buffer untuk fallback browser lama (iOS < 16.4 / HP lama)
+    var _SILENT_VIDEO_BASE64 = 'data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDJpc29tYXZjMQAAADpmcmVlAAAB621kYXQAAAKwBwAI//9/wV4AAAEAAAEAAAEAAAEAAAEAAAEAAAEAAAEAAAEAAAEAAAEAAAEAAAEAAA==';
+
+    function request() {
+        if (_isActive && (_wakeLockSentinel || _videoElement)) return Promise.resolve();
+        _isActive = true;
+
+        // 1. Metode Modern: W3C Screen Wake Lock API
+        if ('wakeLock' in navigator && typeof navigator.wakeLock.request === 'function') {
+            return navigator.wakeLock.request('screen').then(function(sentinel) {
+                _wakeLockSentinel = sentinel;
+                _wakeLockSentinel.addEventListener('release', function() {
+                    _wakeLockSentinel = null;
+                });
+            }).catch(function() {
+                fallbackVideoLock();
+            });
+        } else {
+            fallbackVideoLock();
+            return Promise.resolve();
+        }
+    }
+
+    function fallbackVideoLock() {
+        try {
+            if (!_videoElement) {
+                _videoElement = document.createElement('video');
+                _videoElement.setAttribute('playsinline', '');
+                _videoElement.setAttribute('webkit-playsinline', '');
+                _videoElement.setAttribute('loop', '');
+                _videoElement.setAttribute('muted', '');
+                _videoElement.muted = true;
+                _videoElement.style.position = 'fixed';
+                _videoElement.style.top = '-9999px';
+                _videoElement.style.left = '-9999px';
+                _videoElement.style.width = '1px';
+                _videoElement.style.height = '1px';
+                _videoElement.style.opacity = '0';
+                _videoElement.style.pointerEvents = 'none';
+                _videoElement.src = _SILENT_VIDEO_BASE64;
+                document.body.appendChild(_videoElement);
+            }
+            var p = _videoElement.play();
+            if (p && typeof p.catch === 'function') p.catch(function() {});
+        } catch (e) {}
+    }
+
+    function release() {
+        _isActive = false;
+        if (_wakeLockSentinel) {
+            try {
+                _wakeLockSentinel.release().catch(function() {});
+            } catch (e) {}
+            _wakeLockSentinel = null;
+        }
+        if (_videoElement) {
+            try {
+                _videoElement.pause();
+                _videoElement.currentTime = 0;
+                if (_videoElement.parentNode) _videoElement.parentNode.removeChild(_videoElement);
+            } catch (e) {}
+            _videoElement = null;
+        }
+    }
+
+    function reacquireIfNeeded() {
+        if (_isActive && document.visibilityState === 'visible') {
+            if ('wakeLock' in navigator && !_wakeLockSentinel) {
+                try {
+                    navigator.wakeLock.request('screen').then(function(sentinel) {
+                        _wakeLockSentinel = sentinel;
+                    }).catch(function() {});
+                } catch (e) {}
+            }
+            if (_videoElement && _videoElement.paused) {
+                try {
+                    var p = _videoElement.play();
+                    if (p && typeof p.catch === 'function') p.catch(function() {});
+                } catch (e) {}
+            }
+        }
+    }
+
+    document.addEventListener('visibilitychange', reacquireIfNeeded);
+
+    return {
+        request: request,
+        release: release,
+        reacquire: reacquireIfNeeded
+    };
+})();
+
 function loadView(view, params) {
     // Clean up ujian resources
     clearInterval(_timerInterval);
     clearInterval(_resyncInterval);
     _timerInterval  = null;
     _resyncInterval = null;
+
+    if (view !== 'ujian') {
+        window.CBT_WakeLock.release();
+    }
 
     if (window._onBlurUjian) {
         window.removeEventListener('blur', window._onBlurUjian);
@@ -300,6 +432,8 @@ function loadView(view, params) {
     document.body.style.opacity = '1';
     var _ps = document.getElementById('privacy-screen');
     if (_ps) _ps.style.display = 'none';
+    var _ss = document.getElementById('screenshot-shield');
+    if (_ss) _ss.style.display = 'none';
 
     var url = 'ajax/view_' + view + '.php';
     if (params) url += '?' + $.param(params);

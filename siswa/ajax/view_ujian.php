@@ -320,11 +320,18 @@ $exam_package_json = json_encode([
 </nav>
 <div class="nav-drawer-backdrop" id="navDrawerBackdrop"></div>
 
-<!-- Anti-Screenshot & Privacy Screen Layer -->
+<!-- Anti-Screenshot Shield & Print Blocker Layer -->
 <style>
-    @media print { body { display: none !important; } }
-    #privacy-screen { position: fixed; inset: 0; background: #ffffff; z-index: 2147483647; display: none; }
+    @media print {
+        html, body { display: none !important; visibility: hidden !important; background: #ffffff !important; }
+    }
+    #screenshot-shield, #privacy-screen {
+        position: fixed; inset: 0; width: 100vw; height: 100vh;
+        background-color: #ffffff !important; z-index: 2147483647; display: none;
+        pointer-events: all;
+    }
 </style>
+<div id="screenshot-shield"></div>
 <div id="privacy-screen"></div>
 
 <div class="exam-page-wrap container-fluid px-3 px-md-4 mt-3 mt-md-4">
@@ -436,6 +443,7 @@ $exam_package_json = json_encode([
     function showBlockedAlert() {
         if (_finishCalled) return;
         _finishCalled = true;
+        if (window.CBT_WakeLock) window.CBT_WakeLock.release();
         clearInterval(_timerInterval);
         clearInterval(_resyncInterval);
         Swal.fire({
@@ -451,6 +459,7 @@ $exam_package_json = json_encode([
     function autoFinishUjian() {
         if (_finishCalled) return;
         _finishCalled = true;
+        if (window.CBT_WakeLock) window.CBT_WakeLock.release();
         clearInterval(_timerInterval);
         clearInterval(_resyncInterval);
         $('#timer').text('00:00:00');
@@ -462,8 +471,97 @@ $exam_package_json = json_encode([
         }).then(function() { spaSelesai(examId, 'timeout'); });
     }
 
-    function logSecurityViolation(type) {
+    var _securityViolationCount = 0;
+    var _hasReceivedSecurityWarning = false;
+    var _isSecurityModalOpen = false;
+    var _lastAwayTimestamp = null;
+    var _lastAwayReason = null;
+    var _shieldActive = false;
+
+    // 🛡️ INTERNAL ACTION GUARD (Whitelist Aksi Tombol & Navigasi Ujian)
+    var _internalActionTimer = null;
+    var _isInternalAction = false;
+    function setInternalActionGuard(durationMs) {
+        _isInternalAction = true;
+        if (_internalActionTimer) clearTimeout(_internalActionTimer);
+        _internalActionTimer = setTimeout(function() {
+            _isInternalAction = false;
+        }, durationMs || 800);
+    }
+
+    function activateBlankShield(reason) {
+        // Abaikan jika sedang melakukan aksi internal (Next, Prev, Ragu-ragu, Nomor Soal, Opsi)
+        if (_isInternalAction) return;
+
+        _shieldActive = true;
+        _lastAwayTimestamp = Date.now();
+        _lastAwayReason = reason || 'Screenshot / App Inactive';
+        $('#screenshot-shield, #privacy-screen').show();
+        document.body.style.opacity = "0";
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            try { navigator.clipboard.writeText(""); } catch (e) {}
+        }
+    }
+
+    function deactivateBlankShield() {
+        _shieldActive = false;
+        $('#screenshot-shield, #privacy-screen').hide();
+        document.body.style.opacity = "1";
+    }
+
+    function handleReturnToExam(triggerType) {
+        deactivateBlankShield();
+
         if (_finishCalled) return;
+        if (!_lastAwayTimestamp) return;
+
+        var durationAway = Date.now() - _lastAwayTimestamp;
+        _lastAwayTimestamp = null;
+
+        // Abaikan jika sedang ada aksi internal (klik tombol soal, drawer, SweetAlert)
+        if (_isInternalAction) return;
+        if (_isSecurityModalOpen) return;
+
+        // Abaikan jika durasi hilang fokus terlalu singkat (< 600ms) untuk event blur biasa / tap glitch
+        if (durationAway < 600 && (!triggerType || triggerType.indexOf('Shortcut') === -1)) return;
+
+        // Jika dokumen sebenarnya masih fokus dan bukan shortcut screenshot nyata, abaikan
+        if (document.hasFocus && document.hasFocus() && (!triggerType || triggerType.indexOf('Shortcut') === -1)) return;
+
+        var violationType = _lastAwayReason || triggerType || 'Pindah Aplikasi / Tangkapan Layar';
+
+        // 🛡️ KEBIJAKAN "PERINGATAN DULU, JANGAN LANGSUNG PELANGGARAN" (WARNING FIRST)
+        if (!_hasReceivedSecurityWarning) {
+            _hasReceivedSecurityWarning = true;
+            _isSecurityModalOpen = true;
+
+            Swal.fire({
+                title: 'Peringatan Keamanan Ujian!',
+                html: '<div class="text-start small text-secondary">' +
+                      '<p class="mb-2">Terdeteksi upaya <b>tangkapan layar (screenshot)</b> atau aplikasi kehilangan fokus.</p>' +
+                      '<p class="mb-0">Harap tetap berada di halaman ujian dan <b>jangan mengambil tangkapan layar</b>. Percobaan berulang akan mengunci akun ujian Anda.</p>' +
+                      '</div>',
+                icon: 'warning',
+                confirmButtonColor: '#4e73df',
+                confirmButtonText: 'Saya Mengerti & Lanjutkan Ujian',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            }).then(function() {
+                _isSecurityModalOpen = false;
+                setInternalActionGuard(1000);
+            });
+        } else {
+            // Percobaan berikutnya setelah peringatan pertama → Catat pelanggaran ke server
+            _isSecurityModalOpen = true;
+            logSecurityViolation(violationType);
+        }
+    }
+
+    function logSecurityViolation(type) {
+        if (_finishCalled) {
+            _isSecurityModalOpen = false;
+            return;
+        }
         $.post('ajax_cheat_log.php', { 
             exam_id: examId, 
             type: type,
@@ -472,14 +570,25 @@ $exam_package_json = json_encode([
             if (res && res.status === 'blocked') {
                 showBlockedAlert();
             } else {
+                var strike = (res && res.count) ? res.count : (++_securityViolationCount);
                 Swal.fire({
-                    title: 'Keamanan AXON CBT',
-                    text: 'Tindakan mencurigakan (' + type + ') terdeteksi dan telah dicatat oleh sistem!',
-                    icon: 'warning',
-                    confirmButtonColor: '#4e73df'
+                    title: 'Peringatan Pelanggaran!',
+                    html: '<div class="text-start small text-secondary">' +
+                          '<p class="mb-2">Tindakan mencurigakan (<b>' + type + '</b>) terdeteksi dan dicatat sistem!</p>' +
+                          '<p class="mb-0 text-danger fw-bold">Pelanggaran ke-' + strike + ' dari batas toleransi. Jika terus berulang, akun Anda akan otomatis terkunci.</p>' +
+                          '</div>',
+                    icon: 'error',
+                    confirmButtonColor: '#e74a3b',
+                    confirmButtonText: 'Lanjutkan Ujian',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                }).then(function() {
+                    _isSecurityModalOpen = false;
                 });
             }
-        }, 'json');
+        }, 'json').fail(function() {
+            _isSecurityModalOpen = false;
+        });
     }
 
     if (sisaWaktu > 0) {
@@ -604,6 +713,7 @@ $exam_package_json = json_encode([
 
     // High-Concurrency Single-Payload Renderer: Pindah Soal 100% INSTAN di Klien (0 ms Latensi)
     window.loadSoal = function loadSoal(num) {
+        setInternalActionGuard(800);
         flushActiveInputs();
         currentNumber = num;
         var qData = _questionsMap[num];
@@ -701,6 +811,7 @@ $exam_package_json = json_encode([
 
     // Event Handler Input Jawaban (Radio & Checkbox)
     $(document).off('change.ujian').on('change.ujian', '.answer-input', function() {
+        setInternalActionGuard(800);
         var input = $(this);
         if (input.is('textarea')) return; // Ditangani oleh debounced input.ujian-textarea
         var val   = input.val();
@@ -722,6 +833,7 @@ $exam_package_json = json_encode([
     // Event Handler Input Textarea (Isian Singkat & Essay - Debounced Autosave)
     var _textareaTimer = null;
     $(document).off('input.ujian-textarea').on('input.ujian-textarea', 'textarea.answer-input', function() {
+        setInternalActionGuard(800);
         var $ta = $(this);
         var val = $ta.val();
         var qId = $('#q_id').val();
@@ -735,6 +847,7 @@ $exam_package_json = json_encode([
 
     // Toggle dropdown menjodohkan
     $(document).off('click.ujian-match-toggle').on('click.ujian-match-toggle', '.matching-selected-display', function(e) {
+        setInternalActionGuard(800);
         e.stopPropagation();
         var $wrapper = $(this).closest('.matching-custom-select');
         var $dd = $wrapper.find('.matching-options-dropdown');
@@ -748,6 +861,7 @@ $exam_package_json = json_encode([
 
     // Pilih opsi menjodohkan
     $(document).off('click.ujian-match-pick').on('click.ujian-match-pick', '.matching-option', function(e) {
+        setInternalActionGuard(800);
         e.stopPropagation();
         var $opt = $(this);
         var $wrapper = $opt.closest('.matching-custom-select');
@@ -783,6 +897,7 @@ $exam_package_json = json_encode([
     });
 
     $(document).off('click.ujian-ragu').on('click.ujian-ragu', '#btnRagu', function() {
+        setInternalActionGuard(800);
         var $btn = $(this);
         var newState = !$btn.hasClass('is-active');
         $btn.toggleClass('is-active', newState).attr('aria-pressed', newState ? 'true' : 'false');
@@ -807,6 +922,7 @@ $exam_package_json = json_encode([
     });
 
     $('#btn-next').off('click.ujian').on('click.ujian', function() {
+        setInternalActionGuard(800);
         if (currentNumber < totalSoal) {
             loadSoal(currentNumber + 1);
         } else if (sisaWaktu <= 300) {
@@ -823,15 +939,18 @@ $exam_package_json = json_encode([
     });
 
     $('#btn-prev').off('click.ujian').on('click.ujian', function() {
+        setInternalActionGuard(800);
         if (currentNumber > 1) loadSoal(currentNumber - 1);
     });
 
     $('#btn-toggle-nav').off('click.ujian').on('click.ujian', function() {
+        setInternalActionGuard(800);
         $('#navContainer').addClass('show');
         $('#navDrawerBackdrop').addClass('show');
     });
 
     function closeNavDrawer() {
+        setInternalActionGuard(800);
         $('#navContainer').removeClass('show');
         $('#navDrawerBackdrop').removeClass('show');
     }
@@ -839,50 +958,99 @@ $exam_package_json = json_encode([
     $('#navDrawerBackdrop').off('click.ujian').on('click.ujian', closeNavDrawer);
 
     $(document).off('click.ujian-navclose').on('click.ujian-navclose', '.no-box', function() {
+        setInternalActionGuard(800);
         if (window.innerWidth < 992) closeNavDrawer();
     });
 
     $('#btn-finish-exam').off('click.ujian').on('click.ujian', function() {
+        setInternalActionGuard(1500);
         finishExamConfirm();
     });
 
-    // Keamanan: Touch & Visibility Listeners
-    $(document).on('touchstart.security', function(e) {
-        if (e.originalEvent.touches.length >= 3) {
-            document.body.style.opacity = "0";
-            logSecurityViolation("Screenshot");
+    // 🛡️ KEAMANAN TINGKAT TINGGI LINTAS PLATFORM (Cross-Platform Anti-Screenshot & Blur Shield)
+
+    // 1. Multi-Touch Gesture Detection (Abaikan jika sentuhan mengenai elemen tombol/navigasi ujian atau hanya 1-2 sentuhan palm bezel)
+    $(document).off('touchstart.security').on('touchstart.security', function(e) {
+        // Abaikan jika target sentuhan berada di tombol aksi, nomor soal, opsi jawaban, atau input formulir
+        if ($(e.target).closest('.btn, .no-box, .option-item, .answer-input, #navContainer, .exam-action-bar, .matching-custom-select, textarea, input, label').length > 0) {
+            setInternalActionGuard(800);
+            return;
+        }
+
+        if (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length >= 3) {
+            activateBlankShield('Multi-Touch Gesture Screenshot');
         }
     });
 
-    $(document).on('touchend.security', function() {
-        setTimeout(function() {
-            document.body.style.opacity = "1";
-        }, 1500);
+    $(document).off('touchend.security touchcancel.security').on('touchend.security touchcancel.security', function() {
+        if (_shieldActive) {
+            setTimeout(function() {
+                handleReturnToExam('Multi-Touch Gesture Screenshot');
+            }, 600);
+        }
     });
 
-    window._onBlurUjian = function() {
-        document.body.style.opacity = "0";
-        $('#privacy-screen').show();
-        
-        window._blurCheatTimeout = setTimeout(function() {
-            logSecurityViolation("Pindah Aplikasi/Blur");
-        }, 300);
-    };
+    // 2. Intersepsi Keyboard Shortcut (PrintScreen, Mac Cmd+Shift+3/4/5, Snipping Tool Win+Shift+S, DevTools)
+    $(window).off('keydown.security').on('keydown.security', function(e) {
+        var key = e.key || '';
+        var keyCode = e.keyCode || e.which;
 
-    window._onFocusUjian = function() {
-        clearTimeout(window._blurCheatTimeout);
-        document.body.style.opacity = "1";
-        $('#privacy-screen').hide();
-    };
+        // PrintScreen
+        if (key === 'PrintScreen' || keyCode === 44) {
+            e.preventDefault();
+            activateBlankShield('Shortcut PrintScreen');
+            setTimeout(function() { handleReturnToExam('Shortcut PrintScreen'); }, 400);
+            return false;
+        }
 
-    window.addEventListener('blur', window._onBlurUjian);
-    window.addEventListener('focus', window._onFocusUjian);
+        // macOS / iPadOS Screenshot (Cmd + Shift + 3 / 4 / 5)
+        if (e.metaKey && e.shiftKey && (key === '3' || key === '4' || key === '5' || keyCode === 51 || keyCode === 52 || keyCode === 53)) {
+            e.preventDefault();
+            activateBlankShield('Shortcut Screenshot macOS/iPadOS');
+            setTimeout(function() { handleReturnToExam('Shortcut Screenshot macOS/iPadOS'); }, 400);
+            return false;
+        }
 
-    $(document).on('copy.security cut.security paste.security', function(e) {
+        // Windows Snipping Tool (Win + Shift + S) / Browser Screenshot (Ctrl/Cmd + Shift + S)
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (key === 's' || key === 'S' || keyCode === 83)) {
+            e.preventDefault();
+            activateBlankShield('Shortcut Snipping Tool');
+            setTimeout(function() { handleReturnToExam('Shortcut Snipping Tool'); }, 400);
+            return false;
+        }
+
+        // Cetak Halaman (Ctrl + P / Cmd + P)
+        if ((e.ctrlKey || e.metaKey) && (key === 'p' || key === 'P' || keyCode === 80)) {
+            e.preventDefault();
+            activateBlankShield('Shortcut Cetak Halaman');
+            setTimeout(function() { handleReturnToExam('Shortcut Cetak Halaman'); }, 400);
+            return false;
+        }
+
+        // DevTools (F12, Ctrl/Cmd + Shift + I/J/C)
+        if (keyCode === 123 || ((e.ctrlKey || e.metaKey) && e.shiftKey && (key === 'i' || key === 'I' || key === 'j' || key === 'J' || key === 'c' || key === 'C' || keyCode === 73 || keyCode === 74 || keyCode === 67))) {
+            e.preventDefault();
+            activateBlankShield('Shortcut DevTools');
+            setTimeout(function() { handleReturnToExam('Shortcut DevTools'); }, 400);
+            return false;
+        }
+
+        // View Source (Ctrl/Cmd + U) & Save (Ctrl/Cmd + S)
+        if ((e.ctrlKey || e.metaKey) && (key === 'u' || key === 'U' || keyCode === 85 || key === 's' || key === 'S' || keyCode === 83)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // 3. Blokir Copy, Cut, Paste
+    $(document).off('copy.security cut.security paste.security').on('copy.security cut.security paste.security', function(e) {
+        if ($(e.target).is('textarea, input[type="text"]')) {
+            // Ijinkan paste jawaban teks jika dibutuhkan, atau blokir seluruhnya sesuai aturan
+        }
         e.preventDefault();
         Swal.fire({
             title: 'Aksi Dilarang',
-            text: 'Fungsi Copy, Cut, dan Paste dinonaktifkan demi keamanan ujian.',
+            text: 'Fungsi Copy, Cut, dan Paste dinonaktifkan demi keamanan integritas ujian.',
             icon: 'error',
             timer: 2000,
             showConfirmButton: false
@@ -890,29 +1058,42 @@ $exam_package_json = json_encode([
         return false;
     });
 
-    $(window).on('keyup.security', function(e) {
-        if (e.key === 'PrintScreen' || (e.ctrlKey && e.key === 'p')) {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(""); 
-            }
-            $('#privacy-screen').show().fadeOut(1000);
-            logSecurityViolation("Shortcut Screenshot/Print");
-            return false;
-        }
-    });
+    // 4. Window Blur & Focus Handlers (Dengan Filter Smart Whitelist Aksi Internal)
+    window._onBlurUjian = function(e) {
+        // 1. Abaikan jika sedang ada aksi navigasi internal, klik nomor soal, atau opsi
+        if (_isInternalAction) return;
 
+        // 2. Abaikan jika dokumen sebenarnya masih memegang fokus (false positive blur)
+        if (document.hasFocus && document.hasFocus()) return;
+
+        // 3. Abaikan jika dialog / modal sistem sedang aktif
+        if (typeof Swal !== 'undefined' && Swal.isVisible && Swal.isVisible()) return;
+
+        activateBlankShield('Pindah Aplikasi / Window Blur');
+    };
+
+    window._onFocusUjian = function() {
+        handleReturnToExam('Pindah Aplikasi / Window Blur');
+    };
+
+    window.removeEventListener('blur', window._onBlurUjian);
+    window.removeEventListener('focus', window._onFocusUjian);
+    window.addEventListener('blur', window._onBlurUjian);
+    window.addEventListener('focus', window._onFocusUjian);
+
+    // 5. Document Visibility Change (Pindah Tab / Minimize Browser)
     document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'hidden') {
-            $('#privacy-screen').show();
-            document.body.style.opacity = "0";
-        } else {
-            $('#privacy-screen').hide();
-            document.body.style.opacity = "1";
+        if (_isInternalAction) return;
+        if (document.visibilityState === 'hidden' || document.hidden) {
+            activateBlankShield('Pindah Tab / Minimize Browser');
+        } else if (document.visibilityState === 'visible' && !document.hidden) {
+            handleReturnToExam('Pindah Tab / Minimize Browser');
         }
     });
 
-    // Inisialisasi Navigasi & Muat Soal #1 secara Instan (0 ms)
+    // Inisialisasi Navigasi, Muat Soal #1, dan Kunci Layar Tetap Aktif (0 ms)
     initNavGrid();
     loadSoal(1);
+    if (window.CBT_WakeLock) window.CBT_WakeLock.request();
 })();
 </script>

@@ -14,7 +14,7 @@
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     color: white; text-align: center; padding: 20px;
-    cursor: pointer; user-select: none;
+    cursor: pointer; user-select: none; -webkit-user-select: none;
     transition: opacity 0.35s;
 }
 #fs-overlay.fs-resume { background: rgba(34, 74, 190, 0.97); }
@@ -47,22 +47,61 @@
 <script>
 (function () {
     var FS_KEY = 'cbt_fs_consent';
-
     var _hideOverlayTimer = null;
 
-    function enterFS() {
+    // Cross-Platform OS & Device Detection Helper
+    window.isIOSDevice = function() {
+        return (/iPad|iPhone|iPod/.test(navigator.userAgent) || 
+               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) && 
+               !window.MSStream;
+    };
+
+    window.isNativeFullscreenSupported = function() {
         var el = document.documentElement;
-        var req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
-        if (req && !document.fullscreenElement && !document.webkitFullscreenElement && !window.navigator.standalone) {
-            try {
-                var result = req.call(el);
-                if (result && typeof result.then === 'function') {
-                    return result.catch(function () {});
+        return !!(el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen);
+    };
+
+    window.isFullscreenActive = function() {
+        return !!(document.fullscreenElement || 
+                  document.webkitFullscreenElement || 
+                  document.mozFullScreenElement || 
+                  document.msFullscreenElement || 
+                  window.navigator.standalone || 
+                  (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches));
+    };
+
+    window.requestUniversalFullscreen = function(element) {
+        element = element || document.documentElement;
+        try {
+            if (element.requestFullscreen) {
+                var p = element.requestFullscreen();
+                if (p && typeof p.catch === 'function') {
+                    return p.catch(function(err) { console.warn('Fullscreen request failed:', err); });
                 }
-            } catch (e) {}
+                return Promise.resolve();
+            } else if (element.webkitRequestFullscreen) {
+                var pWebkit = element.webkitRequestFullscreen();
+                if (pWebkit && typeof pWebkit.catch === 'function') {
+                    return pWebkit.catch(function(err) { console.warn('Webkit fullscreen failed:', err); });
+                }
+                return Promise.resolve();
+            } else if (element.mozRequestFullScreen) {
+                return element.mozRequestFullScreen();
+            } else if (element.msRequestFullscreen) {
+                return element.msRequestFullscreen();
+            }
+        } catch (e) {
+            console.warn('Fullscreen invocation error:', e);
+        }
+
+        // Fallback untuk iOS Safari (iPhone/iPad) atau browser tanpa dukungan Element Fullscreen
+        if (window.isIOSDevice()) {
+            document.body.classList.add('ios-simulated-fullscreen');
+            document.documentElement.classList.add('ios-simulated-fullscreen');
+            try { window.scrollTo(0, 1); } catch (e) {}
         }
         return Promise.resolve();
-    }
+    };
 
     function hideOverlay() {
         var o = document.getElementById('fs-overlay');
@@ -94,10 +133,14 @@
         o.style.opacity = '1';
     }
 
-    // Kunci fullscreen – re-show overlay jika siswa keluar (Esc/F11)
+    // Kunci fullscreen – re-show overlay jika siswa keluar (Esc/F11) pada browser yang mendukung native fullscreen
     function attachLock() {
         var handler = function () {
-            if (!document.fullscreenElement && !document.webkitFullscreenElement && !window.navigator.standalone) {
+            if (!window.isFullscreenActive()) {
+                // Pada perangkat iOS reguler tanpa native element fullscreen, jangan loop overlay jika sudah consent
+                if (window.isIOSDevice() && !window.isNativeFullscreenSupported() && sessionStorage.getItem(FS_KEY)) {
+                    return;
+                }
                 showOverlay(true);
             }
         };
@@ -105,22 +148,32 @@
             .forEach(function (e) { document.addEventListener(e, handler); });
     }
 
-    document.getElementById('fs-enter-btn').addEventListener('click', function (e) {
-        e.stopPropagation();
-        enterFS().then(function () {
-            sessionStorage.setItem(FS_KEY, '1');
-            hideOverlay();
+    var enterBtn = document.getElementById('fs-enter-btn');
+    if (enterBtn) {
+        enterBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (window.CBT_WakeLock) window.CBT_WakeLock.request();
+            window.requestUniversalFullscreen(document.documentElement).then(function () {
+                sessionStorage.setItem(FS_KEY, '1');
+                hideOverlay();
+            });
         });
-    });
+    }
 
     // Sudah fullscreen (PWA / sudah masuk sebelumnya di tab yang sama)
-    if (document.fullscreenElement || document.webkitFullscreenElement || window.navigator.standalone) {
+    if (window.isFullscreenActive()) {
         attachLock();
         return;
     }
 
-    // Sudah pernah consent di sesi ini → overlay ringkas
+    // Sudah pernah consent di sesi ini
     if (sessionStorage.getItem(FS_KEY)) {
+        if (window.isIOSDevice() && !window.isNativeFullscreenSupported()) {
+            document.body.classList.add('ios-simulated-fullscreen');
+            document.documentElement.classList.add('ios-simulated-fullscreen');
+            attachLock();
+            return;
+        }
         showOverlay(true);
     } else {
         // Pertama kali → overlay penuh
