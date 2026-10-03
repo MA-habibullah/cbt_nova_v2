@@ -829,7 +829,7 @@ function gJadwalQuery(array $extra = []): string {
 
 <!-- MODAL TAMBAH JADWAL (GURU) -->
 <div class="modal fade" id="modalTambahTest" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <form action="" method="POST" class="modal-content border-0 shadow" id="formTambahTest">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="action" value="tambah_jadwal">
@@ -917,7 +917,7 @@ function gJadwalQuery(array $extra = []): string {
 
 <!-- MODAL EDIT JADWAL (GURU) -->
 <div class="modal fade" id="modalEditTest" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <form action="" method="POST" class="modal-content border-0 shadow" id="formEditTest">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="action" value="edit_jadwal">

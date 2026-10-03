@@ -259,8 +259,8 @@ $listSoal = $stmt_list->fetchAll();
 
 <!-- Modal Tambah Soal -->
 <div class="modal fade" id="modalTambahSoal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-xl">
-        <form action="controllers/proses-soal.php" method="POST" class="modal-content border-0">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <form action="controllers/proses-soal.php" method="POST" class="modal-content border-0 shadow">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title fw-bold">Input Soal Baru</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -317,8 +317,8 @@ $listSoal = $stmt_list->fetchAll();
 
 <!-- Modal Edit Soal -->
 <div class="modal fade" id="modalEditSoal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-xl">
-        <form action="controllers/proses-soal.php" method="POST" class="modal-content border-0">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <form action="controllers/proses-soal.php" method="POST" class="modal-content border-0 shadow">
             <div class="modal-header bg-warning text-dark">
                 <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i> Edit Soal</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -383,7 +383,8 @@ $listSoal = $stmt_list->fetchAll();
 
 <!-- Modal Formula Matematika -->
 <div class="modal fade" id="modalFormula" tabindex="-1" aria-labelledby="modalFormulaLabel">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title fw-bold" id="modalFormulaLabel"><i class="fas fa-square-root-alt me-2"></i> Sisipkan Formula Matematika</h5>

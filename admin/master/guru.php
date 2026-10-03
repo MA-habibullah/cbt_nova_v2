@@ -473,7 +473,7 @@ $count_all    = $count_aktif + $count_nonaktif;
 
 <!-- MODAL EDIT GURU -->
 <div class="modal fade" id="modalEdit" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <form action="" method="POST" class="modal-content border-0 shadow">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="modal-header bg-dark text-white">
@@ -516,7 +516,7 @@ $count_all    = $count_aktif + $count_nonaktif;
 
 <!-- MODAL TAMBAH GURU -->
 <div class="modal fade" id="modalTambah" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <form action="" method="POST" class="modal-content border-0 shadow">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="modal-header bg-primary text-white">
@@ -551,7 +551,8 @@ $count_all    = $count_aktif + $count_nonaktif;
 
 <!-- MODAL IMPORT GURU -->
 <div class="modal fade" id="modalImport" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
+
         <form action="../master-io/import_guru.php" method="POST" enctype="multipart/form-data" class="modal-content border-0 shadow">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="modal-header bg-success text-white">

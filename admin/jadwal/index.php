@@ -718,7 +718,7 @@ function build_pagination_url($targetPage) {
 
 <!-- MODAL TAMBAH JADWAL UJIAN -->
 <div class="modal fade" id="modalTambahJadwal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <form action="" method="POST" class="modal-content border-0 shadow" id="formTambahJadwal">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="action" value="tambah_jadwal">

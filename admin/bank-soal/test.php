@@ -329,7 +329,7 @@ $listExams = $exams->fetchAll();
 </div>
 
 <div class="modal fade" id="modalEditTest" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <form action="" method="POST" class="modal-content border-0">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="modal-header bg-primary text-white">
@@ -397,7 +397,7 @@ $listExams = $exams->fetchAll();
 </div>
 
 <div class="modal fade" id="modalTambahTest" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <form action="" method="POST" class="modal-content border-0">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="modal-header bg-primary text-white">
@@ -460,7 +460,8 @@ $listExams = $exams->fetchAll();
 </div>
 
 <div class="modal fade" id="modalSalinTest" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
+
         <form action="" method="POST" class="modal-content border-0 shadow">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="modal-header bg-success text-white">

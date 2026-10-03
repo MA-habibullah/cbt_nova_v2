@@ -534,7 +534,7 @@ $participantMap      = array_column($participants_raw, null, 'student_id');
 
 <!-- Modal Distribusi Otomatis / Subset Soal -->
 <div class="modal fade" id="modalDistribusi" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0">
             <div class="modal-header bg-info text-white">
                 <h5 class="modal-title fw-bold"><i class="fas fa-sliders-h me-2"></i>Atur Distribusi &amp; Jumlah Soal</h5>
@@ -945,7 +945,7 @@ $(document).ready(function() {
 
 <!-- Modal Salin / Susulan Ujian (Guru) -->
 <div class="modal fade" id="modalSalinTest" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <form action="test.php?id=<?= esc($id_bank) ?>" method="POST" class="modal-content border-0 shadow">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="modal-header bg-success text-white">
