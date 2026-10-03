@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hapus_log'])) {
 }
 
 // Ambil data awal untuk filter Kelas
-$classes = query("SELECT id, nama_kelas FROM cbt_classes WHERE is_aktif = 1 ORDER BY nama_kelas ASC")->fetchAll();
+$classes = query("SELECT id, nama_kelas, jenjang FROM cbt_classes WHERE is_aktif = 1 ORDER BY jenjang ASC, nama_kelas ASC")->fetchAll();
 ?>
 
 <!DOCTYPE html>
@@ -92,7 +92,7 @@ $classes = query("SELECT id, nama_kelas FROM cbt_classes WHERE is_aktif = 1 ORDE
                             <select name="class_id" id="log-class" class="form-select rounded-3">
                                 <option value="">Semua Kelas</option>
                                 <?php foreach($classes as $c): ?>
-                                    <option value="<?= esc($c['id']) ?>"><?= esc($c['nama_kelas']) ?></option>
+                                    <option value="<?= esc($c['id']) ?>">Kelas <?= esc($c['jenjang']) ?> - <?= esc($c['nama_kelas']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>

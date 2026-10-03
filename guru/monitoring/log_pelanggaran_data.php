@@ -14,7 +14,7 @@ $tanggal  = $_GET['tanggal'] ?? '';
 $exam_id  = $_GET['exam_id'] ?? '';
 $class_id = $_GET['class_id'] ?? '';
 
-$sql = "SELECT cl.*, s.nama_lengkap, s.username, s.nisn, c.nama_kelas, e.nama_mapel_ujian
+$sql = "SELECT cl.*, s.nama_lengkap, s.username, s.nisn, c.jenjang, c.nama_kelas, e.nama_mapel_ujian
         FROM cbt_cheat_logs cl
         JOIN cbt_students s ON cl.student_id = s.id
         LEFT JOIN cbt_classes c ON s.class_id = c.id
@@ -35,7 +35,7 @@ if ($class_id) {
     $params[] = $class_id;
 }
 
-$sql .= " ORDER BY cl.waktu_kejadian DESC LIMIT 300";
+$sql .= " ORDER BY cl.waktu_kejadian DESC LIMIT 50";
 $logs = query($sql, $params)->fetchAll();
 
 if (empty($logs)) {
@@ -50,11 +50,12 @@ if (empty($logs)) {
 // Group by student
 $grouped = [];
 foreach ($logs as $l) {
+    $kelasDisplay = !empty($l['jenjang']) ? "Kelas {$l['jenjang']} - {$l['nama_kelas']}" : ($l['nama_kelas'] ?? '-');
     $grouped[$l['student_id']]['info'] = [
         'nama'     => $l['nama_lengkap'],
         'username' => $l['username'],
         'nisn'     => $l['nisn'],
-        'kelas'    => $l['nama_kelas'],
+        'kelas'    => $kelasDisplay,
         'mapel'    => $l['nama_mapel_ujian']
     ];
     $grouped[$l['student_id']]['logs'][] = $l;

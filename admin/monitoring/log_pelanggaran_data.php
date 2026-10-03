@@ -12,7 +12,7 @@ $exam_id  = $_GET['exam_id'] ?? '';
 $class_id = $_GET['class_id'] ?? '';
 
 $params = [$tanggal];
-$sql = "SELECT l.*, s.nama_lengkap, s.username, c.nama_kelas, e.nama_mapel_ujian 
+$sql = "SELECT l.*, s.nama_lengkap, s.username, c.jenjang, c.nama_kelas, e.nama_mapel_ujian 
         FROM cbt_cheat_logs l
         JOIN cbt_students s ON l.student_id = s.id
         LEFT JOIN cbt_classes c ON s.class_id = c.id
@@ -22,7 +22,7 @@ $sql = "SELECT l.*, s.nama_lengkap, s.username, c.nama_kelas, e.nama_mapel_ujian
 if($exam_id) { $sql .= " AND l.exam_id = ?"; $params[] = $exam_id; }
 if($class_id) { $sql .= " AND s.class_id = ?"; $params[] = $class_id; }
 
-$sql .= " ORDER BY l.student_id, l.exam_id, l.waktu_kejadian DESC";
+$sql .= " ORDER BY l.student_id, l.exam_id, l.waktu_kejadian DESC LIMIT 50";
 
 $data = query($sql, $params)->fetchAll();
 
@@ -41,6 +41,7 @@ foreach ($data as $row) {
             'exam_id'         => $row['exam_id'],
             'nama_lengkap'    => $row['nama_lengkap'],
             'username'        => $row['username'],
+            'jenjang'         => $row['jenjang'] ?? '',
             'nama_kelas'      => $row['nama_kelas'],
             'nama_mapel_ujian'=> $row['nama_mapel_ujian'],
             'items'           => [],
@@ -60,6 +61,7 @@ foreach ($groups as $g) {
     $count    = count($g['items']);
     $collapseId = 'grp-' . $g['student_id'] . '-' . $g['exam_id'];
     $lastTime = date('H:i:s', strtotime($g['items'][0]['waktu_kejadian']));
+    $kelasLabel = !empty($g['jenjang']) ? "Kelas {$g['jenjang']} - {$g['nama_kelas']}" : ($g['nama_kelas'] ?? '-');
 
     echo "<div class='card border-0 shadow-sm rounded-3 mb-2 log-group-card'>
         <div class='log-group-header d-flex justify-content-between align-items-center p-3'
@@ -72,7 +74,7 @@ foreach ($groups as $g) {
                         <span class='font-mono-sm text-primary ms-1'>" . htmlspecialchars($g['username']) . "</span>
                     </div>
                     <div class='text-muted small mt-1'>
-                        <span class='badge bg-light text-dark border fw-normal me-1'>" . htmlspecialchars($g['nama_kelas']) . "</span>
+                        <span class='badge bg-light text-dark border fw-normal me-1'>" . htmlspecialchars($kelasLabel) . "</span>
                         " . htmlspecialchars($g['nama_mapel_ujian']) . "
                     </div>
                 </div>
