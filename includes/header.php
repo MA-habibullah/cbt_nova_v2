@@ -34,6 +34,7 @@ unset($_hdr_setting);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="<?= esc(BASE_URL) ?>assets/css/style.css">
+    <link rel="stylesheet" href="<?= esc(BASE_URL) ?>assets/css/nova-modern-ui.css">
     <link rel="icon" type="image/png" href="<?= esc($fileFavicon) ?>">
     <style>
         /* Batasi ukuran gambar di konten soal (preview list, opsi jawaban, menjodohkan) */
