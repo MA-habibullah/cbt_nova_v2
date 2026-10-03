@@ -37,18 +37,18 @@ $sessions = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
             <div class="card border-0 shadow-sm mb-4 rounded-3">
                 <div class="card-body p-3">
                     <form id="filterDevice" class="row g-2">
-                        <div class="col-md-2">
+                        <div class="col-12 col-sm-6 col-lg-2">
                             <label class="form-label-sm">Tanggal Lock</label>
                             <input type="date" name="tanggal" id="tanggal" class="form-control form-control-sm onChangeLoad" value="<?= esc(date('Y-m-d')) ?>">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-12 col-sm-6 col-lg-3">
                             <label class="form-label-sm">Cari Nama / Username</label>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
                                 <input type="text" name="search" class="form-control border-start-0 onChangeLoad" placeholder="Ketik nama siswa...">
                             </div>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-12 col-sm-6 col-lg-2">
                             <label class="form-label-sm">Kelas</label>
                             <select name="class_id" class="form-select form-select-sm onChangeLoad">
                                 <option value="">Semua Kelas</option>
@@ -57,7 +57,7 @@ $sessions = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-12 col-sm-6 col-lg-2">
                             <label class="form-label-sm">Sesi</label>
                             <select name="sesi" class="form-select form-select-sm onChangeLoad">
                                 <option value="">Semua Sesi</option>
@@ -66,7 +66,7 @@ $sessions = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-3 d-flex align-items-end gap-2">
+                        <div class="col-12 col-sm-12 col-lg-3 d-flex align-items-end gap-2">
                             <button type="button" onclick="bulkResetDevice()" class="btn btn-danger btn-sm w-100 fw-bold py-2 shadow-sm">
                                 <i class="fas fa-unlock-alt me-1"></i> BUKA KUNCI MASAL
                             </button>
