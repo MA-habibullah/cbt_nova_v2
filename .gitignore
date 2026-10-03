@@ -35,7 +35,7 @@ config/database.php
 # 5. Temporary Files, Cache, Logs, & Scratch Area
 /scratch/
 /writable/
-.agent/
+.agents/
 *.log
 *.bak
 *.tmp
