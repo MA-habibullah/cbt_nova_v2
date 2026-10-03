@@ -69,7 +69,7 @@ $metric_total_kelas = (int)query("SELECT COUNT(*) FROM cbt_classes WHERE is_akti
             <!-- Breadcrumbs -->
             <nav aria-label="breadcrumb" class="mb-3">
                 <ol class="breadcrumb mb-0 small">
-                    <li class="breadcrumb-item"><a href="<?= esc(BASE_URL) ?>admin/dashboard/index.php" class="text-decoration-none text-muted"><i class="fas fa-home me-1"></i>Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="<?= esc(BASE_URL) ?>admin/index.php" class="text-decoration-none text-muted"><i class="fas fa-home me-1"></i>Dashboard</a></li>
                     <li class="breadcrumb-item"><a href="<?= esc(BASE_URL) ?>admin/monitoring/index.php" class="text-decoration-none text-muted"><i class="fas fa-desktop me-1"></i>Monitoring</a></li>
                     <li class="breadcrumb-item active fw-semibold text-primary" aria-current="page">Device Lock</li>
                 </ol>
