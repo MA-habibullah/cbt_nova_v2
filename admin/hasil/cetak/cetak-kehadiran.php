@@ -41,8 +41,9 @@ $filter_sesi  = (isset($_GET['sesi']) && $_GET['sesi'] !== '') ? $_GET['sesi'] :
 
 $list_students = [];
 $nama_kelas_aktif = "";
+$has_active_filter = ($filter_exam && $filter_class);
 
-if ($filter_exam && $filter_class) {
+if ($has_active_filter) {
     $st_cls = $pdo->prepare("SELECT nama_kelas FROM cbt_classes WHERE id = ?");
     $st_cls->execute([$filter_class]);
     $nama_kelas_aktif = $st_cls->fetchColumn();
@@ -66,6 +67,8 @@ if ($filter_exam && $filter_class) {
     $stmt->execute($params);
     $list_students = $stmt->fetchAll();
 }
+
+$print_url = "cetak-administrasi.php?id=" . urlencode($id_bank) . "&exam_id=" . urlencode($filter_exam) . "&class_id=" . urlencode($filter_class) . "&sesi=" . urlencode($filter_sesi);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -91,6 +94,17 @@ if ($filter_exam && $filter_class) {
                         <small class="text-muted"><?= esc($info_bank['nama_mapel']) ?> &bull; <?= esc($info_bank['nama_bank_soal']) ?></small>
                     </div>
                 </div>
+                <div>
+                    <?php if($has_active_filter): ?>
+                        <a href="<?= esc($print_url) ?>" target="_blank" class="btn btn-danger rounded-3 px-3 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2">
+                            <i class="fas fa-file-pdf"></i> Cetak PDF (A4)
+                        </a>
+                    <?php else: ?>
+                        <button type="button" class="btn btn-secondary rounded-3 px-3 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2 opacity-75" onclick="Swal.fire({icon: 'info', title: 'Pilih Jadwal & Kelas', text: 'Silakan pilih Jadwal Ujian dan Kelas pada form filter di bawah untuk mencetak dokumen daftar hadir & berita acara.', confirmButtonColor: '#3b82f6'});">
+                            <i class="fas fa-file-pdf"></i> Cetak PDF (A4)
+                        </button>
+                    <?php endif; ?>
+                </div>
             </div>
         </nav>
 
@@ -102,9 +116,9 @@ if ($filter_exam && $filter_class) {
                         <input type="hidden" name="id" value="<?= esc($id_bank) ?>">
 
                         <div class="col-lg-4 col-md-6">
-                            <label class="small fw-semibold text-secondary text-uppercase mb-1">1. Pilih Jadwal Ujian</label>
+                            <label class="small fw-semibold text-secondary text-uppercase mb-1">1. Pilih Jadwal Ujian <span class="text-danger">*</span></label>
                             <select name="exam_id" class="form-select rounded-3 py-2 border-secondary-subtle" required onchange="this.form.submit()">
-                                <option value="">-- Pilih Ujian --</option>
+                                <option value="">-- Pilih Jadwal Ujian --</option>
                                 <?php foreach($exams as $e): ?>
                                     <option value="<?= esc($e['id']) ?>" <?= esc($filter_exam == $e['id'] ? 'selected' : '') ?>>
                                         <?= esc($e['nama_mapel_ujian']) ?>
@@ -112,8 +126,8 @@ if ($filter_exam && $filter_class) {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-lg-3 col-md-3">
-                            <label class="small fw-semibold text-secondary text-uppercase mb-1">2. Kelas</label>
+                        <div class="col-lg-3 col-md-6">
+                            <label class="small fw-semibold text-secondary text-uppercase mb-1">2. Kelas <span class="text-danger">*</span></label>
                             <select name="class_id" class="form-select rounded-3 py-2 border-secondary-subtle" required onchange="this.form.submit()">
                                 <option value="">-- Pilih Kelas --</option>
                                 <?php foreach($classes as $c): ?>
@@ -123,7 +137,7 @@ if ($filter_exam && $filter_class) {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-lg-2 col-md-3">
+                        <div class="col-lg-2 col-md-6">
                             <label class="small fw-semibold text-secondary text-uppercase mb-1">3. Sesi</label>
                             <select name="sesi" class="form-select rounded-3 py-2 border-secondary-subtle" onchange="this.form.submit()">
                                 <option value="all" <?= esc($filter_sesi === 'all' ? 'selected' : '') ?>>Semua Sesi</option>
@@ -132,31 +146,39 @@ if ($filter_exam && $filter_class) {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-lg-3 col-md-12 d-flex align-items-end gap-2">
-                            <button type="submit" class="btn btn-primary rounded-3 py-2 w-100 fw-semibold shadow-sm d-flex align-items-center justify-content-center gap-1">
-                                <i class="fas fa-eye"></i> Tampilkan
-                            </button>
-                            <?php if($filter_exam && $filter_class): ?>
-                                <a href="cetak-administrasi.php?id=<?= esc($id_bank) ?>&exam_id=<?= esc($filter_exam) ?>&class_id=<?= esc($filter_class) ?>&sesi=<?= esc($filter_sesi) ?>" 
-                                target="_blank" class="btn btn-danger rounded-3 py-2 w-100 fw-semibold shadow-sm d-flex align-items-center justify-content-center gap-1">
-                                    <i class="fas fa-file-pdf"></i> Cetak PDF
+                        <div class="col-lg-3 col-md-6 d-flex align-items-end gap-2">
+                            <?php if($has_active_filter): ?>
+                                <a href="<?= esc($print_url) ?>" target="_blank" class="btn btn-danger rounded-3 py-2 w-100 fw-semibold shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                    <i class="fas fa-file-pdf"></i> Cetak PDF (A4)
                                 </a>
+                            <?php else: ?>
+                                <button type="button" class="btn btn-danger rounded-3 py-2 w-100 fw-semibold shadow-sm d-flex align-items-center justify-content-center gap-2 opacity-75" onclick="Swal.fire({icon: 'info', title: 'Pilih Jadwal & Kelas', text: 'Silakan pilih Jadwal Ujian dan Kelas terlebih dahulu untuk mencetak dokumen administrasi ujian.', confirmButtonColor: '#3b82f6'});">
+                                    <i class="fas fa-file-pdf"></i> Cetak PDF (A4)
+                                </button>
                             <?php endif; ?>
+                            <a href="cetak-kehadiran.php?id=<?= esc($id_bank) ?>" class="btn btn-outline-secondary rounded-3 py-2 px-3 fw-semibold d-flex align-items-center justify-content-center gap-1" title="Reset Filter">
+                                <i class="fas fa-rotate-left"></i>
+                            </a>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <?php if($filter_exam && $filter_class): ?>
+            <?php if($has_active_filter): ?>
                 <div class="card card-dashboard p-0 shadow-sm border-0 rounded-4 overflow-hidden bg-white mb-4">
                     <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
                         <div class="d-flex align-items-center gap-2">
                             <i class="fas fa-clipboard-user text-primary fs-5"></i>
                             <h6 class="mb-0 fw-bold text-dark">Pratinjau Peserta: <?= esc($nama_kelas_aktif) ?></h6>
                         </div>
-                        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 fw-semibold">
-                            Total: <?= count($list_students) ?> Peserta Terdaftar
-                        </span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 fw-semibold">
+                                Total: <?= count($list_students) ?> Peserta Terdaftar
+                            </span>
+                            <a href="<?= esc($print_url) ?>" target="_blank" class="btn btn-sm btn-outline-danger rounded-3 px-3 py-1 fw-semibold d-flex align-items-center gap-1">
+                                <i class="fas fa-print"></i> Print
+                            </a>
+                        </div>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0" style="min-width: 800px;">
@@ -219,6 +241,7 @@ if ($filter_exam && $filter_class) {
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     $("#menu-toggle").click(function(e) { e.preventDefault(); $("#wrapper").toggleClass("toggled"); });
 </script>
