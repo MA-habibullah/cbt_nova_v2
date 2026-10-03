@@ -17,24 +17,38 @@ $sch = $pdo->query("SELECT * FROM cbt_settings LIMIT 1")->fetch();
 $ta_aktif = $pdo->query("SELECT * FROM cbt_tahun_ajaran WHERE is_aktif = 1 LIMIT 1")->fetch();
 
 // Logic Filter
-$class_id = $_GET['class_id'] ?? '';
-$jenjang = $_GET['jenjang'] ?? '';
-$search = $_GET['search'] ?? '';
+$class_id = isset($_GET['class_id']) ? trim($_GET['class_id']) : '';
+$jenjang = isset($_GET['jenjang']) ? trim($_GET['jenjang']) : '';
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-$query = "SELECT s.*, c.nama_kelas, c.jenjang FROM cbt_students s 
-          JOIN cbt_classes c ON s.class_id = c.id WHERE 1=1";
-$params = [];
+$has_filter = ($class_id !== '' || $jenjang !== '' || $search !== '');
+$students = [];
 
-if ($class_id != '') { $query .= " AND s.class_id = ?"; $params[] = $class_id; }
-if ($jenjang != '') { $query .= " AND c.jenjang = ?"; $params[] = $jenjang; }
-if ($search != '') { 
-    $query .= " AND (s.nama_lengkap LIKE ? OR s.username LIKE ? OR s.nisn LIKE ?)"; 
-    $params[] = "%$search%"; $params[] = "%$search%"; $params[] = "%$search%"; 
+if ($has_filter) {
+    $query = "SELECT s.*, c.nama_kelas, c.jenjang FROM cbt_students s 
+              JOIN cbt_classes c ON s.class_id = c.id WHERE 1=1";
+    $params = [];
+
+    if ($class_id !== '') { 
+        $query .= " AND s.class_id = ?"; 
+        $params[] = $class_id; 
+    }
+    if ($jenjang !== '') { 
+        $query .= " AND c.jenjang = ?"; 
+        $params[] = $jenjang; 
+    }
+    if ($search !== '') { 
+        $query .= " AND (s.nama_lengkap LIKE ? OR s.username LIKE ? OR s.nisn LIKE ?)"; 
+        $params[] = "%$search%"; 
+        $params[] = "%$search%"; 
+        $params[] = "%$search%"; 
+    }
+
+    $query .= " ORDER BY c.jenjang, c.nama_kelas, s.nama_lengkap ASC";
+    $stmt = $pdo->prepare($query);
+    $stmt->execute($params);
+    $students = $stmt->fetchAll();
 }
-
-$stmt = $pdo->prepare($query);
-$stmt->execute($params);
-$students = $stmt->fetchAll();
 
 // Penanganan Logo Default jika di database kosong
 $logo_path = (!empty($sch['logo'])) ? BASE_URL . "assets/img/logo/" . $sch['logo'] : BASE_URL . "assets/img/logo/logo.png";
@@ -119,9 +133,15 @@ $thn_ajaran = ($ta_aktif) ? $ta_aktif['tahun'] : "2025/2026";
                         <small class="text-muted">Cetak kartu login siswa dalam format lembar A4</small>
                     </div>
                 </div>
-                <a href="print-kartu.php?<?= esc(http_build_query($_GET)) ?>" target="_blank" class="btn btn-success rounded-3 px-3 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2">
-                    <i class="fas fa-print"></i> Cetak Kartu A4 (Print Preview)
-                </a>
+                <?php if ($has_filter && count($students) > 0): ?>
+                    <a href="print-kartu.php?<?= esc(http_build_query($_GET)) ?>" target="_blank" class="btn btn-success rounded-3 px-3 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2">
+                        <i class="fas fa-print"></i> Cetak Kartu A4 (Print Preview)
+                    </a>
+                <?php else: ?>
+                    <button type="button" class="btn btn-secondary rounded-3 px-3 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2 opacity-75" onclick="Swal.fire({icon: 'info', title: 'Pilih Filter Terlebih Dahulu', text: 'Silakan pilih Jenjang atau Kelas Target pada formulir filter di bawah untuk mencetak kartu ujian.', confirmButtonColor: '#3b82f6'});">
+                        <i class="fas fa-print"></i> Cetak Kartu A4 (Print Preview)
+                    </button>
+                <?php endif; ?>
             </div>
         </nav>
 
@@ -134,7 +154,7 @@ $thn_ajaran = ($ta_aktif) ? $ta_aktif['tahun'] : "2025/2026";
                             <label class="small fw-semibold text-secondary text-uppercase mb-1">Pencarian Siswa</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-secondary-subtle text-muted"><i class="fas fa-search"></i></span>
-                                <input type="text" name="search" class="form-control rounded-end-3 py-2 border-secondary-subtle" placeholder="Nama / NISN / Username" value="<?= htmlspecialchars($search) ?>" onchange="this.form.submit()">
+                                <input type="text" name="search" class="form-control rounded-end-3 py-2 border-secondary-subtle" placeholder="Nama / NISN / Username" value="<?= htmlspecialchars($search) ?>">
                             </div>
                         </div>
                         <div class="col-lg-2 col-md-3">
@@ -149,9 +169,9 @@ $thn_ajaran = ($ta_aktif) ? $ta_aktif['tahun'] : "2025/2026";
                             </select>
                         </div>
                         <div class="col-lg-3 col-md-3">
-                            <label class="small fw-semibold text-secondary text-uppercase mb-1">Kelas Target</label>
+                            <label class="small fw-semibold text-secondary text-uppercase mb-1">Kelas Target <span class="text-danger">*</span></label>
                             <select name="class_id" class="form-select rounded-3 py-2 border-secondary-subtle" onchange="this.form.submit()">
-                                <option value="">Semua Kelas</option>
+                                <option value="">-- Pilih Kelas --</option>
                                 <?php foreach($classes as $c): ?>
                                     <option value="<?= esc($c['id']) ?>" <?= esc($class_id == $c['id'] ? 'selected' : '') ?>>
                                         Kelas <?= esc($c['jenjang']) ?> - <?= esc($c['nama_kelas']) ?>
@@ -171,86 +191,104 @@ $thn_ajaran = ($ta_aktif) ? $ta_aktif['tahun'] : "2025/2026";
                 </div>
             </div>
 
-            <!-- Cards Container Header -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 fw-semibold">
-                    Total: <?= count($students) ?> Kartu Peserta Ditemukan
-                </span>
-            </div>
+            <?php if (!$has_filter): ?>
+                <!-- State Belum Memilih Filter (Wajib Pilih Filter) -->
+                <div class="card card-dashboard border-0 shadow-sm rounded-4 p-5 text-center bg-white my-2">
+                    <div class="p-3 bg-primary-subtle text-primary rounded-circle d-inline-flex mb-3 mx-auto" style="width: 72px; height: 72px; align-items: center; justify-content: center;">
+                        <i class="fas fa-filter fa-2x"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-2">Pilih Filter Terlebih Dahulu</h5>
+                    <p class="text-secondary small mb-4 mx-auto" style="max-width: 540px;">
+                        Untuk menjaga performa sistem dan kerapian pratinjau lembar cetak, silakan pilih <strong>Kelas Target</strong>, <strong>Jenjang</strong>, atau lakukan <strong>Pencarian</strong> pada formulir filter di atas sebelum menampilkan kartu peserta ujian siswa.
+                    </p>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill"><i class="fas fa-users-class text-primary me-1"></i> Pilih Kelas Target</span>
+                        <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill"><i class="fas fa-print text-success me-1"></i> Standar Format Lembar Cetak A4</span>
+                    </div>
+                </div>
+            <?php else: ?>
+                <!-- Cards Container Header -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 fw-semibold">
+                        Total: <?= count($students) ?> Kartu Peserta Ditemukan
+                    </span>
+                </div>
 
-            <div class="row g-4">
-                <?php if (count($students) > 0): ?>
-                    <?php foreach ($students as $s): ?>
-                    <div class="col-xl-6">
-                        <div class="card-preview-modern shadow-sm">
-                            <div class="card-header-inner">
-                                <img src="<?= esc($logo_path) ?>" class="card-logo" alt="Logo">
-                                <div class="card-title-text">
-                                    <h6 class="main-title"><?= esc(strtoupper($judul_kartu)) ?></h6>
-                                    <h6><?= strtoupper($sch['nama_sekolah'] ?? 'NAMA SEKOLAH BELUM DIATUR') ?></h6>
-                                    <h6>TAHUN PELAJARAN <?= $thn_ajaran ?></h6>
-                                </div>
-                            </div>
-                            
-                            <div class="row g-0 align-items-center">
-                                <div class="col-8">
-                                    <div class="info-body">
-                                        <div class="info-row">
-                                            <div class="info-label">Username</div>
-                                            <div class="info-val">: <strong class="font-monospace text-primary"><?= $s['username'] ?></strong></div>
-                                        </div>
-                                        <div class="info-row">
-                                            <div class="info-label">Password</div>
-                                            <div class="info-val">: <strong class="font-monospace text-dark"><?= $s['kartu'] ?? $s['password'] ?></strong></div>
-                                        </div>
-                                        <div class="info-row">
-                                            <div class="info-label">Nama Siswa</div>
-                                            <div class="info-val">: <?= strtoupper($s['nama_lengkap']) ?></div>
-                                        </div>
-                                        <div class="info-row">
-                                            <div class="info-label">Agama</div>
-                                            <div class="info-val">: <?= strtoupper($s['agama'] ?? '-') ?></div>
-                                        </div>
-                                        <div class="info-row">
-                                            <div class="info-label">Kelas</div>
-                                            <div class="info-val">: <?= $s['jenjang'].' - '.$s['nama_kelas'] ?></div>
-                                        </div>
-
-                                        <div class="box-room">
-                                            <span class="box-room-label">Ruang &bull; Sesi</span>
-                                            <?= $s['jenjang'].' - '.$s['nama_kelas'] ?> &bull; Sesi <?= $s['sesi'] ?>
-                                        </div>
+                <div class="row g-4">
+                    <?php if (count($students) > 0): ?>
+                        <?php foreach ($students as $s): ?>
+                        <div class="col-xl-6">
+                            <div class="card-preview-modern shadow-sm">
+                                <div class="card-header-inner">
+                                    <img src="<?= esc($logo_path) ?>" class="card-logo" alt="Logo">
+                                    <div class="card-title-text">
+                                        <h6 class="main-title"><?= esc(strtoupper($judul_kartu)) ?></h6>
+                                        <h6><?= strtoupper($sch['nama_sekolah'] ?? 'NAMA SEKOLAH BELUM DIATUR') ?></h6>
+                                        <h6>TAHUN PELAJARAN <?= $thn_ajaran ?></h6>
                                     </div>
                                 </div>
-                                <div class="col-4 d-flex flex-column align-items-center justify-content-center">
-                                    <div class="student-photo shadow-sm">
-                                        <?php if(!empty($s['foto']) && file_exists("../../assets/uploads/foto_siswa/".$s['foto'])): ?>
-                                            <img src="<?= esc(BASE_URL) ?>assets/uploads/foto_siswa/<?= htmlspecialchars($s['foto']) ?>" style="width:100%; height:100%; object-fit:cover; display:block;">
-                                        <?php else: ?>
-                                            <span>FOTO 3x4</span>
-                                        <?php endif; ?>
+                                
+                                <div class="row g-0 align-items-center">
+                                    <div class="col-8">
+                                        <div class="info-body">
+                                            <div class="info-row">
+                                                <div class="info-label">Username</div>
+                                                <div class="info-val">: <strong class="font-monospace text-primary"><?= $s['username'] ?></strong></div>
+                                            </div>
+                                            <div class="info-row">
+                                                <div class="info-label">Password</div>
+                                                <div class="info-val">: <strong class="font-monospace text-dark"><?= $s['kartu'] ?? $s['password'] ?></strong></div>
+                                            </div>
+                                            <div class="info-row">
+                                                <div class="info-label">Nama Siswa</div>
+                                                <div class="info-val">: <?= strtoupper($s['nama_lengkap']) ?></div>
+                                            </div>
+                                            <div class="info-row">
+                                                <div class="info-label">Agama</div>
+                                                <div class="info-val">: <?= strtoupper($s['agama'] ?? '-') ?></div>
+                                            </div>
+                                            <div class="info-row">
+                                                <div class="info-label">Kelas</div>
+                                                <div class="info-val">: <?= $s['jenjang'].' - '.$s['nama_kelas'] ?></div>
+                                            </div>
+
+                                            <div class="box-room">
+                                                <span class="box-room-label">Ruang &bull; Sesi</span>
+                                                <?= $s['jenjang'].' - '.$s['nama_kelas'] ?> &bull; Sesi <?= $s['sesi'] ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4 d-flex flex-column align-items-center justify-content-center">
+                                        <div class="student-photo shadow-sm">
+                                            <?php if(!empty($s['foto']) && file_exists("../../assets/uploads/foto_siswa/".$s['foto'])): ?>
+                                                <img src="<?= esc(BASE_URL) ?>assets/uploads/foto_siswa/<?= htmlspecialchars($s['foto']) ?>" style="width:100%; height:100%; object-fit:cover; display:block;">
+                                            <?php else: ?>
+                                                <span>FOTO 3x4</span>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <div class="col-12 text-center py-5 bg-white rounded-4 shadow-sm border p-5">
-                        <div class="p-3 bg-primary-subtle text-primary rounded-circle d-inline-flex mb-3">
-                            <i class="fas fa-id-card-clip fa-3x"></i>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="col-12 text-center py-5 bg-white rounded-4 shadow-sm border p-5">
+                            <div class="p-3 bg-primary-subtle text-primary rounded-circle d-inline-flex mb-3">
+                                <i class="fas fa-id-card-clip fa-3x"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark">Data Siswa Tidak Ditemukan</h5>
+                            <p class="text-muted small mb-0">Tidak ada kartu peserta siswa yang sesuai dengan parameter filter yang Anda pilih.</p>
                         </div>
-                        <h5 class="fw-bold text-dark">Data Siswa Tidak Ditemukan</h5>
-                        <p class="text-muted small mb-0">Tidak ada kartu peserta siswa yang sesuai dengan parameter filter yang Anda pilih.</p>
-                    </div>
-                <?php endif; ?>
-            </div>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     $("#menu-toggle").click(function(e) { e.preventDefault(); $("#wrapper").toggleClass("toggled"); });
 </script>

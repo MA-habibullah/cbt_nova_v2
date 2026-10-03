@@ -11,26 +11,32 @@ $sch = $pdo->query("SELECT * FROM cbt_settings LIMIT 1")->fetch();
 $ta_aktif = $pdo->query("SELECT * FROM cbt_tahun_ajaran WHERE is_aktif = 1 LIMIT 1")->fetch();
 
 // 2. Filter Data (Meneruskan dari halaman sebelumnya)
-$class_id = $_GET['class_id'] ?? '';
-$jenjang  = $_GET['jenjang'] ?? '';
-$search   = $_GET['search'] ?? '';
+$class_id = isset($_GET['class_id']) ? trim($_GET['class_id']) : '';
+$jenjang  = isset($_GET['jenjang']) ? trim($_GET['jenjang']) : '';
+$search   = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-$query = "SELECT s.*, c.nama_kelas, c.jenjang 
-          FROM cbt_students s 
-          JOIN cbt_classes c ON s.class_id = c.id 
-          WHERE 1=1";
-$params = [];
+$has_filter = ($class_id !== '' || $jenjang !== '' || $search !== '');
+$students = [];
 
-if ($class_id != '') { $query .= " AND s.class_id = ?"; $params[] = $class_id; }
-if ($jenjang != '')  { $query .= " AND c.jenjang = ?"; $params[] = $jenjang; }
-if ($search != '') { 
-    $query .= " AND (s.nama_lengkap LIKE ? OR s.username LIKE ? OR s.nisn LIKE ?)"; 
-    $params[] = "%$search%"; $params[] = "%$search%"; $params[] = "%$search%"; 
+if ($has_filter) {
+    $query = "SELECT s.*, c.nama_kelas, c.jenjang 
+              FROM cbt_students s 
+              JOIN cbt_classes c ON s.class_id = c.id 
+              WHERE 1=1";
+    $params = [];
+
+    if ($class_id != '') { $query .= " AND s.class_id = ?"; $params[] = $class_id; }
+    if ($jenjang != '')  { $query .= " AND c.jenjang = ?"; $params[] = $jenjang; }
+    if ($search != '') { 
+        $query .= " AND (s.nama_lengkap LIKE ? OR s.username LIKE ? OR s.nisn LIKE ?)"; 
+        $params[] = "%$search%"; $params[] = "%$search%"; $params[] = "%$search%"; 
+    }
+
+    $query .= " ORDER BY c.jenjang, c.nama_kelas, s.nama_lengkap ASC";
+    $stmt = $pdo->prepare($query);
+    $stmt->execute($params);
+    $students = $stmt->fetchAll();
 }
-
-$stmt = $pdo->prepare($query);
-$stmt->execute($params);
-$students = $stmt->fetchAll();
 
 $logo_path = (!empty($sch['logo'])) ? BASE_URL . "assets/img/logo/" . $sch['logo'] : BASE_URL . "assets/img/logo/logo.png";
 $nama_sekolah = $sch['nama_sekolah'] ?? "SMA NEGERI 11 SURABAYA";
@@ -209,13 +215,26 @@ $thn_ajaran = ($ta_aktif) ? $ta_aktif['tahun'] : "2025/2026";
     </style>
 </head>
 <body>
-
+    <?php if (!$has_filter || count($students) === 0): ?>
+    <div style="text-align: center; padding: 60px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <div style="display: inline-block; padding: 16px; background: #e0f2fe; color: #0284c7; border-radius: 50%; margin-bottom: 16px;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+        </div>
+        <h2 style="color: #0f172a; margin-bottom: 8px; font-size: 20px;">Filter Kelas Belum Dipilih</h2>
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 24px; max-width: 480px; margin-left: auto; margin-right: auto;">
+            Silakan tentukan <strong>Jenjang</strong> atau <strong>Kelas Target</strong> pada halaman Pratinjau Kartu terlebih dahulu sebelum mencetak kartu ujian.
+        </p>
+        <a href="cetak-kartu.php" style="display: inline-block; padding: 10px 24px; background: #0284c7; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">
+            &larr; Kembali ke Pratinjau Kartu
+        </a>
+    </div>
+    <?php else: ?>
     <div class="print-toolbar no-print">
         <span><strong><?= count($students) ?></strong> Kartu Siap Cetak</span>
         <button class="btn-print-action" onclick="window.print()">
             &#128438; Cetak / Print A4
         </button>
-        <a href="cetak-kartu.php" class="btn-print-back">
+        <a href="cetak-kartu.php?<?= esc(http_build_query($_GET)) ?>" class="btn-print-back">
             &larr; Kembali
         </a>
     </div>
@@ -278,6 +297,7 @@ $thn_ajaran = ($ta_aktif) ? $ta_aktif['tahun'] : "2025/2026";
         </div>
         <?php endforeach; ?>
     </div>
+    <?php endif; ?>
 
 </body>
 </html>
