@@ -23,7 +23,7 @@ try {
         throw new RuntimeException("Tidak bisa membuat file backup di: $path");
     }
 
-    fwrite($handle, "-- CBT Nova Database Backup\n");
+    fwrite($handle, "-- AXON CBT Database Backup\n");
     fwrite($handle, "-- Generated: " . date("Y-m-d H:i:s") . "\n");
     fwrite($handle, "-- Database: " . DB_NAME . "\n\n");
     fwrite($handle, "SET FOREIGN_KEY_CHECKS=0;\n");

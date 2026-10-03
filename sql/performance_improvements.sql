@@ -1,5 +1,5 @@
 -- ================================================================
--- CBT Nova — Performance Improvements SQL
+-- AXON CBT — Performance Improvements SQL
 -- Target: MySQL 8.0+
 -- Script ini IDEMPOTENT: aman dijalankan berulang kali
 --

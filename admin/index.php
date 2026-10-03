@@ -266,7 +266,7 @@ $disk_total_gb = ($disk_total) ? round($disk_total / 1073741824, 1) : 0;
                                 <span class="live-dot" style="background-color:#4ade80;"></span> Server Online
                             </span>
                         </div>
-                        <h4 class="fw-bold mb-1 text-white">Selamat Datang di Portal CBT Nova</h4>
+                        <h4 class="fw-bold mb-1 text-white">Selamat Datang di Portal AXON CBT</h4>
                         <p class="mb-0 small" style="color: rgba(255, 255, 255, 0.85);">
                             Kelola jadwal ujian, bank soal, dan pantau aktivitas peserta ujian secara real-time untuk <strong><?= htmlspecialchars($nama_sekolah) ?></strong>.
                         </p>

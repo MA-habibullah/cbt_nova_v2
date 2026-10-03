@@ -1,7 +1,7 @@
 <?php
 /**
  * ============================================================================
- *  CBT NOVA — ONE-CLICK GITHUB PULL & DATABASE MIGRATOR (CLI RUNNER)
+ *  AXON CBT — ONE-CLICK GITHUB PULL & DATABASE MIGRATOR (CLI RUNNER)
  * ============================================================================
  *  Perintah: php migrate.php
  *
@@ -39,7 +39,7 @@ function out_step($step, $title) {
 
 echo "\n";
 out("╔═════════════════════════════════════════════════════════════════════════╗", COLOR_BLUE);
-out("║         CBT NOVA v2 — ONE-CLICK GITHUB PULL & DATABASE MIGRATOR         ║", COLOR_BLUE);
+out("║         AXON CBT v2 — ONE-CLICK GITHUB PULL & DATABASE MIGRATOR         ║", COLOR_BLUE);
 out("║         Instansi: SMAN 11 Surabaya | Environment: " . (PHP_OS_FAMILY === 'Windows' ? 'Windows/Laragon' : 'Linux Production') . "          ║", COLOR_BLUE);
 out("╚═════════════════════════════════════════════════════════════════════════╝", COLOR_BLUE);
 out("Waktu Eksekusi: " . date('Y-m-d H:i:s T') . "\n");
@@ -545,7 +545,7 @@ foreach ($criticalChecks as $label => $query) {
 echo "\n" . str_repeat("═", 75) . "\n";
 if ($allHealthy) {
     out(">>> HASIL: PROSES PULL & MIGRASI SELESAI 100% SUKSES & SISTEM SEHAT! <<<", COLOR_GREEN . COLOR_BOLD);
-    out("Aplikasi CBT Nova telah mutakhir dan siap melayani ujian skala penuh.", COLOR_GREEN);
+    out("Aplikasi AXON CBT telah mutakhir dan siap melayani ujian skala penuh.", COLOR_GREEN);
 } else {
     out(">>> HASIL: SELESAI DENGAN CATATAN (Beberapa tabel memerlukan perhatian) <<<", COLOR_YELLOW . COLOR_BOLD);
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * CBT NOVA - Controller Hapus Jadwal Ujian Guru
+ * AXON CBT - Controller Hapus Jadwal Ujian Guru
  * Lokasi: guru/bank-soal/controllers/bank-soal-test-delete.php
  */
 

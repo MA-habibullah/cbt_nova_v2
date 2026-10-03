@@ -1,5 +1,4 @@
--- ===================================================================
--- CBT NOVA — MASTER DATABASE SCHEMA (10K CONCURRENCY & 100 PARALLEL EXAMS)
+-- AXON CBT — MASTER DATABASE SCHEMA (10K CONCURRENCY & 100 PARALLEL EXAMS)
 -- Exported on: 2026-10-01 07:46:49
 -- Database: db_axon
 -- ===================================================================

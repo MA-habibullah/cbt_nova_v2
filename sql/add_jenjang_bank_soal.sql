@@ -1,5 +1,5 @@
 -- ================================================================
--- CBT Nova — Tambah Kolom Jenjang di cbt_bank_soal
+-- AXON CBT — Tambah Kolom Jenjang di cbt_bank_soal
 -- Target: MySQL 8.0+
 -- Script ini IDEMPOTENT: aman dijalankan berulang kali
 --

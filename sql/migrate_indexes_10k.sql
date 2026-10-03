@@ -1,5 +1,5 @@
 -- ===================================================================
--- CBT NOVA — 10.000 CONCURRENCY & 100 PARALLEL EXAMS INDEXING MIGRATION
+-- AXON CBT — 10.000 CONCURRENCY & 100 PARALLEL EXAMS INDEXING MIGRATION
 -- Database: MariaDB / MySQL (db_axon / db_cbt)
 -- ===================================================================
 

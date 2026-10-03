@@ -38,12 +38,12 @@ class SimpleXLSXGen {
             'docProps/app.xml' => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
 <TotalTime>0</TotalTime>
-<Application>CBT Nova XLSX Generator</Application>
+<Application>AXON CBT XLSX Generator</Application>
 </Properties>',
             'docProps/core.xml' => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-<dc:creator>CBT Nova</dc:creator>
-<cp:lastModifiedBy>CBT Nova</cp:lastModifiedBy>
+<dc:creator>AXON CBT</dc:creator>
+<cp:lastModifiedBy>AXON CBT</cp:lastModifiedBy>
 <dcterms:created xsi:type="dcterms:W3CDTF">' . gmdate('Y-m-d\TH:i:s\Z') . '</dcterms:created>
 <dcterms:modified xsi:type="dcterms:W3CDTF">' . gmdate('Y-m-d\TH:i:s\Z') . '</dcterms:modified>
 </cp:coreProperties>',

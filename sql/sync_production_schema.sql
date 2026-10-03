@@ -1,5 +1,5 @@
 -- ==========================================================================
--- CBT NOVA: COMPLETE PRODUCTION DATABASE SYNC SCRIPT (IDEMPOTENT)
+-- AXON CBT: COMPLETE PRODUCTION DATABASE SYNC SCRIPT (IDEMPOTENT)
 -- Target Database: cbt_nova_v2 (Linux Production Server)
 -- ==========================================================================
 

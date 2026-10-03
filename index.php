@@ -15,7 +15,7 @@ if (isset($_SESSION['role'])) {
 
 // Ambil identitas sekolah & logo dinamis
 $app_settings = get_app_settings();
-$namaSekolah  = !empty($app_settings['nama_sekolah']) ? $app_settings['nama_sekolah'] : "CBT Nova";
+$namaSekolah  = !empty($app_settings['nama_sekolah']) ? $app_settings['nama_sekolah'] : "AXON CBT";
 $fileFavicon  = BASE_URL . "assets/img/logo.png";
 $logoImg      = BASE_URL . "assets/img/logo.png";
 if (!empty($app_settings['logo'])) {
@@ -259,7 +259,7 @@ if (empty($_SESSION['captcha_code'])) {
         <div class="d-md-none text-center mb-4 pb-2 border-bottom">
             <img src="<?= esc($logoImg) ?>" alt="Logo Sekolah" style="height: 42px; width: auto;" class="mb-2">
             <h5 class="fw-bold text-dark mb-0"><?= htmlspecialchars($namaSekolah) ?></h5>
-            <small class="text-muted">CBT Nova Portal</small>
+            <small class="text-muted">AXON CBT Portal</small>
         </div>
 
         <div class="mb-4">

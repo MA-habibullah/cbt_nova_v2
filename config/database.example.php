@@ -1,7 +1,7 @@
 <?php
 /**
  * ============================================================
- *  KONFIGURASI APLIKASI CBT NOVA (TEMPLATE CONTOH)
+ *  KONFIGURASI APLIKASI AXON CBT (TEMPLATE CONTOH)
  *  Salin file ini menjadi 'database.php' dan sesuaikan konfigurasi.
  * ============================================================
  */

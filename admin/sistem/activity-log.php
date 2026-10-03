@@ -379,7 +379,7 @@ function build_log_url($targetPage) {
         </div>
 
         <footer class="bg-white text-center py-3 border-top mt-auto no-print">
-            <small class="text-muted">CBT Nova &copy; <?= date('Y') ?> &bull; SMAN 11 Surabaya</small>
+            <small class="text-muted">AXON CBT &copy; <?= date('Y') ?> &bull; SMAN 11 Surabaya</small>
         </footer>
     </div>
 </div>

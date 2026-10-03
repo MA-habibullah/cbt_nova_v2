@@ -1,6 +1,6 @@
 <?php
 /**
- * Fungsi-fungsi helper global untuk CBT Nova.
+ * Fungsi-fungsi helper global untuk AXON CBT.
  * Include file ini di setiap file yang membutuhkan fungsi bersama.
  */
 
@@ -182,7 +182,7 @@ if (!function_exists('is_tipe_essay')) {
 
 /**
  * ==========================================================================
- *  CENTRALIZED SCORING ENGINE (CBT NOVA)
+ *  CENTRALIZED SCORING ENGINE (AXON CBT)
  *  Satu-satunya sumber kebenaran (Single Source of Truth) untuk kalkulasi
  *  dan penyimpanan nilai peserta ujian.
  * ==========================================================================

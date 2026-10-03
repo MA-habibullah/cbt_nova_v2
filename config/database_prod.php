@@ -1,7 +1,7 @@
 <?php
 /**
  * ============================================================
- *  KONFIGURASI APLIKASI CBT NOVA (PRODUCTION ENVIRONMENT)
+ *  KONFIGURASI APLIKASI AXON CBT (PRODUCTION ENVIRONMENT)
  *  Gunakan file ini untuk server produksi.
  * ============================================================
  */

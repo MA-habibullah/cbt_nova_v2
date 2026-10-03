@@ -93,7 +93,7 @@ $recent_results = $results_stmt->fetchAll();
 // Info Sekolah
 $setting_stmt = $pdo->query("SELECT nama_sekolah FROM cbt_settings LIMIT 1");
 $setting_row  = $setting_stmt ? $setting_stmt->fetch() : null;
-$nama_sekolah = $setting_row['nama_sekolah'] ?? 'CBT Nova';
+$nama_sekolah = $setting_row['nama_sekolah'] ?? 'AXON CBT';
 ?>
 <!DOCTYPE html>
 <html lang="id">
