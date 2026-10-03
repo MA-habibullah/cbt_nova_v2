@@ -180,7 +180,9 @@ $offset = ($page - 1) * $limit;
 // Ambil Data Jadwal Ujian
 $dataQuery = "SELECT e.*, b.nama_bank_soal, b.kode_bank_soal, s.nama_mapel, s.kode_mapel, t.nama_lengkap as nama_guru,
                      COUNT(DISTINCT eq.id) AS jumlah_soal,
-                     COUNT(DISTINCT ep.id) AS jumlah_peserta
+                     COUNT(DISTINCT ep.id) AS jumlah_peserta,
+                     COUNT(DISTINCT CASE WHEN ep.status = 'finished' THEN ep.id END) AS peserta_selesai,
+                     COUNT(DISTINCT CASE WHEN ep.status = 'working' THEN ep.id END) AS peserta_mengerjakan
               $base_from
               LEFT JOIN cbt_exam_questions eq ON eq.exam_id = e.id
               LEFT JOIN cbt_exam_participants ep ON ep.exam_id = e.id
@@ -514,13 +516,13 @@ function build_pagination_url($targetPage) {
                                         <div class="d-md-none mt-1 small">
                                             <span class="badge badge-soft-info me-1">Kelas <?= esc($e['jenjang']) ?></span>
                                             <span class="badge badge-soft-secondary me-1"><i class="far fa-clock text-primary me-1"></i><?= (int)$e['durasi_menit'] ?>m</span>
-                                            <span class="badge badge-soft-secondary"><i class="fas fa-user-graduate me-1"></i><?= (int)$e['jumlah_peserta'] ?></span>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle me-1"><i class="fas fa-check-double me-1"></i><?= (int)$e['peserta_selesai'] ?>/<?= (int)$e['jumlah_peserta'] ?> Selesai</span>
                                         </div>
                                     </td>
                                     <td class="d-none d-sm-table-cell">
                                         <div class="mb-1">
                                             <span class="badge badge-soft-primary px-2.5 py-1 rounded-2 fw-bold">
-                                                <i class="fas fa-graduation-cap me-1"></i>Kelas <?= esc($e['jenjang']) ?>
+                                                 <i class="fas fa-graduation-cap me-1"></i>Kelas <?= esc($e['jenjang']) ?>
                                             </span>
                                         </div>
                                         <span class="badge badge-soft-secondary border font-monospace px-2 py-1" style="font-size:0.75rem;" title="<?= esc($e['nama_bank_soal']) ?>">
@@ -532,7 +534,7 @@ function build_pagination_url($targetPage) {
                                         <div class="small fw-semibold text-secondary"><?= date('H:i', $start_ts) ?> &ndash; <?= date('H:i', $end_ts) ?> WIB</div>
                                         <div class="mt-1">
                                             <span class="badge badge-soft-secondary px-2 py-1" style="font-size:0.75rem;">
-                                                <i class="far fa-clock text-primary me-1"></i><?= (int)$e['durasi_menit'] ?> Menit
+                                                 <i class="far fa-clock text-primary me-1"></i><?= (int)$e['durasi_menit'] ?> Menit
                                             </span>
                                         </div>
                                     </td>
@@ -542,9 +544,19 @@ function build_pagination_url($targetPage) {
                                                 <i class="fas fa-tasks me-1"></i><?= (int)$e['jumlah_soal'] ?> Soal
                                             </span>
                                         </div>
-                                        <span class="badge badge-soft-success px-2 py-1" style="font-size:0.75rem;">
-                                            <i class="fas fa-user-graduate me-1"></i><?= (int)$e['jumlah_peserta'] ?> Peserta
-                                        </span>
+                                        <div class="d-flex flex-column align-items-center gap-1">
+                                            <span class="badge badge-soft-primary px-2 py-1" style="font-size:0.75rem;" title="Total Siswa Terdaftar">
+                                                <i class="fas fa-user-graduate me-1"></i><?= (int)$e['jumlah_peserta'] ?> Peserta
+                                            </span>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 fw-bold" style="font-size:0.72rem;" title="Siswa yang telah menyelesaikan ujian">
+                                                <i class="fas fa-check-double me-1"></i><?= (int)$e['peserta_selesai'] ?> Selesai
+                                            </span>
+                                            <?php if ((int)($e['peserta_mengerjakan'] ?? 0) > 0): ?>
+                                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-0.5" style="font-size:0.68rem;" title="Siswa sedang aktif mengerjakan ujian">
+                                                    <i class="fas fa-spinner fa-spin me-1"></i><?= (int)$e['peserta_mengerjakan'] ?> Mengerjakan
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                     <td class="text-center">
                                         <?php if ((int)$e['is_token_aktif'] === 1 && !empty($e['token'])): ?>
