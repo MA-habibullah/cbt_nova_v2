@@ -1,7 +1,7 @@
 <?php
     if (session_status() === PHP_SESSION_NONE) { session_start(); }
-    require_once '../../config/database.php';
-    require_once '../../includes/helpers.php';
+    require_once dirname(__DIR__, 2) . '/config/database.php';
+    require_once dirname(__DIR__, 2) . '/includes/helpers.php';
 
     // 1. Proteksi
     if (!isset($_SESSION['admin_id']) && (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin')) {

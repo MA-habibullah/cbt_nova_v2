@@ -23,40 +23,37 @@ if (!$bank) {
 $stmt_cnt = $pdo->prepare("SELECT COUNT(*) FROM cbt_questions WHERE bank_soal_id = ?");
 $stmt_cnt->execute([$id_bank]);
 $jml_soal = (int)$stmt_cnt->fetchColumn();
-?>
 
+// Exam count with prepared statement
+$stmt_ex = $pdo->prepare("SELECT COUNT(*) FROM cbt_exams WHERE bank_soal_id = ?");
+$stmt_ex->execute([$id_bank]);
+$jml_ujian = (int)$stmt_ex->fetchColumn();
+?>
 <!DOCTYPE html>
 <html lang="id">
-    <?php include dirname(__DIR__, 2) . '/includes/header.php'; ?>
-    <style>
-        .menu-card {
-            transition: all 0.3s ease;
-            border: none;
-            border-radius: 15px;
-            overflow: hidden;
-        }
-        .menu-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-        .icon-box {
-            width: 70px;
-            height: 70px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            margin-bottom: 20px;
-        }
-        .hover-overlay {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: rgba(0,0,0,0.1);
-        }
-    </style>
+<?php include dirname(__DIR__, 2) . '/includes/header.php'; ?>
+<style>
+    .menu-action-card {
+        transition: all 0.25s ease-in-out;
+        border: 1px solid rgba(226, 232, 240, 0.8) !important;
+        border-radius: 1rem;
+        background: #ffffff;
+    }
+    .menu-action-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 12px 24px -4px rgba(15, 23, 42, 0.08), 0 4px 8px -2px rgba(15, 23, 42, 0.04) !important;
+        border-color: rgba(148, 163, 184, 0.4) !important;
+    }
+    .icon-box-modern {
+        width: 58px;
+        height: 58px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 14px;
+        font-size: 1.5rem;
+    }
+</style>
 <body class="bg-light">
 
 <div class="d-flex" id="wrapper">
@@ -64,11 +61,23 @@ $jml_soal = (int)$stmt_cnt->fetchColumn();
 
     <div id="content" class="w-100">
         <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm">
-            <div class="d-flex align-items-center">
-                <a href="index.php" class="btn btn-light border me-3"><i class="fas fa-arrow-left"></i></a>
+            <div class="d-flex align-items-center justify-content-between w-100">
+                <div class="d-flex align-items-center">
+                    <a href="index.php" class="btn btn-light border rounded-circle me-3 d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                        <i class="fas fa-arrow-left text-secondary"></i>
+                    </a>
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="mb-0 fw-bold text-dark"><?= esc($bank['nama_bank_soal']) ?></h5>
+                            <span class="badge bg-primary-subtle text-primary font-monospace px-2 py-1"><?= esc($bank['kode_bank_soal']) ?></span>
+                        </div>
+                        <small class="text-muted"><?= esc($bank['kode_mapel']) ?> &bull; <?= esc($bank['nama_mapel']) ?> <?= !empty($bank['jenjang']) ? '&bull; Kelas ' . esc($bank['jenjang']) : '' ?></small>
+                    </div>
+                </div>
                 <div>
-                    <h5 class="mb-0 fw-bold"><?= $bank['nama_bank_soal'] ?></h5>
-                    <small class="text-muted"><?= $bank['kode_mapel'] ?> | <?= $bank['nama_mapel'] ?></small>
+                    <span class="badge <?= $bank['status'] === 'aktif' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle' ?> rounded-pill px-3 py-2 fw-semibold">
+                        <i class="fas fa-circle me-1 small"></i> <?= strtoupper($bank['status']) ?>
+                    </span>
                 </div>
             </div>
         </nav>
@@ -76,132 +85,214 @@ $jml_soal = (int)$stmt_cnt->fetchColumn();
         <div class="container-fluid px-4 pt-4 pb-5">
             
             <?php if ($bank['status'] == 'nonaktif'): ?>
-            <div class="alert alert-danger border-0 shadow-sm d-flex align-items-center mb-4">
-                <i class="fas fa-lock fa-2x me-3"></i>
+            <div class="alert alert-danger border-0 shadow-sm rounded-4 d-flex align-items-center p-3 mb-4">
+                <div class="fs-3 text-danger me-3"><i class="fas fa-lock"></i></div>
                 <div>
                     <strong class="d-block">Bank Soal Terkunci!</strong>
-                    Anda tidak dapat menambah atau mengedit soal karena status bank soal dinonaktifkan.
+                    Anda tidak dapat menambah atau mengedit butir soal karena status bank soal dinonaktifkan oleh administrator.
                 </div>
             </div>
             <?php endif; ?>
 
+            <!-- Top Metric Overview -->
+            <div class="row g-3 mb-4">
+                <div class="col-xl-3 col-sm-6">
+                    <div class="card border-0 shadow-sm rounded-4 bg-white p-3 h-100">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-secondary small fw-semibold text-uppercase">Total Butir Soal</span>
+                                <h3 class="fw-bold mb-0 text-dark mt-1"><?= $jml_soal ?></h3>
+                            </div>
+                            <div class="p-3 bg-primary-subtle text-primary rounded-3">
+                                <i class="fas fa-file-lines fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-sm-6">
+                    <div class="card border-0 shadow-sm rounded-4 bg-white p-3 h-100">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-secondary small fw-semibold text-uppercase">Jadwal Ujian Aktif</span>
+                                <h3 class="fw-bold mb-0 text-dark mt-1"><?= $jml_ujian ?></h3>
+                            </div>
+                            <div class="p-3 bg-info-subtle text-info rounded-3">
+                                <i class="fas fa-calendar-check fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-sm-6">
+                    <div class="card border-0 shadow-sm rounded-4 bg-white p-3 h-100">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-secondary small fw-semibold text-uppercase">Jenjang Target</span>
+                                <h4 class="fw-bold mb-0 text-dark mt-1"><?= !empty($bank['jenjang']) ? 'Kelas ' . esc($bank['jenjang']) : 'Semua Jenjang' ?></h4>
+                            </div>
+                            <div class="p-3 bg-warning-subtle text-warning rounded-3">
+                                <i class="fas fa-graduation-cap fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-sm-6">
+                    <div class="card border-0 shadow-sm rounded-4 bg-white p-3 h-100">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-secondary small fw-semibold text-uppercase">Tanggal Dibuat</span>
+                                <h5 class="fw-bold mb-0 text-dark mt-1"><?= date('d M Y', strtotime($bank['created_at'])) ?></h5>
+                            </div>
+                            <div class="p-3 bg-success-subtle text-success rounded-3">
+                                <i class="fas fa-clock fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menu Cards Grid -->
             <div class="row g-4">
                 
-                <div class="col-xl-3 col-md-6">
+                <!-- Data Soal -->
+                <div class="col-xl-4 col-md-6">
                     <a href="<?= esc(BASE_URL) ?>admin/bank-soal/soal.php?id=<?= esc($id_bank) ?>" class="text-decoration-none">
-                        <div class="card h-100 menu-card shadow-sm border-start border-primary border-4">
-                            <div class="card-body p-4">
-                                <div class="icon-box bg-primary-subtle text-primary">
-                                    <i class="fas fa-file-lines fa-2x"></i>
+                        <div class="card h-100 menu-action-card shadow-sm p-3">
+                            <div class="card-body p-3 d-flex flex-column justify-content-between">
+                                <div>
+                                    <div class="icon-box-modern bg-primary-subtle text-primary mb-3">
+                                        <i class="fas fa-file-lines"></i>
+                                    </div>
+                                    <h5 class="fw-bold text-dark mb-1">Kelola Butir Soal</h5>
+                                    <p class="text-secondary small mb-3">Kelola 6 tipe soal (PG, PG Kompleks, Isian Singkat, B/S, Menjodohkan, Esai) beserta formula KaTeX.</p>
                                 </div>
-                                <h5 class="fw-bold text-dark">Data Soal</h5>
-                                <p class="text-muted small mb-0">Kelola 6 tipe soal (PG, Kompleks, Menjodohkan, dll)</p>
-                                <div class="mt-3 badge bg-primary"><?= $jml_soal ?> Tersedia</div>
+                                <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 fw-semibold">
+                                        <i class="fas fa-layer-group me-1"></i> <?= $jml_soal ?> Butir Tersedia
+                                    </span>
+                                    <span class="text-primary small fw-semibold">Buka Modul <i class="fas fa-arrow-right ms-1"></i></span>
+                                </div>
                             </div>
                         </div>
                     </a>
                 </div>
 
-                <div class="col-xl-3 col-md-6">
+                <!-- Upload Soal -->
+                <div class="col-xl-4 col-md-6">
                     <a href="upload.php?id=<?= esc($id_bank) ?>" class="text-decoration-none">
-                        <div class="card h-100 menu-card shadow-sm border-start border-success border-4">
-                            <div class="card-body p-4">
-                                <div class="icon-box bg-success-subtle text-success">
-                                    <i class="fas fa-file-import fa-2x"></i>
+                        <div class="card h-100 menu-action-card shadow-sm p-3">
+                            <div class="card-body p-3 d-flex flex-column justify-content-between">
+                                <div>
+                                    <div class="icon-box-modern bg-success-subtle text-success mb-3">
+                                        <i class="fas fa-file-arrow-up"></i>
+                                    </div>
+                                    <h5 class="fw-bold text-dark mb-1">Import Soal (Excel/Word)</h5>
+                                    <p class="text-secondary small mb-3">Import butir soal secara massal menggunakan template Excel (.xlsx) atau Word (.docx) terstandarisasi.</p>
                                 </div>
-                                <h5 class="fw-bold text-dark">Upload Soal</h5>
-                                <p class="text-muted small mb-0">Import soal cepat via file Excel (.xlsx) atau Word (.docx)</p>
+                                <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                                    <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2 fw-semibold">
+                                        <i class="fas fa-file-excel me-1"></i> Format Cepat
+                                    </span>
+                                    <span class="text-success small fw-semibold">Upload File <i class="fas fa-arrow-right ms-1"></i></span>
+                                </div>
                             </div>
                         </div>
                     </a>
                 </div>
 
-                <div class="col-xl-3 col-md-6">
+                <!-- Backup & Restore -->
+                <div class="col-xl-4 col-md-6">
                     <a href="<?= esc(BASE_URL) ?>admin/bank-soal/backup/bank-soal-backup.php?id=<?= esc($id_bank) ?>" class="text-decoration-none">
-                        <div class="card h-100 menu-card shadow-sm border-start border-warning border-4">
-                            <div class="card-body p-4">
-                                <div class="icon-box bg-warning-subtle text-warning">
-                                    <i class="fas fa-database fa-2x"></i>
+                        <div class="card h-100 menu-action-card shadow-sm p-3">
+                            <div class="card-body p-3 d-flex flex-column justify-content-between">
+                                <div>
+                                    <div class="icon-box-modern bg-warning-subtle text-warning mb-3">
+                                        <i class="fas fa-box-archive"></i>
+                                    </div>
+                                    <h5 class="fw-bold text-dark mb-1">Backup & Restore (.zip)</h5>
+                                    <p class="text-secondary small mb-3">Amankan seluruh butir soal dan gambar stimulus dalam paket ZIP atau pulihkan dari server lain.</p>
                                 </div>
-                                <h5 class="fw-bold text-dark">Backup & Restore</h5>
-                                <p class="text-muted small mb-0">Amankan data atau pindahkan bank soal antar server</p>
+                                <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                                    <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3 py-2 fw-semibold">
+                                        <i class="fas fa-shield-halved me-1"></i> Proteksi Data
+                                    </span>
+                                    <span class="text-warning-emphasis small fw-semibold">Kelola Arsip <i class="fas fa-arrow-right ms-1"></i></span>
+                                </div>
                             </div>
                         </div>
                     </a>
                 </div>
 
-                <div class="col-xl-3 col-md-6">
+                <!-- Buat Ujian -->
+                <div class="col-xl-4 col-md-6">
                     <a href="test.php?id=<?= esc($id_bank) ?>" class="text-decoration-none">
-                        <div class="card h-100 menu-card shadow-sm border-start border-danger border-4">
-                            <div class="card-body p-4">
-                                <div class="icon-box bg-danger-subtle text-danger">
-                                    <i class="fas fa-calendar-plus fa-2x"></i>
+                        <div class="card h-100 menu-action-card shadow-sm p-3">
+                            <div class="card-body p-3 d-flex flex-column justify-content-between">
+                                <div>
+                                    <div class="icon-box-modern bg-danger-subtle text-danger mb-3">
+                                        <i class="fas fa-calendar-plus"></i>
+                                    </div>
+                                    <h5 class="fw-bold text-dark mb-1">Jadwal Ujian / Test</h5>
+                                    <p class="text-secondary small mb-3">Konfigurasi durasi pengerjaan, opsi acak soal, token rilis, dan jadwal pelaksanaan siswa.</p>
                                 </div>
-                                <h5 class="fw-bold text-dark">Buat Ujian / Test</h5>
-                                <p class="text-muted small mb-0">Atur durasi, acak soal, dan jadwalkan ujian siswa</p>
+                                <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                                    <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-2 fw-semibold">
+                                        <i class="fas fa-clock me-1"></i> <?= $jml_ujian ?> Jadwal Dibuat
+                                    </span>
+                                    <span class="text-danger small fw-semibold">Atur Jadwal <i class="fas fa-arrow-right ms-1"></i></span>
+                                </div>
                             </div>
                         </div>
                     </a>
                 </div>
 
-                <div class="col-xl-3 col-md-6">
-                    <!--<a class="collapse-item" href="<?= esc(BASE_URL) ?>admin/tahun-ajaran.php">Tahun Ajaran</a>-->
-                    <a class="collapse-item" href="<?= esc(BASE_URL) ?>admin/hasil/index.php?id=<?= esc($id_bank) ?>" class="text-decoration-none">
-                        <div class="card h-100 menu-card shadow-sm">
-                            <div class="card-body p-4">
-                                <div class="icon-box bg-info-subtle text-info">
-                                    <i class="fas fa-poll-h fa-2x"></i>
+                <!-- Hasil Test -->
+                <div class="col-xl-4 col-md-6">
+                    <a href="<?= esc(BASE_URL) ?>admin/hasil/index.php?id=<?= esc($id_bank) ?>" class="text-decoration-none">
+                        <div class="card h-100 menu-action-card shadow-sm p-3">
+                            <div class="card-body p-3 d-flex flex-column justify-content-between">
+                                <div>
+                                    <div class="icon-box-modern bg-info-subtle text-info mb-3">
+                                        <i class="fas fa-chart-column"></i>
+                                    </div>
+                                    <h5 class="fw-bold text-dark mb-1">Rekap Hasil & Nilai</h5>
+                                    <p class="text-secondary small mb-3">Lihat skor otomatis siswa, status koreksi esai, serta ekspor rekapitulasi ke Excel dan PDF.</p>
                                 </div>
-                                <h5 class="fw-bold text-dark">Hasil Test</h5>
-                                <p class="text-muted small mb-0">Lihat skor siswa, download Excel dan laporan PDF</p>
+                                <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                                    <span class="badge bg-info-subtle text-info rounded-pill px-3 py-2 fw-semibold">
+                                        <i class="fas fa-file-pdf me-1"></i> Laporan Nilai
+                                    </span>
+                                    <span class="text-info small fw-semibold">Lihat Nilai <i class="fas fa-arrow-right ms-1"></i></span>
+                                </div>
                             </div>
                         </div>
                     </a>
                 </div>
 
-                <!-- <div class="col-xl-3 col-md-6">
-                    <a href="<?= esc(BASE_URL) ?>admin/hasil/ajax/analisis-soal.php?id=<?= esc($id_bank) ?>" class="text-decoration-none">
-                        <div class="card h-100 menu-card shadow-sm">
-                            <div class="card-body p-4">
-                                <div class="icon-box bg-secondary-subtle text-secondary">
-                                    <i class="fas fa-chart-line fa-2x"></i>
-                                </div>
-                                <h5 class="fw-bold text-dark">Analisa Soal</h5>
-                                <p class="text-muted small mb-0">Analisis tingkat kesukaran dan daya pembeda soal</p>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-
-                <div class="col-xl-3 col-md-6">
-                    <a href="<?= esc(BASE_URL) ?>admin/hasil/ajax/analisis-jawaban.php?id=<?= esc($id_bank) ?>" class="text-decoration-none">
-                        <div class="card h-100 menu-card shadow-sm">
-                            <div class="card-body p-4">
-                                <div class="icon-box bg-dark-subtle text-dark">
-                                    <i class="fas fa-list-check fa-2x"></i>
-                                </div>
-                                <h5 class="fw-bold text-dark">Analisa Jawaban</h5>
-                                <p class="text-muted small mb-0">Detail jawaban setiap siswa per nomor soal</p>
-                            </div>
-                        </div>
-                    </a>
-                </div> -->
-
-                <div class="col-xl-3 col-md-6">
+                <!-- Daftar Hadir -->
+                <div class="col-xl-4 col-md-6">
                     <a href="<?= esc(BASE_URL) ?>admin/hasil/cetak/cetak-kehadiran.php?id=<?= esc($id_bank) ?>" class="text-decoration-none">
-                        <div class="card h-100 menu-card shadow-sm border-bottom border-dark border-4">
-                            <div class="card-body p-4">
-                                <div class="icon-box bg-light border text-dark">
-                                    <i class="fas fa-user-check fa-2x"></i>
+                        <div class="card h-100 menu-action-card shadow-sm p-3">
+                            <div class="card-body p-3 d-flex flex-column justify-content-between">
+                                <div>
+                                    <div class="icon-box-modern bg-secondary-subtle text-secondary mb-3">
+                                        <i class="fas fa-clipboard-user"></i>
+                                    </div>
+                                    <h5 class="fw-bold text-dark mb-1">Daftar Hadir & Berita Acara</h5>
+                                    <p class="text-secondary small mb-3">Cetak lembar daftar hadir peserta per ruang/sesi dan berita acara pelaksanaan ujian proktor.</p>
                                 </div>
-                                <h5 class="fw-bold text-dark">Daftar Hadir</h5>
-                                <p class="text-muted small mb-0">Cetak Daftar Hadir dan Berita Acara</p>
+                                <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                                    <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-2 fw-semibold">
+                                        <i class="fas fa-print me-1"></i> Format Cetak A4
+                                    </span>
+                                    <span class="text-secondary small fw-semibold">Cetak Dokumen <i class="fas fa-arrow-right ms-1"></i></span>
+                                </div>
                             </div>
                         </div>
                     </a>
                 </div>
 
-            </div> </div>
+            </div> 
+        </div>
     </div>
 </div>
 

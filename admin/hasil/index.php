@@ -93,69 +93,89 @@ $results = $stmt->fetchAll();
 
 <!DOCTYPE html>
 <html lang="id">
-    <?php include '../../includes/header.php'; ?>
+    <?php include dirname(__DIR__, 2) . '/includes/header.php'; ?>
     <style>
         .navbar { z-index: 1030; }
-        .breadcrumb-item + .breadcrumb-item::before { content: "|"; }
+        .table-responsive {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
+        .table-responsive::-webkit-scrollbar {
+            height: 7px;
+        }
+        .table-responsive::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
     </style>
 <body class="bg-light">
 
 <div class="d-flex" id="wrapper">
-    <?php include '../../includes/sidebar.php'; ?>
+    <?php include dirname(__DIR__, 2) . '/includes/sidebar.php'; ?>
 
     <div id="content" class="w-100">
         <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm">
-            <div class="d-flex align-items-center">
-                <a href="<?= esc(BASE_URL) ?>admin/bank-soal/detail.php?id=<?= esc($id_bank) ?>" class="btn btn-light border me-3">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-                <div>
-                    <h5 class="mb-0 fw-bold">Rekapitulasi Hasil Test</h5>
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb small mb-0">
-                            <li class="breadcrumb-item text-primary"><?= $bank['nama_mapel'] ?></li>
-                            <li class="breadcrumb-item active"><?= $bank['nama_bank_soal'] ?></li>
-                        </ol>
-                    </nav>
+            <div class="d-flex align-items-center justify-content-between w-100">
+                <div class="d-flex align-items-center">
+                    <a href="<?= esc(BASE_URL) ?>admin/bank-soal/detail.php?id=<?= esc($id_bank) ?>" class="btn btn-light border rounded-circle me-3 d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                        <i class="fas fa-arrow-left text-secondary"></i>
+                    </a>
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="mb-0 fw-bold text-dark">Rekapitulasi Hasil Test</h5>
+                            <span class="badge bg-primary-subtle text-primary font-monospace px-2 py-1"><?= esc($bank['kode_bank_soal']) ?></span>
+                        </div>
+                        <small class="text-muted"><?= esc($bank['nama_mapel']) ?> &bull; <?= esc($bank['nama_bank_soal']) ?></small>
+                    </div>
                 </div>
             </div>
         </nav>
 
         <div class="container-fluid px-4 pt-4 pb-5">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body">
-                    <form method="GET" id="filterForm" class="row g-3">
+            <!-- Filter Toolbar Card -->
+            <div class="card card-dashboard p-3 mb-4 shadow-sm border-0 rounded-4 bg-white">
+                <div class="card-body p-2">
+                    <form method="GET" id="filterForm" class="row g-3 align-items-end">
                         <input type="hidden" name="id" value="<?= esc($id_bank) ?>">
-                        <div class="col-md-5">
-                            <label class="small fw-bold">Pilih Jadwal Ujian</label>
-                            <select name="exam_id" id="filterExam" class="form-select" onchange="$('select[name=class_id]').val(''); $('select[name=sesi]').val(''); this.form.submit()">
+                        <div class="col-lg-5 col-md-6">
+                            <label class="small fw-semibold text-secondary text-uppercase mb-1">Pilih Jadwal Ujian</label>
+                            <select name="exam_id" id="filterExam" class="form-select rounded-3 py-2 border-secondary-subtle" onchange="$('select[name=class_id]').val(''); $('select[name=sesi]').val(''); this.form.submit()">
                                 <option value="">-- Semua Ujian di Bank Soal Ini --</option>
                                 <?php foreach($listExams as $ex): ?>
                                     <option value="<?= esc($ex['id']) ?>" <?= esc($filter_exam == $ex['id'] ? 'selected' : '') ?>><?= esc($ex['nama_mapel_ujian']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <label class="small fw-bold">Kelas</label>
-                            <select name="class_id" id="filterClass" class="form-select" onchange="this.form.submit()" <?= esc(!$filter_exam ? 'disabled' : '') ?>>
+                        <div class="col-lg-3 col-md-3">
+                            <label class="small fw-semibold text-secondary text-uppercase mb-1">Kelas Target</label>
+                            <select name="class_id" id="filterClass" class="form-select rounded-3 py-2 border-secondary-subtle" onchange="this.form.submit()" <?= esc(!$filter_exam ? 'disabled' : '') ?>>
                                 <option value=""><?= esc(!$filter_exam ? '-- Pilih jadwal dulu --' : '-- Semua Kelas --') ?></option>
                                 <?php foreach($classes as $cl): ?>
                                     <option value="<?= esc($cl['id']) ?>" <?= esc($filter_kelas == $cl['id'] ? 'selected' : '') ?>>Kelas <?= esc($cl['jenjang']) ?> - <?= esc($cl['nama_kelas']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-2">
-                            <label class="small fw-bold">Sesi</label>
-                            <select name="sesi" id="filterSesi" class="form-select" onchange="this.form.submit()" <?= esc(!$filter_exam ? 'disabled' : '') ?>>
+                        <div class="col-lg-2 col-md-3">
+                            <label class="small fw-semibold text-secondary text-uppercase mb-1">Sesi Ujian</label>
+                            <select name="sesi" id="filterSesi" class="form-select rounded-3 py-2 border-secondary-subtle" onchange="this.form.submit()" <?= esc(!$filter_exam ? 'disabled' : '') ?>>
                                 <option value=""><?= esc(!$filter_exam ? '-- Pilih jadwal dulu --' : '-- Semua --') ?></option>
                                 <?php foreach ($listSesi as $s): ?>
                                     <option value="<?= esc($s['id']) ?>" <?= esc($filter_sesi == $s['id'] ? 'selected' : '') ?>><?= htmlspecialchars($s['nama_sesi']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-2 d-flex align-items-end">
-                            <a href="index.php?id=<?= esc($id_bank) ?>" class="btn btn-outline-secondary w-100">
-                                <i class="fas fa-undo me-1"></i> Reset
+                        <div class="col-lg-2 col-md-12 d-flex align-items-end">
+                            <a href="index.php?id=<?= esc($id_bank) ?>" class="btn btn-outline-secondary rounded-3 py-2 w-100 fw-semibold d-flex align-items-center justify-content-center gap-1">
+                                <i class="fas fa-rotate-left"></i> Reset
                             </a>
                         </div>
                     </form>
@@ -164,49 +184,53 @@ $results = $stmt->fetchAll();
 
             <?php if ($filter_active): ?>
             <!-- Info Banner Nilai Otomatis -->
-            <div class="alert alert-info border-0 shadow-sm rounded-3 py-2 px-3 mb-3 d-flex align-items-center gap-3">
-                <i class="fas fa-info-circle text-info fs-4 flex-shrink-0"></i>
+            <div class="alert alert-info border-0 shadow-sm rounded-4 p-3 mb-4 bg-primary-subtle text-primary-emphasis d-flex align-items-center gap-3">
+                <i class="fas fa-circle-info fs-3 text-primary flex-shrink-0"></i>
                 <div class="small">
-                    <span class="fw-bold">Nilai Otomatis Tersimpan:</span> Nilai peserta ujian otomatis terhitung secara instan saat siswa menekan tombol <em>Selesai Ujian</em>. Anda bisa <strong>langsung mengunduh Excel atau PDF</strong> tanpa perlu menekan tombol <em>Hitung Ulang Nilai</em>.
-                    <br><span class="text-muted"><i class="fas fa-lightbulb text-warning me-1"></i>Tombol <strong>Hitung Ulang Nilai</strong> hanya digunakan jika ada revisi kunci jawaban di bank soal, perubahan bobot nilai, atau setelah selesai mengoreksi soal esai.</span>
+                    <span class="fw-bold">Penilaian Otomatis Real-Time:</span> Nilai ujian objektif terhitung instan saat siswa menekan tombol <em>Selesai Ujian</em>. Anda dapat langsung mengunduh rekap Excel / PDF.
+                    <br><span class="text-secondary"><i class="fas fa-lightbulb text-warning me-1"></i>Tombol <strong>Hitung Ulang Nilai</strong> digunakan apabila ada pembaruan kunci jawaban pada bank soal, revisi bobot skor, atau setelah selesai memeriksa esai.</span>
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-0">
-                    <div>
-                        <h6 class="mb-0 fw-bold"><i class="fas fa-list me-2 text-primary"></i>Daftar Nilai Siswa</h6>
+            <div class="card card-dashboard p-0 shadow-sm border-0 rounded-4 overflow-hidden bg-white mb-4">
+                <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-list-check text-primary fs-5"></i>
+                        <h6 class="mb-0 fw-bold text-dark">Daftar Nilai Siswa</h6>
+                        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 fw-semibold ms-2">
+                            Total: <?= count($results) ?> Peserta
+                        </span>
                     </div>
                     <div class="d-flex gap-2">
                         <?php if ($filter_exam || $id_bank): ?>
-                        <button type="button" class="btn btn-warning btn-sm px-3 fw-bold shadow-sm" id="btnRecalculateBatch" data-exam-id="<?= esc($filter_exam) ?>" data-bank-id="<?= esc($id_bank) ?>" title="Gunakan hanya jika ada revisi kunci jawaban di bank soal atau perubahan bobot">
-                            <i class="fas fa-sync-alt me-1"></i> Hitung Ulang Nilai
+                        <button type="button" class="btn btn-warning rounded-3 btn-sm px-3 fw-semibold shadow-sm text-dark d-flex align-items-center gap-1" id="btnRecalculateBatch" data-exam-id="<?= esc($filter_exam) ?>" data-bank-id="<?= esc($id_bank) ?>" title="Gunakan hanya jika ada revisi kunci jawaban di bank soal atau perubahan bobot">
+                            <i class="fas fa-arrows-rotate"></i> Hitung Ulang Nilai
                         </button>
                         <?php endif; ?>
-                        <div class="btn-group">
-                            <a href="<?= esc(BASE_URL) ?>admin/hasil/cetak/export-excel.php?id=<?= esc($id_bank) ?>&exam_id=<?= esc($filter_exam) ?>&class_id=<?= esc($filter_kelas) ?>&sesi=<?= esc($filter_sesi) ?>" class="btn btn-success btn-sm px-3">
-                                <i class="fas fa-file-excel me-2"></i> Excel
+                        <div class="btn-group shadow-sm">
+                            <a href="<?= esc(BASE_URL) ?>admin/hasil/cetak/export-excel.php?id=<?= esc($id_bank) ?>&exam_id=<?= esc($filter_exam) ?>&class_id=<?= esc($filter_kelas) ?>&sesi=<?= esc($filter_sesi) ?>" class="btn btn-success rounded-start-3 btn-sm px-3 fw-semibold d-flex align-items-center gap-1">
+                                <i class="fas fa-file-excel"></i> Excel
                             </a>
-                            <a href="<?= esc(BASE_URL) ?>admin/hasil/cetak/export-pdf.php?id=<?= esc($id_bank) ?>&exam_id=<?= esc($filter_exam) ?>&class_id=<?= esc($filter_kelas) ?>&sesi=<?= esc($filter_sesi) ?>" class="btn btn-danger btn-sm px-3">
-                                <i class="fas fa-file-pdf me-2"></i> PDF
+                            <a href="<?= esc(BASE_URL) ?>admin/hasil/cetak/export-pdf.php?id=<?= esc($id_bank) ?>&exam_id=<?= esc($filter_exam) ?>&class_id=<?= esc($filter_kelas) ?>&sesi=<?= esc($filter_sesi) ?>" class="btn btn-danger rounded-end-3 btn-sm px-3 fw-semibold d-flex align-items-center gap-1">
+                                <i class="fas fa-file-pdf"></i> PDF
                             </a>
                         </div>
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
+                    <table class="table table-hover align-middle mb-0" style="min-width: 1050px;">
+                        <thead class="table-light text-secondary small text-uppercase fw-semibold">
                             <tr>
-                                <th class="ps-4">No</th>
-                                <th>Siswa</th>
+                                <th class="ps-4" style="width: 50px;">No</th>
+                                <th>Nama Lengkap & NISN</th>
                                 <th>Kelas</th>
-                                <th class="text-center">Status</th>
+                                <th class="text-center">Status Ujian</th>
                                 <th class="text-center">Status Koreksi</th>
-                                <th class="text-center">Terjawab Benar</th>
+                                <th class="text-center">Benar</th>
                                 <th class="text-center">Nilai Obj</th>
                                 <th class="text-center">Nilai Esai</th>
-                                <th class="text-center">Nilai Akhir (100)</th>
-                                <th class="text-center">Aksi</th>
+                                <th class="text-center">Nilai Akhir</th>
+                                <th class="text-center" style="width: 120px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>

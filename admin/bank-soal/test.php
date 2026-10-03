@@ -195,171 +195,222 @@ $listExams = $exams->fetchAll();
 
 <!DOCTYPE html>
 <html lang="id">
-    <?php include '../../includes/header.php'; ?>
+    <?php include dirname(__DIR__, 2) . '/includes/header.php'; ?>
 
 <body class="bg-light">
 
 <div class="d-flex" id="wrapper">
-    <?php include '../../includes/sidebar.php'; ?>
+    <?php include dirname(__DIR__, 2) . '/includes/sidebar.php'; ?>
 
     <div id="content" class="w-100">
         <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm">
-            <div class="d-flex align-items-center">
-                <a href="<?= esc(BASE_URL) ?>admin/bank-soal/detail.php?id=<?= esc($id_bank) ?>" class="btn btn-light border me-3"><i class="fas fa-arrow-left"></i></a>
-                <h5 class="mb-0 fw-bold">Jadwal Ujian: <?= $bank['nama_mapel'] ?></h5>
+            <div class="d-flex align-items-center justify-content-between w-100">
+                <div class="d-flex align-items-center">
+                    <a href="<?= esc(BASE_URL) ?>admin/bank-soal/detail.php?id=<?= esc($id_bank) ?>" class="btn btn-light border rounded-circle me-3 d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                        <i class="fas fa-arrow-left text-secondary"></i>
+                    </a>
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="mb-0 fw-bold text-dark">Jadwal Ujian: <?= esc($bank['nama_mapel']) ?></h5>
+                            <span class="badge bg-primary-subtle text-primary font-monospace px-2 py-1"><?= esc($bank['kode_bank_soal']) ?></span>
+                        </div>
+                        <small class="text-muted"><?= esc($bank['nama_bank_soal']) ?></small>
+                    </div>
+                </div>
+                <button class="btn btn-primary rounded-3 px-3 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#modalTambahTest">
+                    <i class="fas fa-calendar-plus"></i>
+                    <span>Buat Jadwal Baru</span>
+                </button>
             </div>
         </nav>
 
-        <div class="container-fluid px-4 pt-4">
+        <div class="container-fluid px-4 pt-4 pb-5">
             <?php $flash = $_GET['msg'] ?? ''; ?>
             <?php if($flash === 'test_added'): ?>
-                <div class="alert alert-success border-0 shadow-sm mb-3 alert-dismissible fade show">
-                    <i class="fas fa-check-circle me-2"></i> Jadwal ujian baru berhasil dibuat!
+                <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4 p-3 alert-dismissible fade show d-flex align-items-center">
+                    <div class="fs-3 text-success me-3"><i class="fas fa-check-circle"></i></div>
+                    <div>
+                        <strong class="d-block">Jadwal Berhasil Dibuat!</strong>
+                        Jadwal pelaksanaan ujian baru telah aktif dan siap dikonfigurasi pesertanya.
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php elseif($flash === 'test_updated'): ?>
-                <div class="alert alert-info border-0 shadow-sm mb-3 alert-dismissible fade show">
-                    <i class="fas fa-check-circle me-2"></i> Jadwal ujian berhasil diperbarui!
+                <div class="alert alert-info border-0 shadow-sm rounded-4 mb-4 p-3 alert-dismissible fade show d-flex align-items-center">
+                    <div class="fs-3 text-info me-3"><i class="fas fa-check-circle"></i></div>
+                    <div>
+                        <strong class="d-block">Jadwal Diperbarui!</strong>
+                        Perubahan jadwal ujian telah berhasil disimpan.
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php elseif($flash === 'test_cloned'): ?>
-                <div class="alert alert-success border-0 shadow-sm mb-3 alert-dismissible fade show">
-                    <i class="fas fa-check-double me-2"></i> <strong>Berhasil Menduplikasi Ujian!</strong> Jadwal ujian baru telah dibuat lengkap dengan soal dan peserta.
+                <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4 p-3 alert-dismissible fade show d-flex align-items-center">
+                    <div class="fs-3 text-success me-3"><i class="fas fa-check-double"></i></div>
+                    <div>
+                        <strong class="d-block">Berhasil Menduplikasi Ujian!</strong>
+                        Jadwal ujian duplikasi telah dibuat lengkap beserta butir soal dan siswa terkait.
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php elseif($flash === 'date_invalid'): ?>
-                <div class="alert alert-danger border-0 shadow-sm mb-3 alert-dismissible fade show">
-                    <i class="fas fa-exclamation-triangle me-2"></i> <strong>Gagal:</strong> Tanggal selesai tidak boleh lebih dulu atau sama dengan tanggal mulai!
+                <div class="alert alert-danger border-0 shadow-sm rounded-4 mb-4 p-3 alert-dismissible fade show d-flex align-items-center">
+                    <div class="fs-3 text-danger me-3"><i class="fas fa-triangle-exclamation"></i></div>
+                    <div>
+                        <strong class="d-block">Kesalahan Waktu!</strong>
+                        Waktu selesai (batas login) tidak boleh lebih awal atau sama dengan waktu mulai.
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
 
-            <button class="btn btn-primary shadow-sm mb-4" data-bs-toggle="modal" data-bs-target="#modalTambahTest">
-                <i class="fas fa-calendar-plus me-2"></i> Buat Jadwal Ujian Baru
-            </button>
-
-            <div class="row">
-                <?php foreach($listExams as $ex): ?>
-                <div class="col-md-6 mb-4">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
+            <?php if (empty($listExams)): ?>
+                <div class="text-center py-5 bg-white rounded-4 shadow-sm border p-5">
+                    <div class="p-3 bg-primary-subtle text-primary rounded-circle d-inline-flex mb-3">
+                        <i class="fas fa-calendar-xmark fa-3x"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark">Belum Ada Jadwal Ujian</h5>
+                    <p class="text-muted small mb-4">Bank soal ini belum dijadwalkan ke siswa. Silakan klik tombol di bawah untuk membuat jadwal ujian baru.</p>
+                    <button class="btn btn-primary rounded-3 px-4 py-2 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambahTest">
+                        <i class="fas fa-calendar-plus me-2"></i> Buat Jadwal Ujian Pertama
+                    </button>
+                </div>
+            <?php else: ?>
+                <div class="row g-4">
+                    <?php foreach($listExams as $ex): ?>
+                    <div class="col-xl-6">
+                        <div class="card border-0 shadow-sm rounded-4 bg-white h-100">
+                            <div class="card-body p-4 d-flex flex-column justify-content-between">
                                 <div>
-                                    <div class="text-primary small fw-bold mb-1">KELAS <?= $ex['jenjang'] ?></div>
-                                    <h5 class="fw-bold mb-2"><?= $ex['nama_mapel_ujian'] ?></h5>
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div>
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <span class="badge bg-info-subtle text-info-emphasis px-2 py-1">KELAS <?= esc($ex['jenjang']) ?></span>
+                                                <span class="badge bg-dark-subtle text-dark font-monospace px-2 py-1">Token: <?= esc($ex['token']) ?></span>
+                                                <?php 
+                                                    $status_badge = 'bg-secondary-subtle text-secondary';
+                                                    if($ex['status'] == 'aktif') $status_badge = 'bg-success-subtle text-success border border-success-subtle';
+                                                    if($ex['status'] == 'selesai') $status_badge = 'bg-danger-subtle text-danger border border-danger-subtle';
+                                                ?>
+                                                <span class="badge <?= $status_badge ?> rounded-pill px-3 py-1 fw-semibold">
+                                                    <?= strtoupper($ex['status']) ?>
+                                                </span>
+                                            </div>
+                                            <h5 class="fw-bold text-dark mb-0"><?= esc($ex['nama_mapel_ujian']) ?></h5>
+                                        </div>
+                                        
+                                        <div class="dropdown">
+                                            <button class="btn btn-light btn-sm border rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width:36px; height:36px;" data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-vertical text-secondary"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3">
+                                                <li><a class="dropdown-item py-2" href="<?= esc(BASE_URL) ?>admin/bank-soal/test-kelola.php?exam_id=<?= esc($ex['id']) ?>&id=<?= esc($id_bank) ?>">
+                                                    <i class="fas fa-users-gear me-2 text-primary"></i> Kelola Butir & Peserta</a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item btn-salin py-2" href="javascript:void(0)"
+                                                        data-id="<?= esc($ex['id']) ?>"
+                                                        data-nama="<?= esc($ex['nama_mapel_ujian']) ?>"
+                                                        data-jenjang="<?= esc($ex['jenjang']) ?>"
+                                                        data-durasi="<?= esc($ex['durasi_menit']) ?>"
+                                                        data-status="<?= esc($ex['status']) ?>"
+                                                        data-acaksoal="<?= esc($ex['acak_soal']) ?>"
+                                                        data-acakopsi="<?= esc($ex['acak_opsi']) ?>">
+                                                        <i class="fas fa-copy me-2 text-success"></i> Salin / Buat Susulan
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item btn-edit py-2" href="javascript:void(0)" 
+                                                        data-id="<?= esc($ex['id']) ?>"
+                                                        data-nama="<?= esc($ex['nama_mapel_ujian']) ?>"
+                                                        data-jenjang="<?= esc($ex['jenjang']) ?>" 
+                                                        data-durasi="<?= esc($ex['durasi_menit']) ?>"
+                                                        data-mulai="<?= esc(date('Y-m-d\TH:i', strtotime($ex['mulai_pada']))) ?>"
+                                                        data-selesai="<?= esc(date('Y-m-d\TH:i', strtotime($ex['selesai_pada']))) ?>"
+                                                        data-status="<?= esc($ex['status']) ?>"
+                                                        data-acaksoal="<?= esc($ex['acak_soal']) ?>"
+                                                        data-acakopsi="<?= esc($ex['acak_opsi']) ?>">
+                                                        <i class="fas fa-pen-to-square me-2 text-info"></i> Edit Jadwal
+                                                    </a>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <a class="dropdown-item text-danger py-2" href="javascript:void(0)" onclick="confirmDelete(<?= esc($ex['id']) ?>, '<?= esc(addslashes($ex['nama_mapel_ujian'])) ?>')">
+                                                        <i class="fas fa-trash me-2"></i> Hapus Jadwal
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
                                     
-                                    <div class="d-flex gap-1 flex-wrap">
-                                        <span class="badge bg-dark">Token: <?= $ex['token'] ?></span>
-                                        <?php 
-                                            $status_badge = 'bg-secondary';
-                                            if($ex['status'] == 'aktif') $status_badge = 'bg-success';
-                                            if($ex['status'] == 'selesai') $status_badge = 'bg-danger';
-                                        ?>
-                                        <span class="badge <?= $status_badge ?>"><?= strtoupper($ex['status']) ?></span>
+                                    <div class="row g-2 small text-secondary mb-4 p-3 bg-light rounded-3">
+                                        <div class="col-sm-6 d-flex align-items-center gap-2">
+                                            <i class="far fa-clock text-primary"></i>
+                                            <span>Durasi: <strong><?= $ex['durasi_menit'] ?> Menit</strong></span>
+                                        </div>
+                                        <div class="col-sm-6 d-flex align-items-center gap-2">
+                                            <i class="fas fa-shuffle text-primary"></i>
+                                            <span>Acak Soal: <strong><?= $ex['acak_soal'] ? 'Ya' : 'Tidak' ?></strong></span>
+                                        </div>
+                                        <div class="col-sm-6 d-flex align-items-center gap-2">
+                                            <i class="far fa-calendar-plus text-success"></i>
+                                            <span>Mulai: <?= esc(date('d M Y, H:i', strtotime($ex['mulai_pada']))) ?> WIB</span>
+                                        </div>
+                                        <div class="col-sm-6 d-flex align-items-center gap-2">
+                                            <i class="far fa-calendar-check text-danger"></i>
+                                            <span>Selesai: <?= date('d M Y, H:i', strtotime($ex['selesai_pada'])) ?> WIB</span>
+                                        </div>
                                     </div>
                                 </div>
-                                
-                                <div class="dropdown">
-                                    <button class="btn btn-light btn-sm border shadow-sm" data-bs-toggle="dropdown">
-                                        <i class="fas fa-ellipsis-v"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                                        <li><a class="dropdown-item py-2" href="<?= esc(BASE_URL) ?>admin/bank-soal/test-kelola.php?exam_id=<?= esc($ex['id']) ?>&id=<?= esc($id_bank) ?>">
-                                            <i class="fas fa-tasks me-2 text-info"></i> Kelola Test</a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item btn-salin py-2" href="javascript:void(0)"
-                                                data-id="<?= esc($ex['id']) ?>"
-                                                data-nama="<?= esc($ex['nama_mapel_ujian']) ?>"
-                                                data-jenjang="<?= esc($ex['jenjang']) ?>"
-                                                data-durasi="<?= esc($ex['durasi_menit']) ?>"
-                                                data-status="<?= esc($ex['status']) ?>"
-                                                data-acaksoal="<?= esc($ex['acak_soal']) ?>"
-                                                data-acakopsi="<?= esc($ex['acak_opsi']) ?>">
-                                                <i class="fas fa-copy me-2 text-success"></i> Salin / Buat Susulan
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item btn-edit py-2" href="javascript:void(0)" 
-                                                data-id="<?= esc($ex['id']) ?>"
-                                                data-nama="<?= esc($ex['nama_mapel_ujian']) ?>"
-                                                data-jenjang="<?= esc($ex['jenjang']) ?>" 
-                                                data-durasi="<?= esc($ex['durasi_menit']) ?>"
-                                                data-mulai="<?= esc(date('Y-m-d\TH:i', strtotime($ex['mulai_pada']))) ?>"
-                                                data-selesai="<?= esc(date('Y-m-d\TH:i', strtotime($ex['selesai_pada']))) ?>"
-                                                data-status="<?= esc($ex['status']) ?>"
-                                                data-acaksoal="<?= esc($ex['acak_soal']) ?>"
-                                                data-acakopsi="<?= esc($ex['acak_opsi']) ?>">
-                                                <i class="fas fa-edit me-2 text-primary"></i> Edit Jadwal
-                                            </a>
-                                        </li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <a class="dropdown-item text-danger py-2" href="javascript:void(0)" onclick="confirmDelete(<?= esc($ex['id']) ?>, '<?= esc(addslashes($ex['nama_mapel_ujian'])) ?>')">
-                                                <i class="fas fa-trash me-2"></i> Hapus Jadwal
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                            
-                            <div class="row small text-muted g-2">
-                                <div class="col-6"><i class="far fa-clock me-2 text-primary"></i><?= $ex['durasi_menit'] ?> Menit</div>
-                                <div class="col-6"><i class="fas fa-random me-2 text-primary"></i>Acak: <?= $ex['acak_soal'] ? 'Ya' : 'Tidak' ?></div>
-                                <div class="col-12"><i class="far fa-calendar-alt me-2 text-primary"></i>Mulai: <?= esc(date('d M Y, H:i', strtotime($ex['mulai_pada']))) ?> WIB</div>
-                                <div class="col-12"><i class="far fa-calendar-check me-2 text-primary"></i>Selesai: <?= date('d M Y, H:i', strtotime($ex['selesai_pada'])) ?> WIB</div>
-                            </div>
 
-                            <hr class="my-3">
-                            
-                            <div class="row g-2">
-                                <div class="col-12">
-                                    <a href="<?= esc(BASE_URL) ?>admin/bank-soal/test-kelola.php?exam_id=<?= esc($ex['id']) ?>&id=<?= esc($id_bank) ?>" class="btn btn-primary w-100 btn-sm shadow-sm">
-                                        <i class="fas fa-users-cog me-2"></i> Atur Soal & Peserta
+                                <div class="d-flex gap-2 pt-2 border-top">
+                                    <a href="<?= esc(BASE_URL) ?>admin/bank-soal/test-kelola.php?exam_id=<?= esc($ex['id']) ?>&id=<?= esc($id_bank) ?>" class="btn btn-primary rounded-3 w-100 py-2 fw-semibold shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                        <i class="fas fa-sliders"></i> Atur Soal & Peserta Siswa
                                     </a>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    <?php endforeach; ?>
                 </div>
-                <?php endforeach; ?>
-            </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
 
+<!-- Modal Edit Test -->
 <div class="modal fade" id="modalEditTest" tabindex="-1">
-    <div class="modal-dialog modal-dialog-scrollable">
-        <form action="" method="POST" class="modal-content border-0">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <form action="" method="POST" class="modal-content rounded-4 border-0 shadow">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">Edit Jadwal Ujian</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-white py-3 px-4 border-bottom">
+                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-pen-to-square text-primary me-2"></i>Edit Jadwal Ujian</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <input type="hidden" name="edit_test" value="1">
                 <input type="hidden" name="exam_id" id="edit_id">
                 
                 <div class="mb-3">
-                    <label class="form-label small fw-bold">Nama Ujian / Test</label>
-                    <input type="text" name="nama_test" id="edit_nama" class="form-control" required>
+                    <label class="form-label small fw-semibold text-secondary text-uppercase">Nama Ujian / Test</label>
+                    <input type="text" name="nama_test" id="edit_nama" class="form-control rounded-3 py-2 border-secondary-subtle" required>
                 </div>
                 <div class="mb-3">
-                    <label>Jenjang / Kelas</label>
-                    <select name="jenjang" id="edit-jenjang" class="form-select" required>
+                    <label class="form-label small fw-semibold text-secondary text-uppercase">Jenjang / Kelas</label>
+                    <select name="jenjang" id="edit-jenjang" class="form-select rounded-3 py-2 border-secondary-subtle" required>
                         <option value="10">Kelas 10</option>
                         <option value="11">Kelas 11</option>
                         <option value="12">Kelas 12</option>
                     </select>
                 </div>
-                <div class="row">
+                <div class="row g-3">
                     <div class="col-6 mb-3">
-                        <label class="form-label small fw-bold">Durasi (Menit)</label>
-                        <input type="number" name="durasi" id="edit_durasi" class="form-control" required>
+                        <label class="form-label small fw-semibold text-secondary text-uppercase">Durasi (Menit)</label>
+                        <input type="number" name="durasi" id="edit_durasi" class="form-control rounded-3 py-2 border-secondary-subtle" required>
                     </div>
                     <div class="col-6 mb-3">
-                        <label class="form-label small fw-bold">Status</label>
-                        <select name="status" id="edit_status" class="form-select">
+                        <label class="form-label small fw-semibold text-secondary text-uppercase">Status</label>
+                        <select name="status" id="edit_status" class="form-select rounded-3 py-2 border-secondary-subtle">
                             <option value="draft">DRAFT</option>
                             <option value="aktif">AKTIF</option>
                             <option value="selesai">SELESAI</option>
@@ -367,65 +418,66 @@ $listExams = $exams->fetchAll();
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label small fw-bold">Opsi Acak</label>
-                    <div class="d-flex gap-3">
-                        <div class="form-check small">
+                    <label class="form-label small fw-semibold text-secondary text-uppercase">Opsi Pengacakan</label>
+                    <div class="d-flex gap-4 p-3 bg-light rounded-3 border">
+                        <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="acak_soal" id="edit_acak_soal">
-                            <label class="form-check-label" for="edit_acak_soal">Acak Soal</label>
+                            <label class="form-check-label small fw-semibold" for="edit_acak_soal">Acak Urutan Soal</label>
                         </div>
-                        <div class="form-check small">
+                        <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="acak_opsi" id="edit_acak_opsi">
-                            <label class="form-check-label" for="edit_acak_opsi">Acak Jawaban</label>
+                            <label class="form-check-label small fw-semibold" for="edit_acak_opsi">Acak Urutan Opsi</label>
                         </div>
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label small fw-bold">Waktu Mulai</label>
-                    <input type="datetime-local" name="tgl_mulai" id="edit_mulai" class="form-control" required>
+                    <label class="form-label small fw-semibold text-secondary text-uppercase">Waktu Mulai</label>
+                    <input type="datetime-local" name="tgl_mulai" id="edit_mulai" class="form-control rounded-3 py-2 border-secondary-subtle" required>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label small fw-bold">Waktu Selesai</label>
-                    <input type="datetime-local" name="tgl_selesai" id="edit_selesai" class="form-control" required>
+                    <label class="form-label small fw-semibold text-secondary text-uppercase">Waktu Selesai (Batas Login)</label>
+                    <input type="datetime-local" name="tgl_selesai" id="edit_selesai" class="form-control rounded-3 py-2 border-secondary-subtle" required>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
-                <button type="submit" class="btn btn-primary text-white">Simpan Perubahan</button>
+            <div class="modal-footer bg-light py-3 px-4 border-top">
+                <button type="button" class="btn btn-secondary rounded-3 px-3 py-2" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary rounded-3 px-4 py-2 fw-semibold shadow-sm">Simpan Perubahan</button>
             </div>
         </form>
     </div>
 </div>
 
+<!-- Modal Tambah Test -->
 <div class="modal fade" id="modalTambahTest" tabindex="-1">
-    <div class="modal-dialog modal-dialog-scrollable">
-        <form action="" method="POST" class="modal-content border-0">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <form action="" method="POST" class="modal-content rounded-4 border-0 shadow">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">Buat Jadwal Ujian</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-white py-3 px-4 border-bottom">
+                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-calendar-plus text-primary me-2"></i>Buat Jadwal Ujian Baru</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <input type="hidden" name="tambah_test" value="1">
                 <div class="mb-3">
-                    <label class="form-label small fw-bold">Nama Ujian / Test</label>
-                    <input type="text" name="nama_test" class="form-control" placeholder="Contoh: PTS Ganjil 2024" required>
+                    <label class="form-label small fw-semibold text-secondary text-uppercase">Nama Ujian / Test</label>
+                    <input type="text" name="nama_test" class="form-control rounded-3 py-2 border-secondary-subtle" placeholder="Contoh: PTS Ganjil 2026/2027" required>
                 </div>
                 <div class="mb-3">
-                    <label>Jenjang / Kelas</label>
-                    <select name="jenjang" class="form-select" required>
+                    <label class="form-label small fw-semibold text-secondary text-uppercase">Jenjang / Kelas</label>
+                    <select name="jenjang" class="form-select rounded-3 py-2 border-secondary-subtle" required>
                         <option value="10">Kelas 10</option>
                         <option value="11">Kelas 11</option>
                         <option value="12">Kelas 12</option>
                     </select>
                 </div>
-                <div class="row">
+                <div class="row g-3">
                     <div class="col-6 mb-3">
-                        <label class="form-label small fw-bold">Durasi (Menit)</label>
-                        <input type="number" name="durasi" class="form-control" value="90" required>
+                        <label class="form-label small fw-semibold text-secondary text-uppercase">Durasi (Menit)</label>
+                        <input type="number" name="durasi" class="form-control rounded-3 py-2 border-secondary-subtle" value="90" required>
                     </div>
                     <div class="col-6 mb-3">
-                        <label class="form-label small fw-bold">Status</label>
-                        <select name="status" class="form-select">
+                        <label class="form-label small fw-semibold text-secondary text-uppercase">Status Awal</label>
+                        <select name="status" class="form-select rounded-3 py-2 border-secondary-subtle">
                             <option value="draft" selected>DRAFT</option>
                             <option value="aktif">AKTIF</option>
                             <option value="selesai">SELESAI</option>
@@ -433,28 +485,31 @@ $listExams = $exams->fetchAll();
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label small fw-bold">Opsi Acak</label>
-                    <div class="d-flex gap-3">
-                        <div class="form-check small">
+                    <label class="form-label small fw-semibold text-secondary text-uppercase">Opsi Pengacakan</label>
+                    <div class="d-flex gap-4 p-3 bg-light rounded-3 border">
+                        <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="acak_soal" checked id="ac1">
-                            <label class="form-check-label" for="ac1">Acak Soal</label>
+                            <label class="form-check-label small fw-semibold" for="ac1">Acak Urutan Soal</label>
                         </div>
-                        <div class="form-check small">
+                        <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="acak_opsi" checked id="ac2">
-                            <label class="form-check-label" for="ac2">Acak Jawaban</label>
+                            <label class="form-check-label small fw-semibold" for="ac2">Acak Urutan Opsi</label>
                         </div>
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label small fw-bold">Waktu Mulai</label>
-                    <input type="datetime-local" name="tgl_mulai" class="form-control" required>
+                    <label class="form-label small fw-semibold text-secondary text-uppercase">Waktu Mulai</label>
+                    <input type="datetime-local" name="tgl_mulai" class="form-control rounded-3 py-2 border-secondary-subtle" required>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label small fw-bold">Waktu Selesai (Batas Login)</label>
-                    <input type="datetime-local" name="tgl_selesai" class="form-control" required>
+                    <label class="form-label small fw-semibold text-secondary text-uppercase">Waktu Selesai (Batas Login)</label>
+                    <input type="datetime-local" name="tgl_selesai" class="form-control rounded-3 py-2 border-secondary-subtle" required>
                 </div>
             </div>
-            <div class="modal-footer"><button type="submit" class="btn btn-primary">Simpan Jadwal</button></div>
+            <div class="modal-footer bg-light py-3 px-4 border-top">
+                <button type="button" class="btn btn-secondary rounded-3 px-3 py-2" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary rounded-3 px-4 py-2 fw-semibold shadow-sm">Simpan Jadwal Ujian</button>
+            </div>
         </form>
     </div>
 </div>

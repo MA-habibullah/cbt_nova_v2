@@ -14,7 +14,7 @@ if (!isset($_SESSION['admin_id']) && (!isset($_SESSION['role']) || $_SESSION['ro
 $id_bank = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 // Ambil info bank soal & mapel
-$stmt_info = $pdo->prepare("SELECT b.nama_bank_soal, s.nama_mapel 
+$stmt_info = $pdo->prepare("SELECT b.nama_bank_soal, b.kode_bank_soal, s.nama_mapel 
                              FROM cbt_bank_soal b 
                              JOIN cbt_subjects s ON b.subject_id = s.id 
                              WHERE b.id = ?");
@@ -43,16 +43,10 @@ $list_students = [];
 $nama_kelas_aktif = "";
 
 if ($filter_exam && $filter_class) {
-    // Ambil nama kelas
     $st_cls = $pdo->prepare("SELECT nama_kelas FROM cbt_classes WHERE id = ?");
     $st_cls->execute([$filter_class]);
     $nama_kelas_aktif = $st_cls->fetchColumn();
 
-    /**
-     * PERBAIKAN LOGIKA: 
-     * Kita JOIN ke cbt_exam_participants agar hanya siswa yang SUDAH DI-SETTING 
-     * di 'Kelola Peserta' yang muncul di daftar hadir.
-     */
     $query = "SELECT s.nisn, s.nama_lengkap, k.jenjang, k.nama_kelas, s.sesi 
               FROM cbt_exam_participants p
               JOIN cbt_students s ON p.student_id = s.id
@@ -73,74 +67,79 @@ if ($filter_exam && $filter_class) {
     $list_students = $stmt->fetchAll();
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
-    <?php include '../../../includes/header.php'; ?>
+<?php include dirname(__DIR__, 3) . '/includes/header.php'; ?>
 
 <body class="bg-light">
 
 <div class="d-flex" id="wrapper">
-    <?php include '../../../includes/sidebar.php'; ?>
+    <?php include dirname(__DIR__, 3) . '/includes/sidebar.php'; ?>
 
     <div id="content" class="w-100">
         <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm">
-            <div class="d-flex align-items-center">
-                <a href="<?= esc(BASE_URL) ?>admin/bank-soal/detail.php?id=<?= esc($id_bank) ?>" class="btn btn-light border me-3 shadow-sm">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-                <div>
-                    <h5 class="mb-0 fw-bold text-primary">Daftar Hadir & Berita Acara</h5>
-                    <small class="text-muted"><?= $info_bank['nama_mapel'] ?> - <?= $info_bank['nama_bank_soal'] ?></small>
+            <div class="d-flex align-items-center justify-content-between w-100">
+                <div class="d-flex align-items-center">
+                    <a href="<?= esc(BASE_URL) ?>admin/bank-soal/detail.php?id=<?= esc($id_bank) ?>" class="btn btn-light border rounded-circle me-3 d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                        <i class="fas fa-arrow-left text-secondary"></i>
+                    </a>
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="mb-0 fw-bold text-dark">Daftar Hadir & Berita Acara</h5>
+                            <span class="badge bg-primary-subtle text-primary font-monospace px-2 py-1"><?= esc($info_bank['kode_bank_soal']) ?></span>
+                        </div>
+                        <small class="text-muted"><?= esc($info_bank['nama_mapel']) ?> &bull; <?= esc($info_bank['nama_bank_soal']) ?></small>
+                    </div>
                 </div>
             </div>
         </nav>
 
         <div class="container-fluid px-4 pt-4 pb-5">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <form method="GET" action="" class="row g-3">
+            <!-- Filter Toolbar Card -->
+            <div class="card card-dashboard p-3 mb-4 shadow-sm border-0 rounded-4 bg-white">
+                <div class="card-body p-2">
+                    <form method="GET" action="" class="row g-3 align-items-end">
                         <input type="hidden" name="id" value="<?= esc($id_bank) ?>">
 
-                        <div class="col-md-4">
-                            <label class="small fw-bold text-uppercase">1. Pilih Ujian / Test</label>
-                            <select name="exam_id" class="form-select" required onchange="this.form.submit()">
+                        <div class="col-lg-4 col-md-6">
+                            <label class="small fw-semibold text-secondary text-uppercase mb-1">1. Pilih Jadwal Ujian</label>
+                            <select name="exam_id" class="form-select rounded-3 py-2 border-secondary-subtle" required onchange="this.form.submit()">
                                 <option value="">-- Pilih Ujian --</option>
                                 <?php foreach($exams as $e): ?>
                                     <option value="<?= esc($e['id']) ?>" <?= esc($filter_exam == $e['id'] ? 'selected' : '') ?>>
-                                        <?= $e['nama_mapel_ujian'] ?>
+                                        <?= esc($e['nama_mapel_ujian']) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <label class="small fw-bold text-uppercase">2. Kelas</label>
-                            <select name="class_id" class="form-select" required onchange="this.form.submit()">
+                        <div class="col-lg-3 col-md-3">
+                            <label class="small fw-semibold text-secondary text-uppercase mb-1">2. Kelas</label>
+                            <select name="class_id" class="form-select rounded-3 py-2 border-secondary-subtle" required onchange="this.form.submit()">
                                 <option value="">-- Pilih Kelas --</option>
                                 <?php foreach($classes as $c): ?>
                                     <option value="<?= esc($c['id']) ?>" <?= esc($filter_class == $c['id'] ? 'selected' : '') ?>>
-                                        <?= $c['jenjang'] ?> - <?= $c['nama_kelas'] ?>
+                                        Kelas <?= esc($c['jenjang']) ?> - <?= esc($c['nama_kelas']) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-2">
-                            <label class="small fw-bold text-uppercase">3. Sesi</label>
-                            <select name="sesi" class="form-select" onchange="this.form.submit()">
+                        <div class="col-lg-2 col-md-3">
+                            <label class="small fw-semibold text-secondary text-uppercase mb-1">3. Sesi</label>
+                            <select name="sesi" class="form-select rounded-3 py-2 border-secondary-subtle" onchange="this.form.submit()">
                                 <option value="all" <?= esc($filter_sesi === 'all' ? 'selected' : '') ?>>Semua Sesi</option>
                                 <?php foreach ($listSesi as $s): ?>
                                     <option value="<?= esc($s['id']) ?>" <?= esc($filter_sesi == $s['id'] ? 'selected' : '') ?>><?= htmlspecialchars($s['nama_sesi']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-3 d-flex align-items-end gap-2">
-                            <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm">
-                                <i class="fas fa-eye me-2"></i> Preview
+                        <div class="col-lg-3 col-md-12 d-flex align-items-end gap-2">
+                            <button type="submit" class="btn btn-primary rounded-3 py-2 w-100 fw-semibold shadow-sm d-flex align-items-center justify-content-center gap-1">
+                                <i class="fas fa-eye"></i> Tampilkan
                             </button>
                             <?php if($filter_exam && $filter_class): ?>
                                 <a href="cetak-administrasi.php?id=<?= esc($id_bank) ?>&exam_id=<?= esc($filter_exam) ?>&class_id=<?= esc($filter_class) ?>&sesi=<?= esc($filter_sesi) ?>" 
-                                target="_blank" class="btn btn-danger w-100 fw-bold shadow-sm">
-                                    <i class="fas fa-file-pdf me-2"></i> Cetak PDF
+                                target="_blank" class="btn btn-danger rounded-3 py-2 w-100 fw-semibold shadow-sm d-flex align-items-center justify-content-center gap-1">
+                                    <i class="fas fa-file-pdf"></i> Cetak PDF
                                 </a>
                             <?php endif; ?>
                         </div>
@@ -149,33 +148,34 @@ if ($filter_exam && $filter_class) {
             </div>
 
             <?php if($filter_exam && $filter_class): ?>
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0 fw-bold text-muted">
-                            <i class="fas fa-list me-2 text-primary"></i>Preview Peserta: <?= $nama_kelas_aktif ?>
-                        </h6>
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill">
+                <div class="card card-dashboard p-0 shadow-sm border-0 rounded-4 overflow-hidden bg-white mb-4">
+                    <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fas fa-clipboard-user text-primary fs-5"></i>
+                            <h6 class="mb-0 fw-bold text-dark">Pratinjau Peserta: <?= esc($nama_kelas_aktif) ?></h6>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 fw-semibold">
                             Total: <?= count($list_students) ?> Peserta Terdaftar
                         </span>
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
+                        <table class="table table-hover align-middle mb-0" style="min-width: 800px;">
+                            <thead class="table-light text-secondary small text-uppercase fw-semibold">
                                 <tr>
-                                    <th class="text-center" width="5%">No</th>
-                                    <th width="15%">Username (Nomer Ujian)</th>
+                                    <th class="ps-4" style="width: 60px;">No</th>
+                                    <th style="width: 180px;">Nomor Ujian (NISN)</th>
                                     <th>Nama Lengkap Peserta</th>
-                                    <th width="15%">Kelas</th>
-                                    <th width="10%" class="text-center">Sesi</th>
-                                    <th class="text-center" width="15%">Status Adm</th>
+                                    <th style="width: 150px;">Kelas</th>
+                                    <th class="text-center" style="width: 120px;">Sesi</th>
+                                    <th class="text-center" style="width: 140px;">Status Adm</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if(empty($list_students)): ?>
                                     <tr>
-                                        <td colspan="5" class="text-center py-5">
+                                        <td colspan="6" class="text-center py-5">
                                             <div class="text-muted">
-                                                <i class="fas fa-user-slash fa-3x mb-3 d-block"></i>
+                                                <i class="fas fa-user-slash fa-3x mb-3 d-block opacity-25"></i>
                                                 Belum ada siswa yang di-setting untuk ujian ini di kelas tersebut.
                                             </div>
                                         </td>
@@ -183,15 +183,19 @@ if ($filter_exam && $filter_class) {
                                 <?php else: ?>
                                     <?php foreach($list_students as $i => $s): ?>
                                     <tr>
-                                        <td class="text-center"><?= $i+1 ?></td>
-                                        <td class="fw-bold text-primary"><?= $s['nisn'] ?></td>
-                                        <td class="text-uppercase"><?= htmlspecialchars($s['nama_lengkap']) ?></td>
-                                        <td><?= $s['jenjang'] ?> - <?= $s['nama_kelas'] ?></td>
-                                        <td class="text-center">
-                                            <span class="badge bg-secondary">Sesi <?= $s['sesi'] ?></span>
+                                        <td class="ps-4 text-muted"><?= $i+1 ?></td>
+                                        <td>
+                                            <span class="badge bg-primary-subtle text-primary font-monospace px-2 py-1"><?= esc($s['nisn']) ?></span>
                                         </td>
-                                        <td class="text-center small">
-                                            <span class="text-success fw-bold"><i class="fas fa-check-circle me-1"></i> Terdaftar</span>
+                                        <td class="fw-semibold text-dark text-uppercase"><?= htmlspecialchars($s['nama_lengkap']) ?></td>
+                                        <td><span class="badge bg-secondary-subtle text-secondary"><?= esc($s['jenjang']) ?> - <?= esc($s['nama_kelas']) ?></span></td>
+                                        <td class="text-center">
+                                            <span class="badge bg-info-subtle text-info-emphasis rounded-pill px-3 py-1 fw-semibold">Sesi <?= esc($s['sesi']) ?></span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 fw-semibold">
+                                                <i class="fas fa-check-circle me-1"></i> Terdaftar
+                                            </span>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
@@ -201,15 +205,22 @@ if ($filter_exam && $filter_class) {
                     </div>
                 </div>
             <?php else: ?>
-                <div class="text-center py-5 bg-white rounded shadow-sm border">
-                    <i class="fas fa-filter fa-4x text-light mb-3"></i>
-                    <h5 class="text-muted">Gunakan filter di atas untuk menampilkan data peserta yang sudah di-setting.</h5>
+                <div class="text-center py-5 bg-white rounded-4 shadow-sm border p-5">
+                    <div class="p-3 bg-primary-subtle text-primary rounded-circle d-inline-flex mb-3">
+                        <i class="fas fa-filter fa-3x"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark">Pilih Jadwal Ujian dan Kelas</h5>
+                    <p class="text-muted small mb-0">Gunakan filter di atas untuk menampilkan daftar hadir dan mencetak dokumen administrasi ujian.</p>
                 </div>
             <?php endif; ?>
         </div>
     </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    $("#menu-toggle").click(function(e) { e.preventDefault(); $("#wrapper").toggleClass("toggled"); });
+</script>
 </body>
 </html>
