@@ -481,7 +481,7 @@ $exam_package_json = json_encode([
     var _lastAwayReason = null;
     var _shieldActive = false;
 
-    // 🛡️ INTERNAL ACTION GUARD (Whitelist Aksi Tombol & Navigasi Ujian)
+    // 🛡️ INTERNAL ACTION GUARD & DRAWER STATE (Whitelist Aksi Tombol & Navigasi Ujian)
     var _internalActionTimer = null;
     var _isInternalAction = false;
     function setInternalActionGuard(durationMs) {
@@ -489,12 +489,16 @@ $exam_package_json = json_encode([
         if (_internalActionTimer) clearTimeout(_internalActionTimer);
         _internalActionTimer = setTimeout(function() {
             _isInternalAction = false;
-        }, durationMs || 800);
+        }, durationMs || 1000);
+    }
+
+    function isExamDrawerOpen() {
+        return $('#navContainer').hasClass('show') || $('#navDrawerBackdrop').hasClass('show');
     }
 
     function activateBlankShield(reason) {
-        // Abaikan jika sedang melakukan aksi internal (Next, Prev, Ragu-ragu, Nomor Soal, Opsi)
-        if (_isInternalAction) return;
+        // Abaikan jika sedang melakukan aksi internal atau drawer daftar soal sedang terbuka
+        if (_isInternalAction || isExamDrawerOpen()) return;
 
         _shieldActive = true;
         _lastAwayTimestamp = Date.now();
@@ -521,8 +525,8 @@ $exam_package_json = json_encode([
         var durationAway = Date.now() - _lastAwayTimestamp;
         _lastAwayTimestamp = null;
 
-        // Abaikan jika sedang ada aksi internal (klik tombol soal, drawer, SweetAlert)
-        if (_isInternalAction) return;
+        // Abaikan jika sedang ada aksi internal atau drawer nomor soal aktif
+        if (_isInternalAction || isExamDrawerOpen()) return;
         if (_isSecurityModalOpen) return;
 
         // Abaikan jika durasi hilang fokus terlalu singkat (< 600ms) untuk event blur biasa / tap glitch
@@ -551,7 +555,7 @@ $exam_package_json = json_encode([
                 allowEscapeKey: false
             }).then(function() {
                 _isSecurityModalOpen = false;
-                setInternalActionGuard(1000);
+                setInternalActionGuard(1200);
             });
         } else {
             // Percobaan berikutnya setelah peringatan pertama → Catat pelanggaran ke server
@@ -996,22 +1000,26 @@ $exam_package_json = json_encode([
         if (currentNumber > 1) loadSoal(currentNumber - 1);
     });
 
-    $('#btn-toggle-nav').off('click.ujian').on('click.ujian', function() {
-        setInternalActionGuard(800);
+    $('#btn-toggle-nav').off('click.ujian touchstart.ujian').on('click.ujian touchstart.ujian', function(e) {
+        e.stopPropagation();
+        setInternalActionGuard(2000);
         $('#navContainer').addClass('show');
         $('#navDrawerBackdrop').addClass('show');
     });
 
     function closeNavDrawer() {
-        setInternalActionGuard(800);
+        setInternalActionGuard(2000);
         $('#navContainer').removeClass('show');
         $('#navDrawerBackdrop').removeClass('show');
     }
 
-    $('#navDrawerBackdrop').off('click.ujian').on('click.ujian', closeNavDrawer);
+    $('#navDrawerBackdrop').off('click.ujian touchstart.ujian').on('click.ujian touchstart.ujian', function(e) {
+        e.preventDefault();
+        closeNavDrawer();
+    });
 
     $(document).off('click.ujian-navclose').on('click.ujian-navclose', '.no-box', function() {
-        setInternalActionGuard(800);
+        setInternalActionGuard(1500);
         if (window.innerWidth < 992) closeNavDrawer();
     });
 
@@ -1020,15 +1028,66 @@ $exam_package_json = json_encode([
         finishExamConfirm();
     });
 
+    // 📱 MOBILE TOUCH SWIPE GESTURE (Geser Kiri/Kanan untuk Pindah Soal di HP)
+    var _touchStartX = 0;
+    var _touchStartY = 0;
+    var _isSwipeValid = false;
+
+    $(document).off('touchstart.ujian-swipe touchmove.ujian-swipe touchend.ujian-swipe')
+               .on('touchstart.ujian-swipe', '.exam-question-card, #soal-container', function(e) {
+        if (isExamDrawerOpen()) return;
+        // Abaikan swipe jika sentuhan berada di dalam input esai / isian / matching select / tombol
+        if ($(e.target).closest('textarea, input, select, .matching-custom-select, .matching-options-dropdown, .btn, .no-box').length > 0) {
+            _isSwipeValid = false;
+            return;
+        }
+
+        if (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length === 1) {
+            _touchStartX = e.originalEvent.touches[0].clientX;
+            _touchStartY = e.originalEvent.touches[0].clientY;
+            _isSwipeValid = true;
+        }
+    }).on('touchend.ujian-swipe', '.exam-question-card, #soal-container', function(e) {
+        if (!_isSwipeValid || isExamDrawerOpen()) return;
+        _isSwipeValid = false;
+
+        if (e.originalEvent && e.originalEvent.changedTouches && e.originalEvent.changedTouches.length === 1) {
+            var touchEndX = e.originalEvent.changedTouches[0].clientX;
+            var touchEndY = e.originalEvent.changedTouches[0].clientY;
+            var deltaX = touchEndX - _touchStartX;
+            var deltaY = touchEndY - _touchStartY;
+
+            // Deteksi gesekan horizontal tegas: delta horizontal >= 55px dan dominan dibanding vertikal (rasio > 1.3)
+            if (Math.abs(deltaX) >= 55 && Math.abs(deltaX) > Math.abs(deltaY) * 1.3) {
+                setInternalActionGuard(1200);
+                if (deltaX < 0) {
+                    // Geser ke KIRI -> Soal Selanjutnya (Next)
+                    if (currentNumber < totalSoal) {
+                        loadSoal(currentNumber + 1);
+                    } else if (sisaWaktu <= 300) {
+                        finishExamConfirm();
+                    }
+                } else {
+                    // Geser ke KANAN -> Soal Sebelumnya (Prev)
+                    if (currentNumber > 1) {
+                        loadSoal(currentNumber - 1);
+                    }
+                }
+            }
+        }
+    });
+
     // 🛡️ KEAMANAN TINGKAT TINGGI LINTAS PLATFORM (Cross-Platform Anti-Screenshot & Blur Shield)
 
     // 1. Multi-Touch Gesture Detection (Abaikan jika sentuhan mengenai elemen tombol/navigasi ujian atau hanya 1-2 sentuhan palm bezel)
     $(document).off('touchstart.security').on('touchstart.security', function(e) {
-        // Abaikan jika target sentuhan berada di tombol aksi, nomor soal, opsi jawaban, atau input formulir
-        if ($(e.target).closest('.btn, .no-box, .option-item, .answer-input, #navContainer, .exam-action-bar, .matching-custom-select, textarea, input, label').length > 0) {
-            setInternalActionGuard(800);
+        // Abaikan jika target sentuhan berada di tombol aksi, nomor soal, opsi jawaban, header, atau drawer
+        if ($(e.target).closest('.btn, .no-box, .option-item, .answer-input, #navContainer, .exam-nav-card, #navDrawerBackdrop, .exam-action-bar, .exam-header, .matching-custom-select, textarea, input, label').length > 0) {
+            setInternalActionGuard(1200);
             return;
         }
+
+        if (isExamDrawerOpen()) return;
 
         if (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length >= 3) {
             activateBlankShield('Multi-Touch Gesture Screenshot');
@@ -1113,8 +1172,8 @@ $exam_package_json = json_encode([
 
     // 4. Window Blur & Focus Handlers (Dengan Filter Smart Whitelist Aksi Internal)
     window._onBlurUjian = function(e) {
-        // 1. Abaikan jika sedang ada aksi navigasi internal, klik nomor soal, atau opsi
-        if (_isInternalAction) return;
+        // 1. Abaikan jika sedang ada aksi navigasi internal atau drawer daftar soal sedang terbuka
+        if (_isInternalAction || isExamDrawerOpen()) return;
 
         // 2. Abaikan jika dokumen sebenarnya masih memegang fokus (false positive blur)
         if (document.hasFocus && document.hasFocus()) return;
@@ -1136,7 +1195,7 @@ $exam_package_json = json_encode([
 
     // 5. Document Visibility Change (Pindah Tab / Minimize Browser)
     document.addEventListener('visibilitychange', function() {
-        if (_isInternalAction) return;
+        if (_isInternalAction || isExamDrawerOpen()) return;
         if (document.visibilityState === 'hidden' || document.hidden) {
             activateBlankShield('Pindah Tab / Minimize Browser');
         } else if (document.visibilityState === 'visible' && !document.hidden) {
