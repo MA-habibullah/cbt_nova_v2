@@ -13,11 +13,12 @@ if (!empty($setting['logo'])) {
     }
 }
 
-$is_bank_soal = ($current_dir === 'bank-soal');
-$is_jadwal    = ($current_dir === 'jadwal');
-$is_monitor   = ($current_dir === 'monitoring');
-$is_hasil     = ($current_dir === 'hasil');
-$is_display   = ($current_dir === 'display-publik');
+$is_bank_soal   = ($current_dir === 'bank-soal');
+$is_jadwal      = ($current_dir === 'jadwal');
+$is_cetak_kartu = ($current_dir === 'siswa' && $current_page === 'cetak-kartu.php');
+$is_monitor     = ($current_dir === 'monitoring');
+$is_hasil       = ($current_dir === 'hasil');
+$is_display     = ($current_dir === 'display-publik');
 ?>
 
 <nav id="sidebar" class="vh-100 sticky-top overflow-auto shadow-sm bg-white">
@@ -52,6 +53,11 @@ $is_display   = ($current_dir === 'display-publik');
         <a class="nav-link <?= $is_jadwal ? 'active' : '' ?>"
            href="<?= esc(BASE_URL) ?>guru/jadwal/index.php">
             <i class="fas fa-calendar-alt me-2"></i> <span>Jadwal Ujian</span>
+        </a>
+
+        <a class="nav-link <?= $is_cetak_kartu ? 'active' : '' ?>"
+           href="<?= esc(BASE_URL) ?>guru/siswa/cetak-kartu.php">
+            <i class="fas fa-id-card me-2"></i> <span>Cetak Kartu</span>
         </a>
 
         <div class="sidebar-heading mt-3 mb-1 small text-muted px-3 text-uppercase fw-bold" style="font-size:.7rem;">Pengawasan</div>
