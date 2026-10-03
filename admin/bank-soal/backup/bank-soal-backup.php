@@ -47,7 +47,10 @@ try {
         <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm">
             <div class="d-flex align-items-center justify-content-between w-100">
                 <div class="d-flex align-items-center">
-                    <a href="<?= esc(BASE_URL) ?>admin/bank-soal/detail.php?id=<?= esc($id_bank) ?>" class="btn btn-light border rounded-circle me-3 d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                    <button class="btn btn-light shadow-sm border me-2 d-flex align-items-center justify-content-center" id="menu-toggle" style="width:40px; height:40px;">
+                        <i class="fas fa-bars text-secondary"></i>
+                    </button>
+                    <a href="<?= esc(BASE_URL) ?>admin/bank-soal/detail.php?id=<?= esc($id_bank) ?>" class="btn btn-light border rounded-circle me-3 d-flex align-items-center justify-content-center shadow-sm" style="width:40px; height:40px;">
                         <i class="fas fa-arrow-left text-secondary"></i>
                     </a>
                     <div>
@@ -265,6 +268,11 @@ $(document).ready(function() {
 
     $('#filter_mapel').on('change', function() {
         $('#select_bank_soal').val(null).trigger('change');
+    });
+
+    $("#menu-toggle").click(function(e) { 
+        e.preventDefault(); 
+        $("#wrapper").toggleClass("toggled"); 
     });
 });
 </script>

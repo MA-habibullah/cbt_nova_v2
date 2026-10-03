@@ -75,13 +75,21 @@
 
     <div id="content" class="w-100">
         <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm">
-            <div class="d-flex align-items-center">
-                <a href="detail.php?id=<?= esc($id_bank) ?>" class="btn btn-light border me-3 shadow-sm">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-                <div>
-                    <h5 class="mb-0 fw-bold text-primary">Data Soal: <?= htmlspecialchars($bank['nama_mapel']) ?></h5>
-                    <small class="text-muted">Kelola butir soal ujian secara mandiri atau import</small>
+            <div class="d-flex align-items-center justify-content-between w-100">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-light shadow-sm border me-2 d-flex align-items-center justify-content-center" id="menu-toggle" style="width:40px; height:40px;">
+                        <i class="fas fa-bars text-secondary"></i>
+                    </button>
+                    <a href="detail.php?id=<?= esc($id_bank) ?>" class="btn btn-light border rounded-circle me-3 d-flex align-items-center justify-content-center shadow-sm" style="width:40px; height:40px;">
+                        <i class="fas fa-arrow-left text-secondary"></i>
+                    </a>
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="mb-0 fw-bold text-primary">Data Soal: <?= htmlspecialchars($bank['nama_mapel']) ?></h5>
+                            <span class="badge bg-primary-subtle text-primary font-monospace px-2 py-1"><?= esc($bank['kode_bank_soal']) ?></span>
+                        </div>
+                        <small class="text-muted">Kelola butir soal ujian secara mandiri atau import</small>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -959,6 +967,11 @@ $(document).ready(function() {
         if ($('#kunci-container .kunci-row').length > 1) {
             $(this).closest('.kunci-row').remove();
         }
+    });
+
+    $("#menu-toggle").click(function(e) { 
+        e.preventDefault(); 
+        $("#wrapper").toggleClass("toggled"); 
     });
 });
 </script>
