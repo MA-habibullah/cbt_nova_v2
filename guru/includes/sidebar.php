@@ -21,13 +21,17 @@ $is_display   = ($current_dir === 'display-publik');
 ?>
 
 <nav id="sidebar" class="vh-100 sticky-top overflow-auto shadow-sm bg-white">
-    <div class="p-4 d-flex align-items-center border-bottom mb-2">
-        <img src="<?= esc($logo_display) ?>" width="35" class="me-2" alt="Logo" style="border-radius:6px;object-fit:cover;">
-        <div>
-            <h6 class="mb-0 fw-bold text-primary" style="font-size:.85rem;"><?= htmlspecialchars($nama_display) ?></h6>
-            <small class="text-muted" style="font-size:.65rem;">Portal Guru</small>
+    <div class="p-4 d-flex align-items-center justify-content-between border-bottom mb-2">
+        <div class="d-flex align-items-center">
+            <img src="<?= esc($logo_display) ?>" width="35" class="me-2" alt="Logo" style="border-radius:6px;object-fit:cover;">
+            <div>
+                <h6 class="mb-0 fw-bold text-primary" style="font-size:.85rem;"><?= htmlspecialchars($nama_display) ?></h6>
+                <small class="text-muted" style="font-size:.65rem;">Portal Guru</small>
+            </div>
         </div>
+        <button type="button" class="btn-close d-lg-none" id="btn-close-sidebar" aria-label="Tutup Menu" onclick="if(typeof closeSidebar==='function')closeSidebar()"></button>
     </div>
+
 
     <div class="nav flex-column px-2">
 

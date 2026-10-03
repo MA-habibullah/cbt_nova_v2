@@ -40,10 +40,14 @@ if (!function_exists('menu_active')) {
 ?>
 
 <nav id="sidebar" class="vh-100 sticky-top overflow-auto shadow-sm bg-white">
-    <div class="p-4 d-flex align-items-center border-bottom mb-2">
-        <img src="<?= esc($logo_display) ?>" width="35" class="me-2" alt="Logo"> 
-        <h6 class="mb-0 fw-bold text-primary"><?= htmlspecialchars($nama_display) ?></h6>
+    <div class="p-4 d-flex align-items-center justify-content-between border-bottom mb-2">
+        <div class="d-flex align-items-center">
+            <img src="<?= esc($logo_display) ?>" width="35" class="me-2" alt="Logo"> 
+            <h6 class="mb-0 fw-bold text-primary"><?= htmlspecialchars($nama_display) ?></h6>
+        </div>
+        <button type="button" class="btn-close d-lg-none" id="btn-close-sidebar" aria-label="Tutup Menu" onclick="if(typeof closeSidebar==='function')closeSidebar()"></button>
     </div>
+
 
     <div class="nav flex-column px-2">
         <a href="<?= esc(BASE_URL) ?>admin/index.php" class="nav-link <?= esc(($current_page == 'index.php' && $current_dir == 'admin') ? 'active' : '') ?>">
