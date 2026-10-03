@@ -225,11 +225,37 @@ function build_pagination_url($targetPage) {
 
 <style>
 /* Status Dropdown Styling */
-.select-status { font-size: 0.78rem; font-weight: 700; border-radius: 6px; padding: 4px 8px; cursor: pointer; transition: all 0.2s; }
+.select-status { font-size: 0.78rem; font-weight: 700; border-radius: 6px; padding: 5px 8px; cursor: pointer; transition: all 0.2s; }
 .status-aktif { background-color: #198754; color: white; border-color: #198754; }
-.status-draft { background-color: #6c757d; color: white; border-color: #6c757d; }
+.status-draft { background-color: #64748b; color: white; border-color: #64748b; }
 .status-selesai { background-color: #dc3545; color: white; border-color: #dc3545; }
 .select-status:focus { box-shadow: none; color: white; }
+
+/* Table Readability & Aesthetics */
+.table-modern {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+.table-modern th {
+    background-color: #f8fafc !important;
+    color: #475569 !important;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border-bottom: 2px solid #e2e8f0 !important;
+    padding: 12px 14px !important;
+    white-space: nowrap;
+}
+.table-modern td {
+    padding: 14px 14px !important;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+.table-modern tbody tr {
+    transition: background-color 0.15s ease-in-out;
+}
+.table-modern tbody tr:hover {
+    background-color: #f8fafc !important;
+}
 
 /* Pulsing Live Badge Animation */
 @keyframes pulse-live {
@@ -458,17 +484,17 @@ function build_pagination_url($targetPage) {
             <!-- Table Card -->
             <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
                 <div class="table-responsive">
-                    <table class="table table-modern align-middle mb-0" style="min-width: 950px;">
+                    <table class="table table-modern align-middle mb-0" style="min-width: 1180px;">
                         <thead class="table-light text-secondary small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">
                             <tr>
-                                <th class="text-center py-3" width="50">#</th>
-                                <th class="py-3">Identitas Ujian</th>
-                                <th class="py-3 d-none d-sm-table-cell">Jenjang & Bank Soal</th>
-                                <th class="py-3 text-center">Jadwal & Waktu</th>
-                                <th class="py-3 text-center d-none d-lg-table-cell">Soal & Peserta</th>
-                                <th class="py-3 text-center" width="130">Token Ujian</th>
-                                <th class="py-3 text-center" width="150">Status Pelaksanaan</th>
-                                <th class="text-center py-3" width="180">Aksi</th>
+                                <th class="text-center py-3" style="width: 48px; min-width: 48px;">#</th>
+                                <th class="py-3" style="min-width: 320px;">Identitas Ujian</th>
+                                <th class="py-3 d-none d-sm-table-cell" style="width: 160px; min-width: 150px;">Jenjang & Bank Soal</th>
+                                <th class="py-3 text-center" style="width: 160px; min-width: 150px;">Jadwal & Waktu</th>
+                                <th class="py-3 text-center d-none d-lg-table-cell" style="width: 150px; min-width: 140px;">Soal & Peserta</th>
+                                <th class="py-3 text-center" style="width: 140px; min-width: 130px;">Token Ujian</th>
+                                <th class="py-3 text-center" style="width: 140px; min-width: 130px;">Status Pelaksanaan</th>
+                                <th class="text-center py-3" style="width: 180px; min-width: 170px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -476,7 +502,7 @@ function build_pagination_url($targetPage) {
                                 <tr>
                                     <td colspan="8" class="text-center py-5 text-muted">
                                         <div class="py-4">
-                                            <i class="fas fa-calendar-times fa-3x mb-3 text-secondary opacity-25 d-block"></i>
+                                             <i class="fas fa-calendar-times fa-3x mb-3 text-secondary opacity-25 d-block"></i>
                                             <h6 class="fw-bold text-secondary mb-1">Tidak Ada Jadwal Ujian Ditemukan</h6>
                                             <p class="small text-muted mb-3">Tidak ada jadwal yang sesuai dengan filter atau kata kunci pencarian Anda.</p>
                                             <button class="btn btn-sm btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambahJadwal">
@@ -496,56 +522,58 @@ function build_pagination_url($targetPage) {
                                 <tr class="<?= $is_live ? 'table-success bg-opacity-25' : '' ?>">
                                     <td class="text-center fw-bold text-secondary small"><?= $offset + $i + 1 ?></td>
                                     <td>
-                                        <div class="d-flex align-items-center gap-2">
+                                        <div class="d-flex align-items-center gap-2 mb-1">
                                             <?php if ($is_live): ?>
-                                                <span class="badge bg-success text-white px-2 py-1 rounded-pill live-badge-pulse" style="font-size:0.68rem;">
+                                                <span class="badge bg-success text-white px-2 py-0.5 rounded-pill live-badge-pulse" style="font-size:0.68rem;">
                                                     <i class="fas fa-broadcast-tower me-1"></i>LIVE
                                                 </span>
                                             <?php endif; ?>
-                                            <div class="fw-bold text-dark fs-6"><?= esc($e['nama_mapel_ujian']) ?></div>
+                                            <div class="fw-bold text-dark fs-6 lh-sm"><?= esc($e['nama_mapel_ujian']) ?></div>
                                         </div>
-                                        <div class="d-flex flex-wrap align-items-center gap-2 mt-1 small">
-                                            <span class="text-dark fw-semibold">
+                                        <div class="d-flex flex-wrap align-items-center gap-1.5 mt-1 small">
+                                            <span class="badge bg-light text-dark border px-2 py-1 fw-semibold">
                                                 <i class="fas fa-book-open text-primary me-1"></i><?= esc($e['kode_mapel']) ?> - <?= esc($e['nama_mapel']) ?>
                                             </span>
-                                            <span class="text-secondary fw-medium">
-                                                &bull; <i class="fas fa-user-tie text-secondary ms-1 me-1"></i><?= esc($e['nama_guru']) ?>
+                                            <?php if (!empty($e['nama_guru'])): ?>
+                                            <span class="text-secondary small fw-medium ms-1">
+                                                <i class="fas fa-user-tie text-secondary me-1"></i><?= esc($e['nama_guru']) ?>
                                             </span>
+                                            <?php endif; ?>
                                         </div>
                                         <!-- Sub-label untuk Tampilan Mobile (< 768px) -->
-                                        <div class="d-md-none mt-1 small">
-                                            <span class="badge badge-soft-info me-1">Kelas <?= esc($e['jenjang']) ?></span>
-                                            <span class="badge badge-soft-secondary me-1"><i class="far fa-clock text-primary me-1"></i><?= (int)$e['durasi_menit'] ?>m</span>
-                                            <span class="badge bg-success-subtle text-success border border-success-subtle me-1"><i class="fas fa-check-double me-1"></i><?= (int)$e['peserta_selesai'] ?>/<?= (int)$e['jumlah_peserta'] ?> Selesai</span>
+                                        <div class="d-md-none mt-2 d-flex flex-wrap gap-1 small">
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Kelas <?= esc($e['jenjang']) ?></span>
+                                            <span class="badge bg-light text-secondary border"><i class="far fa-clock text-primary me-1"></i><?= (int)$e['durasi_menit'] ?>m</span>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fas fa-check-double me-1"></i><?= (int)$e['peserta_selesai'] ?>/<?= (int)$e['jumlah_peserta'] ?> Selesai</span>
                                         </div>
                                     </td>
                                     <td class="d-none d-sm-table-cell">
-                                        <div class="mb-1">
-                                            <span class="badge badge-soft-primary px-2.5 py-1 rounded-2 fw-bold">
+                                        <div class="d-flex flex-column align-items-start gap-1">
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 rounded-2 fw-bold">
                                                  <i class="fas fa-graduation-cap me-1"></i>Kelas <?= esc($e['jenjang']) ?>
                                             </span>
+                                            <span class="badge bg-secondary-subtle text-secondary border font-monospace px-2 py-1 text-truncate" style="max-width: 160px; font-size:0.75rem;" title="<?= esc($e['nama_bank_soal']) ?>">
+                                                <i class="fas fa-database me-1 text-primary"></i><?= esc($e['kode_bank_soal'] ?: $e['nama_bank_soal']) ?>
+                                            </span>
                                         </div>
-                                        <span class="badge badge-soft-secondary border font-monospace px-2 py-1" style="font-size:0.75rem;" title="<?= esc($e['nama_bank_soal']) ?>">
-                                            <i class="fas fa-database me-1 text-primary"></i><?= esc($e['kode_bank_soal'] ?: $e['nama_bank_soal']) ?>
-                                        </span>
                                     </td>
                                     <td class="text-center">
-                                        <div class="fw-bold text-dark small"><?= date('d M Y', $start_ts) ?></div>
-                                        <div class="small fw-semibold text-secondary"><?= date('H:i', $start_ts) ?> &ndash; <?= date('H:i', $end_ts) ?> WIB</div>
-                                        <div class="mt-1">
-                                            <span class="badge badge-soft-secondary px-2 py-1" style="font-size:0.75rem;">
-                                                 <i class="far fa-clock text-primary me-1"></i><?= (int)$e['durasi_menit'] ?> Menit
-                                            </span>
+                                        <div class="d-flex flex-column align-items-center">
+                                            <div class="fw-bold text-dark small mb-0.5"><?= date('d M Y', $start_ts) ?></div>
+                                            <div class="small fw-semibold text-secondary" style="font-size:0.78rem;"><?= date('H:i', $start_ts) ?> &ndash; <?= date('H:i', $end_ts) ?> WIB</div>
+                                            <div class="mt-1">
+                                                <span class="badge bg-light text-secondary border px-2 py-1" style="font-size:0.72rem;">
+                                                     <i class="far fa-clock text-primary me-1"></i><?= (int)$e['durasi_menit'] ?> Menit
+                                                </span>
+                                            </div>
                                         </div>
                                     </td>
                                     <td class="text-center d-none d-lg-table-cell">
-                                        <div class="mb-1">
-                                            <span class="badge badge-soft-info px-2 py-1">
+                                        <div class="d-flex flex-column align-items-center gap-1">
+                                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-0.5" style="font-size:0.72rem;">
                                                 <i class="fas fa-tasks me-1"></i><?= (int)$e['jumlah_soal'] ?> Soal
                                             </span>
-                                        </div>
-                                        <div class="d-flex flex-column align-items-center gap-1">
-                                            <span class="badge badge-soft-primary px-2 py-1" style="font-size:0.75rem;" title="Total Siswa Terdaftar">
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-0.5" style="font-size:0.72rem;" title="Total Siswa Terdaftar">
                                                 <i class="fas fa-user-graduate me-1"></i><?= (int)$e['jumlah_peserta'] ?> Peserta
                                             </span>
                                             <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 fw-bold" style="font-size:0.72rem;" title="Siswa yang telah menyelesaikan ujian">
@@ -561,19 +589,19 @@ function build_pagination_url($targetPage) {
                                     <td class="text-center">
                                         <?php if ((int)$e['is_token_aktif'] === 1 && !empty($e['token'])): ?>
                                             <div class="d-flex align-items-center justify-content-center gap-1">
-                                                <code class="fw-bold fs-6 text-primary bg-white px-2 py-1 border border-primary-subtle rounded shadow-sm font-monospace"><?= esc($e['token']) ?></code>
+                                                <code class="fw-bold fs-6 text-primary bg-white px-2 py-0.5 border border-primary-subtle rounded shadow-sm font-monospace"><?= esc($e['token']) ?></code>
                                                 <button type="button" class="btn btn-sm btn-light border btn-copy-token p-1 px-2 shadow-none" 
                                                         data-token="<?= esc($e['token']) ?>" title="Salin Token">
                                                     <i class="far fa-copy text-secondary"></i>
                                                 </button>
                                             </div>
                                             <div class="mt-1">
-                                                <span class="badge badge-soft-success px-2 py-0.5" style="font-size:0.68rem;">
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5" style="font-size:0.68rem;">
                                                     <i class="fas fa-check-circle me-1"></i>Rilis Aktif
                                                 </span>
                                             </div>
                                         <?php else: ?>
-                                            <span class="badge badge-soft-secondary px-2 py-1">
+                                            <span class="badge bg-secondary-subtle text-secondary border px-2 py-1" style="font-size:0.75rem;">
                                                 <i class="fas fa-lock me-1 text-muted"></i>Terkunci / Nonaktif
                                             </span>
                                         <?php endif; ?>
