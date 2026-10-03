@@ -182,10 +182,11 @@ try {
 
         case 'isian':
         case 'essay':
+            $val_ta = htmlspecialchars((string)($q['jawaban_simpan'] ?? ''), ENT_QUOTES, 'UTF-8');
             $html .= "
             <div class='form-group'>
                 <label class='small fw-bold text-muted mb-2 text-uppercase'>Jawaban Anda:</label>
-                <textarea class='form-control answer-input p-3 shadow-sm' rows='6' placeholder='Ketik jawaban di sini...' style='border-radius:15px; border: 2px solid #eaecf4;'>{$q['jawaban_simpan']}</textarea>
+                <textarea class='form-control answer-input p-3 shadow-sm' rows='6' placeholder='Ketik jawaban di sini...' style='border-radius:15px; border: 2px solid #eaecf4;'>{$val_ta}</textarea>
             </div>";
             break;
 

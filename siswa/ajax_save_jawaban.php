@@ -70,8 +70,9 @@ try {
         $final_deadline     = min($waktu_habis_durasi, $batas_jadwal);
     }
 
-    if ($waktu_sekarang > $final_deadline) {
-        // Hitung dan simpan nilai otomatis saat waktu habis
+    // Beri toleransi grace period 60 detik agar jawaban detik-detik terakhir tidak tertolak akibat latensi jaringan
+    if ($waktu_sekarang > ($final_deadline + 60)) {
+        // Hitung dan simpan nilai otomatis saat waktu benar-benar habis lewat grace period
         hitung_dan_simpan_nilai_peserta($pdo, (int)$row['participant_id']);
 
         if (ob_get_length()) ob_clean();

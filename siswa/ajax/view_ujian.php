@@ -158,10 +158,11 @@ if (!empty($all_question_ids)) {
             case 'isian':
             case 'essay':
                 if (trim((string)$jawaban_simpan) !== '') $is_answered = true;
+                $val_ta = htmlspecialchars((string)$jawaban_simpan, ENT_QUOTES, 'UTF-8');
                 $html .= "
                 <div class='form-group'>
                     <label class='small fw-bold text-muted mb-2 text-uppercase'>Jawaban Anda:</label>
-                    <textarea class='form-control answer-input p-3 shadow-sm' rows='6' placeholder='Ketik jawaban di sini...' style='border-radius:15px; border: 2px solid #eaecf4;'>{$jawaban_simpan}</textarea>
+                    <textarea class='form-control answer-input p-3 shadow-sm' rows='6' placeholder='Ketik jawaban di sini...' style='border-radius:15px; border: 2px solid #eaecf4;'>{$val_ta}</textarea>
                 </div>";
                 break;
 
@@ -276,6 +277,7 @@ if (!empty($all_question_ids)) {
             'id'          => (int)$qid,
             'no'          => $no,
             'html'        => inject_domain_to_html($html),
+            'jawaban'     => $jawaban_simpan,
             'is_ragu'     => $is_ragu,
             'is_answered' => $is_answered
         ];
@@ -459,6 +461,7 @@ $exam_package_json = json_encode([
     function autoFinishUjian() {
         if (_finishCalled) return;
         _finishCalled = true;
+        flushActiveInputs();
         if (window.CBT_WakeLock) window.CBT_WakeLock.release();
         clearInterval(_timerInterval);
         clearInterval(_resyncInterval);
@@ -620,6 +623,7 @@ $exam_package_json = json_encode([
     }, 120000 + jitter);
 
     function finishExamConfirm() {
+        flushActiveInputs();
         Swal.fire({
             title: 'Selesai Ujian?',
             text: 'Periksa kembali jawaban Anda. Ujian tidak bisa diulang!',
@@ -628,7 +632,10 @@ $exam_package_json = json_encode([
             confirmButtonText: 'Ya, Selesai',
             cancelButtonText: 'Batal'
         }).then(function(result) {
-            if (result.isConfirmed) spaSelesai(examId);
+            if (result.isConfirmed) {
+                flushActiveInputs();
+                spaSelesai(examId);
+            }
         });
     }
 
@@ -656,7 +663,9 @@ $exam_package_json = json_encode([
     }
 
     var _saveTimers = {};
-    function saveJawabanToServer(qId, val, isAnswered) {
+    function saveJawabanToServer(qId, val, isAnswered, isImmediate) {
+        if (!qId) return;
+
         // 1. Instant DOM & In-Memory State Update
         var $targetBox = $('#nav-numbers .no-box[data-no="' + currentNumber + '"]');
         if (isAnswered) {
@@ -681,13 +690,13 @@ $exam_package_json = json_encode([
             localStorage.setItem(storageKey, JSON.stringify(stored));
         } catch (e) {}
 
-        // 3. Silent Asynchronous Background Autosave (Debounced 300ms)
+        // 3. Background Autosave (Immediate jika perpindahan soal / blur / finish, Debounced 350ms saat mengetik)
         if (_saveTimers[qId]) {
             clearTimeout(_saveTimers[qId]);
-        }
-        var delay = 300 + Math.floor(Math.random() * 150);
-        _saveTimers[qId] = setTimeout(function() {
             delete _saveTimers[qId];
+        }
+
+        var doSend = function() {
             $.post('ajax_save_jawaban.php', {
                 exam_id: examId,
                 question_id: qId,
@@ -697,7 +706,17 @@ $exam_package_json = json_encode([
                     showBlockedAlert();
                 }
             }, 'json');
-        }, delay);
+        };
+
+        if (isImmediate) {
+            doSend();
+        } else {
+            var delay = 350 + Math.floor(Math.random() * 100);
+            _saveTimers[qId] = setTimeout(function() {
+                delete _saveTimers[qId];
+                doSend();
+            }, delay);
+        }
     }
 
     function flushActiveInputs() {
@@ -706,7 +725,7 @@ $exam_package_json = json_encode([
             var val = $ta.val();
             var qId = $('#q_id').val();
             if (qId) {
-                saveJawabanToServer(qId, val, $.trim(val) !== '');
+                saveJawabanToServer(qId, val, $.trim(val) !== '', true);
             }
         }
     }
@@ -830,19 +849,53 @@ $exam_package_json = json_encode([
         saveJawabanToServer($('#q_id').val(), val, hasAnswer);
     });
 
-    // Event Handler Input Textarea (Isian Singkat & Essay - Debounced Autosave)
+    // Event Handler Input Textarea (Isian Singkat & Essay - Realtime In-Memory Sync + Immediate Flush on Blur)
     var _textareaTimer = null;
-    $(document).off('input.ujian-textarea').on('input.ujian-textarea', 'textarea.answer-input', function() {
+    $(document).off('input.ujian-textarea change.ujian-textarea blur.ujian-textarea')
+               .on('input.ujian-textarea', 'textarea.answer-input', function() {
         setInternalActionGuard(800);
         var $ta = $(this);
         var val = $ta.val();
         var qId = $('#q_id').val();
         var hasAnswer = ($.trim(val) !== '');
 
+        // 1. Seketika simpan ke memori browser & localstorage (0ms) agar tidak pernah hilang saat pindah nomor
+        if (_questionsMap[currentNumber]) {
+            _questionsMap[currentNumber].jawaban = val;
+            _questionsMap[currentNumber].is_answered = hasAnswer;
+        }
+        var $targetBox = $('#nav-numbers .no-box[data-no="' + currentNumber + '"]');
+        if (hasAnswer) {
+            $targetBox.addClass('answered');
+        } else {
+            $targetBox.removeClass('answered');
+        }
+        if (_pkg.nav_items && _pkg.nav_items[currentNumber]) {
+            _pkg.nav_items[currentNumber].is_answered = hasAnswer;
+        }
+        refreshNavSummary();
+
+        try {
+            var storageKey = 'cbt_ans_' + examId;
+            var stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
+            stored[qId] = { jawaban: val, waktu: Date.now() };
+            localStorage.setItem(storageKey, JSON.stringify(stored));
+        } catch(e) {}
+
+        // 2. Debounced save ke server saat mengetik aktif
         if (_textareaTimer) clearTimeout(_textareaTimer);
         _textareaTimer = setTimeout(function() {
-            saveJawabanToServer(qId, val, hasAnswer);
-        }, 400);
+            saveJawabanToServer(qId, val, hasAnswer, false);
+        }, 350);
+    }).on('change.ujian-textarea blur.ujian-textarea', 'textarea.answer-input', function() {
+        // Saat cursor keluar dari textarea (blur / ganti fokus), paksa simpan instan ke server (immediate)
+        var $ta = $(this);
+        var val = $ta.val();
+        var qId = $('#q_id').val();
+        if (qId) {
+            if (_textareaTimer) clearTimeout(_textareaTimer);
+            saveJawabanToServer(qId, val, $.trim(val) !== '', true);
+        }
     });
 
     // Toggle dropdown menjodohkan
