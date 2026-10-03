@@ -704,14 +704,28 @@ $exam_package_json = json_encode([
             var val = $ta.val();
             var qId = $('#q_id').val();
             if (qId) {
-                saveJawabanToServer(qId, val, $.trim(val) !== '', true);
+                var hasAnswer = ($.trim(val) !== '');
+                if (_questionsMap[currentNumber]) {
+                    _questionsMap[currentNumber].jawaban = val;
+                    _questionsMap[currentNumber].is_answered = hasAnswer;
+                }
+                if (_pkg.nav_items && _pkg.nav_items[currentNumber]) {
+                    _pkg.nav_items[currentNumber].is_answered = hasAnswer;
+                }
+                try {
+                    var storageKey = 'cbt_ans_' + examId;
+                    var stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
+                    stored[qId] = { jawaban: val, waktu: Date.now() };
+                    localStorage.setItem(storageKey, JSON.stringify(stored));
+                } catch(e) {}
+                saveJawabanToServer(qId, val, hasAnswer, true);
             }
         }
     }
 
     // High-Concurrency Single-Payload Renderer: Pindah Soal 100% INSTAN di Klien (0 ms Latensi)
     window.loadSoal = function loadSoal(num) {
-        setInternalActionGuard(800);
+        setInternalActionGuard(1200);
         flushActiveInputs();
         currentNumber = num;
         var qData = _questionsMap[num];
@@ -733,22 +747,25 @@ $exam_package_json = json_encode([
             var ans = undefined;
             if (stored && stored[qId] && stored[qId].jawaban !== undefined) {
                 ans = stored[qId].jawaban;
-            } else if (qData.jawaban !== undefined) {
+            } else if (qData.jawaban !== undefined && qData.jawaban !== null) {
                 ans = qData.jawaban;
             }
 
             if (ans !== undefined && ans !== null) {
-                // A. Pilihan Ganda Tunggal / Benar Salah / Textarea (Isian/Essay)
-                if (typeof ans === 'string' || typeof ans === 'number') {
+                // A. Textarea (Isian / Essay)
+                var $taElem = $('#soal-container textarea.answer-input');
+                if ($taElem.length) {
+                    $taElem.val(ans);
+                }
+                // B. Pilihan Ganda Tunggal / Benar Salah
+                else if (typeof ans === 'string' || typeof ans === 'number') {
                     var $radio = $('#soal-container .answer-input[type="radio"][value="' + ans + '"]');
                     if ($radio.length) {
                         $('#soal-container .answer-input[type="radio"]').prop('checked', false).closest('.option-item').removeClass('selected');
                         $radio.prop('checked', true).closest('.option-item').addClass('selected');
-                    } else {
-                        $('#soal-container textarea.answer-input').val(ans);
                     }
                 }
-                // B. Pilihan Ganda Kompleks (Multi-Jawaban / Checkbox)
+                // C. Pilihan Ganda Kompleks (Multi-Jawaban / Checkbox)
                 else if (Array.isArray(ans)) {
                     $('#soal-container .answer-input[type="checkbox"]').each(function() {
                         var valStr = String($(this).val());
@@ -756,7 +773,7 @@ $exam_package_json = json_encode([
                         $(this).prop('checked', checked).closest('.option-item').toggleClass('selected', checked);
                     });
                 }
-                // C. Menjodohkan (Matching Pairs - Rehidrasi Pasangan Jawaban)
+                // D. Menjodohkan (Matching Pairs - Rehidrasi Pasangan Jawaban)
                 else if (typeof ans === 'object' && ans !== null) {
                     $.each(ans, function(rowId, matchVal) {
                         var $select = $('#soal-container .matching-custom-select[data-row-id="' + rowId + '"]');
@@ -793,6 +810,16 @@ $exam_package_json = json_encode([
         // Update tombol dan indikator aktif
         $('#nav-numbers .no-box').removeClass('active');
         $('#nav-numbers .no-box[data-no="' + num + '"]').addClass('active');
+        
+        // Sinkronisasi status answered kotak navigasi nomor
+        var isAnswered = false;
+        if (qData && qData.is_answered) {
+            isAnswered = true;
+        } else if (_pkg.nav_items && _pkg.nav_items[num] && _pkg.nav_items[num].is_answered) {
+            isAnswered = true;
+        }
+        $('#nav-numbers .no-box[data-no="' + num + '"]').toggleClass('answered', isAnswered);
+
         updateProgress();
 
         $('#btn-prev').prop('disabled', num === 1);
@@ -809,7 +836,7 @@ $exam_package_json = json_encode([
 
     // Event Handler Input Jawaban (Radio & Checkbox)
     $(document).off('change.ujian').on('change.ujian', '.answer-input', function() {
-        setInternalActionGuard(800);
+        setInternalActionGuard(1200);
         var input = $(this);
         if (input.is('textarea')) return; // Ditangani oleh debounced input.ujian-textarea
         var val   = input.val();
@@ -832,7 +859,7 @@ $exam_package_json = json_encode([
     var _textareaTimer = null;
     $(document).off('input.ujian-textarea change.ujian-textarea blur.ujian-textarea')
                .on('input.ujian-textarea', 'textarea.answer-input', function() {
-        setInternalActionGuard(800);
+        setInternalActionGuard(1200);
         var $ta = $(this);
         var val = $ta.val();
         var qId = $('#q_id').val();
@@ -873,7 +900,15 @@ $exam_package_json = json_encode([
         var qId = $('#q_id').val();
         if (qId) {
             if (_textareaTimer) clearTimeout(_textareaTimer);
-            saveJawabanToServer(qId, val, $.trim(val) !== '', true);
+            var hasAnswer = ($.trim(val) !== '');
+            if (_questionsMap[currentNumber]) {
+                _questionsMap[currentNumber].jawaban = val;
+                _questionsMap[currentNumber].is_answered = hasAnswer;
+            }
+            if (_pkg.nav_items && _pkg.nav_items[currentNumber]) {
+                _pkg.nav_items[currentNumber].is_answered = hasAnswer;
+            }
+            saveJawabanToServer(qId, val, hasAnswer, true);
         }
     });
 

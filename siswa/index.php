@@ -509,7 +509,33 @@ function spaSelesai(examId, reason) {
         }
         clearTimeout(window._blurCheatTimeout);
     }
+
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Mengirim Jawaban...',
+            text: 'Mohon tunggu sebentar, sistem sedang menyelesaikan ujian Anda.',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: function() {
+                Swal.showLoading();
+            }
+        });
+    }
+
+    var isFinishedHandled = false;
+    var fallbackTimer = setTimeout(function() {
+        if (!isFinishedHandled) {
+            isFinishedHandled = true;
+            cleanupUjianState();
+            loadView('dashboard', { msg: 'ujian_selesai' });
+        }
+    }, 4500);
+
     $.get('proses_selesai_ujian.php', { id: examId, reason: reason || '', _spa: 1 }, function(res) {
+        if (isFinishedHandled) return;
+        isFinishedHandled = true;
+        clearTimeout(fallbackTimer);
+
         if (res && res.status === 'too_early') {
             // Server menolak: belum masuk window 5 menit terakhir. Biarkan siswa
             // tetap di halaman ujian — jangan hentikan timer/listener, jangan pindah dashboard.
@@ -524,6 +550,9 @@ function spaSelesai(examId, reason) {
         cleanupUjianState();
         loadView('dashboard', { msg: 'ujian_selesai' });
     }, 'json').fail(function() {
+        if (isFinishedHandled) return;
+        isFinishedHandled = true;
+        clearTimeout(fallbackTimer);
         cleanupUjianState();
         loadView('dashboard', { msg: 'ujian_selesai' });
     });
