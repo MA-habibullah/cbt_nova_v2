@@ -62,10 +62,23 @@ $is_display     = ($current_dir === 'display-publik');
 
         <div class="sidebar-heading mt-3 mb-1 small text-muted px-3 text-uppercase fw-bold" style="font-size:.7rem;">Pengawasan</div>
 
-        <a class="nav-link <?= $is_monitor ? 'active' : '' ?>"
-           href="<?= esc(BASE_URL) ?>guru/monitoring/index.php">
-            <i class="fas fa-desktop me-2"></i> <span>Monitoring Peserta</span>
+        <a class="nav-link justify-content-between d-flex align-items-center <?= ($current_dir === 'monitoring') ? 'active' : '' ?>" 
+           data-bs-toggle="collapse" href="#menuMonitoringGuru" role="button" aria-expanded="<?= esc(($current_dir === 'monitoring') ? 'true' : 'false') ?>">
+            <span><i class="fas fa-desktop me-2"></i> <span>Pengawasan</span></span>
+            <i class="fas fa-chevron-right small rotate-icon"></i>
         </a>
+        <div class="collapse <?= ($current_dir === 'monitoring') ? 'show' : '' ?>" id="menuMonitoringGuru">
+            <div class="collapse-inner">
+                <a class="collapse-item <?= ($current_dir === 'monitoring' && $current_page === 'index.php') ? 'active' : '' ?>" 
+                   href="<?= esc(BASE_URL) ?>guru/monitoring/index.php">Monitoring Peserta</a>
+                
+                <a class="collapse-item <?= ($current_page === 'log-pelanggaran.php') ? 'active' : '' ?>" 
+                   href="<?= esc(BASE_URL) ?>guru/monitoring/log-pelanggaran.php">Log Pelanggaran</a>
+                
+                <a class="collapse-item <?= ($current_page === 'device-lock.php') ? 'active' : '' ?>" 
+                   href="<?= esc(BASE_URL) ?>guru/monitoring/device-lock.php">Device Lock</a>
+            </div>
+        </div>
 
         <div class="sidebar-heading mt-3 mb-1 small text-muted px-3 text-uppercase fw-bold" style="font-size:.7rem;">Laporan</div>
 

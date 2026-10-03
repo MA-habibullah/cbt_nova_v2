@@ -1,21 +1,63 @@
 <?php
 require_once dirname(__DIR__, 2) . '/config/database.php';
 
-// Proteksi Admin
-if (!isset($_SESSION['admin_id'])) {
-    header("Location: " . BASE_URL . "index.php");
+// Proteksi Guru
+if (!isset($_SESSION['teacher_id']) || ($_SESSION['role'] ?? '') !== 'guru') {
+    header("Location: " . BASE_URL . "auth/login.php");
     exit;
 }
 
-// Ambil data filter
-$classes = query("SELECT id, nama_kelas, jenjang FROM cbt_classes WHERE is_aktif = 1 ORDER BY jenjang, nama_kelas")->fetchAll();
+$teacher_id = (int)$_SESSION['teacher_id'];
+
+// Ambil kelas yang diampu guru
+$classes = query("
+    SELECT DISTINCT c.id, c.nama_kelas, c.jenjang 
+    FROM cbt_classes c
+    JOIN cbt_exams e ON e.class_id = c.id
+    WHERE e.teacher_id = ? AND c.is_aktif = 1
+    ORDER BY c.jenjang, c.nama_kelas
+", [$teacher_id])->fetchAll();
+
+// Jika belum ada kelas dari ujian, ambil semua kelas aktif
+if (empty($classes)) {
+    $classes = query("SELECT id, nama_kelas, jenjang FROM cbt_classes WHERE is_aktif = 1 ORDER BY jenjang, nama_kelas")->fetchAll();
+}
+
 $sessions = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER BY nama_sesi")->fetchAll();
 
-// Metrik Ringkasan
-$metric_total_lock = (int)query("SELECT COUNT(*) FROM cbt_device_locks")->fetchColumn();
-$metric_today_lock = (int)query("SELECT COUNT(*) FROM cbt_device_locks WHERE DATE(created_at) = CURDATE()")->fetchColumn();
-$metric_total_siswa = (int)query("SELECT COUNT(*) FROM cbt_students WHERE is_aktif = 1")->fetchColumn();
-$metric_total_kelas = (int)query("SELECT COUNT(*) FROM cbt_classes WHERE is_aktif = 1")->fetchColumn();
+// Metrik Ringkasan (dibatasi lingkup guru)
+$metric_total_lock = (int)query("
+    SELECT COUNT(DISTINCT dl.id) 
+    FROM cbt_device_locks dl
+    JOIN cbt_students s ON dl.student_id = s.id
+    WHERE (
+        s.id IN (
+            SELECT DISTINCT ep.student_id FROM cbt_exam_participants ep 
+            JOIN cbt_exams e ON ep.exam_id = e.id WHERE e.teacher_id = ?
+        )
+        OR s.class_id IN (
+            SELECT DISTINCT class_id FROM cbt_exams WHERE teacher_id = ?
+        )
+    )
+", [$teacher_id, $teacher_id])->fetchColumn();
+
+$metric_today_lock = (int)query("
+    SELECT COUNT(DISTINCT dl.id) 
+    FROM cbt_device_locks dl
+    JOIN cbt_students s ON dl.student_id = s.id
+    WHERE DATE(dl.created_at) = CURDATE() AND (
+        s.id IN (
+            SELECT DISTINCT ep.student_id FROM cbt_exam_participants ep 
+            JOIN cbt_exams e ON ep.exam_id = e.id WHERE e.teacher_id = ?
+        )
+        OR s.class_id IN (
+            SELECT DISTINCT class_id FROM cbt_exams WHERE teacher_id = ?
+        )
+    )
+", [$teacher_id, $teacher_id])->fetchColumn();
+
+$metric_total_ujian = (int)query("SELECT COUNT(*) FROM cbt_exams WHERE teacher_id = ?", [$teacher_id])->fetchColumn();
+$metric_total_kelas = count($classes);
 ?>
 
 <!DOCTYPE html>
@@ -50,7 +92,7 @@ $metric_total_kelas = (int)query("SELECT COUNT(*) FROM cbt_classes WHERE is_akti
 
 <body class="bg-light">
 <div class="d-flex" id="wrapper">
-    <?php include dirname(__DIR__, 2) . '/includes/sidebar.php'; ?>
+    <?php include dirname(__DIR__, 2) . '/guru/includes/sidebar.php'; ?>
     
     <div id="content" class="w-100">
         <!-- Top Navbar -->
@@ -76,13 +118,13 @@ $metric_total_kelas = (int)query("SELECT COUNT(*) FROM cbt_classes WHERE is_akti
             <!-- Breadcrumbs -->
             <nav aria-label="breadcrumb" class="mb-3">
                 <ol class="breadcrumb mb-0 small">
-                    <li class="breadcrumb-item"><a href="<?= esc(BASE_URL) ?>admin/index.php" class="text-decoration-none text-muted"><i class="fas fa-home me-1"></i>Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="<?= esc(BASE_URL) ?>admin/monitoring/index.php" class="text-decoration-none text-muted"><i class="fas fa-desktop me-1"></i>Monitoring</a></li>
+                    <li class="breadcrumb-item"><a href="<?= esc(BASE_URL) ?>guru/index.php" class="text-decoration-none text-muted"><i class="fas fa-home me-1"></i>Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="<?= esc(BASE_URL) ?>guru/monitoring/index.php" class="text-decoration-none text-muted"><i class="fas fa-desktop me-1"></i>Monitoring</a></li>
                     <li class="breadcrumb-item active fw-semibold text-primary" aria-current="page">Device Lock</li>
                 </ol>
             </nav>
 
-            <!-- Top Metric Cards (Overview Statistik Device Lock) -->
+            <!-- Top Metric Cards -->
             <div class="row g-3 mb-4">
                 <div class="col-xl-3 col-md-6">
                     <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
@@ -90,7 +132,7 @@ $metric_total_kelas = (int)query("SELECT COUNT(*) FROM cbt_classes WHERE is_akti
                             <div>
                                 <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:0.5px;">TOTAL TERKUNCI</span>
                                 <h3 class="fw-bold mb-0 mt-1 text-danger"><?= number_format($metric_total_lock, 0, ',', '.') ?></h3>
-                                <small class="text-muted"><i class="fas fa-lock me-1 text-danger"></i>Semua sesi tersimpan</small>
+                                <small class="text-muted"><i class="fas fa-lock me-1 text-danger"></i>Siswa kelas ujian Anda</small>
                             </div>
                             <div class="rounded-3 p-3 bg-danger-subtle text-danger">
                                 <i class="fas fa-laptop-code fa-2x"></i>
@@ -118,12 +160,12 @@ $metric_total_kelas = (int)query("SELECT COUNT(*) FROM cbt_classes WHERE is_akti
                     <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
                         <div class="card-body p-3 d-flex align-items-center justify-content-between">
                             <div>
-                                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:0.5px;">TOTAL SISWA AKTIF</span>
-                                <h3 class="fw-bold mb-0 mt-1 text-primary"><?= number_format($metric_total_siswa, 0, ',', '.') ?></h3>
-                                <small class="text-muted"><i class="fas fa-user-graduate me-1 text-primary"></i>Akun siswa terdaftar</small>
+                                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:0.5px;">TOTAL JADWAL UJIAN</span>
+                                <h3 class="fw-bold mb-0 mt-1 text-primary"><?= number_format($metric_total_ujian, 0, ',', '.') ?></h3>
+                                <small class="text-muted"><i class="fas fa-calendar-alt me-1 text-primary"></i>Jadwal aktif & selesai</small>
                             </div>
                             <div class="rounded-3 p-3 bg-primary-subtle text-primary">
-                                <i class="fas fa-users fa-2x"></i>
+                                <i class="fas fa-book-reader fa-2x"></i>
                             </div>
                         </div>
                     </div>
@@ -135,7 +177,7 @@ $metric_total_kelas = (int)query("SELECT COUNT(*) FROM cbt_classes WHERE is_akti
                             <div>
                                 <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:0.5px;">TOTAL KELAS</span>
                                 <h3 class="fw-bold mb-0 mt-1 text-success"><?= number_format($metric_total_kelas, 0, ',', '.') ?></h3>
-                                <small class="text-muted"><i class="fas fa-school me-1 text-success"></i>Rombel aktif</small>
+                                <small class="text-muted"><i class="fas fa-school me-1 text-success"></i>Rombel diampu</small>
                             </div>
                             <div class="rounded-3 p-3 bg-success-subtle text-success">
                                 <i class="fas fa-layer-group fa-2x"></i>
@@ -149,14 +191,14 @@ $metric_total_kelas = (int)query("SELECT COUNT(*) FROM cbt_classes WHERE is_akti
             <div class="card border-0 shadow-sm rounded-3 mb-4">
                 <div class="card-body p-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
                     <div class="d-flex align-items-center gap-2">
-                        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-shield-alt text-primary me-2"></i>Daftar Kunci Perangkat Aktif</h6>
+                        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-shield-alt text-primary me-2"></i>Daftar Kunci Perangkat Siswa</h6>
                         <span id="lockCounterBadge" class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">Memuat data...</span>
                     </div>
                     <div class="d-flex flex-wrap align-items-center gap-2">
-                        <a href="<?= esc(BASE_URL) ?>admin/monitoring/index.php" class="btn btn-sm btn-outline-primary shadow-sm fw-semibold">
-                            <i class="fas fa-desktop me-1"></i> Monitoring Proktor
+                        <a href="<?= esc(BASE_URL) ?>guru/monitoring/index.php" class="btn btn-sm btn-outline-primary shadow-sm fw-semibold">
+                            <i class="fas fa-desktop me-1"></i> Monitoring Live
                         </a>
-                        <a href="<?= esc(BASE_URL) ?>admin/monitoring/log-pelanggaran.php" class="btn btn-sm btn-outline-warning shadow-sm fw-semibold text-dark">
+                        <a href="<?= esc(BASE_URL) ?>guru/monitoring/log-pelanggaran.php" class="btn btn-sm btn-outline-warning shadow-sm fw-semibold text-dark">
                             <i class="fas fa-exclamation-triangle me-1"></i> Log Pelanggaran
                         </a>
                         <button type="button" onclick="bulkResetDevice()" class="btn btn-sm btn-danger shadow-sm fw-bold px-3">
@@ -230,6 +272,8 @@ $metric_total_kelas = (int)query("SELECT COUNT(*) FROM cbt_classes WHERE is_akti
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    const CSRF_TOKEN = '<?= csrf_token() ?>';
+
     function loadDeviceData() {
         let formData = $('#filterDevice').serialize();
         $.ajax({
@@ -246,7 +290,6 @@ $metric_total_kelas = (int)query("SELECT COUNT(*) FROM cbt_classes WHERE is_akti
             },
             success: function(data) {
                 $('#deviceContent').html(data);
-                // Update badge counter dari atribut data jika tersedia
                 let count = $('#deviceContent').find('tbody tr').not('.no-data').length;
                 if ($('#deviceContent').find('.no-data').length > 0) {
                     count = 0;
@@ -268,7 +311,6 @@ $metric_total_kelas = (int)query("SELECT COUNT(*) FROM cbt_classes WHERE is_akti
         loadDeviceData();
     }
 
-    // id diisi saat reset satu baris, null saat bulk dari checkbox
     function bulkResetDevice(id = null) {
         let selected = [];
         if (id !== null) {
@@ -301,7 +343,11 @@ $metric_total_kelas = (int)query("SELECT COUNT(*) FROM cbt_classes WHERE is_akti
                 $.ajax({
                     url: 'actions.php',
                     type: 'POST',
-                    data: { action: 'reset_login', ids: selected },
+                    data: { 
+                        action: 'reset_login', 
+                        ids: selected,
+                        csrf_token: CSRF_TOKEN
+                    },
                     dataType: 'json',
                     success: function(data) {
                         if (data.status === 'success') {
@@ -328,7 +374,6 @@ $metric_total_kelas = (int)query("SELECT COUNT(*) FROM cbt_classes WHERE is_akti
     $(document).ready(function() {
         loadDeviceData();
         
-        // Debounce input search
         let searchTimeout;
         $('#filter_search').on('keyup', function() {
             clearTimeout(searchTimeout);
@@ -337,12 +382,10 @@ $metric_total_kelas = (int)query("SELECT COUNT(*) FROM cbt_classes WHERE is_akti
             }, 300);
         });
 
-        // Event change dropdown & date
         $('#filter_tanggal, #filter_class, #filter_sesi').on('change', function() {
             loadDeviceData();
         });
 
-        // Check/Uncheck All Checkboxes
         $(document).on('change', '#checkAll', function() {
             $('.checkItem').prop('checked', $(this).prop('checked'));
         });

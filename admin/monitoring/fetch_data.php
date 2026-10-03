@@ -13,6 +13,7 @@ $tanggal  = $_GET['tanggal'] ?? date('Y-m-d');
 $exam_id  = $_GET['exam_id'] ?? '';
 $class_id = $_GET['class_id'] ?? '';
 $sesi     = $_GET['sesi'] ?? '';
+$status   = $_GET['status'] ?? '';
 
 // Query peserta ujian aktif
 $params = [];
@@ -36,6 +37,7 @@ if ($tanggal) {
 if ($exam_id) { $sql .= " AND e.id = ?"; $params[] = $exam_id; }
 if ($class_id) { $sql .= " AND COALESCE(p.class_id, s.class_id) = ?"; $params[] = $class_id; }
 if ($sesi) { $sql .= " AND s.sesi = ?"; $params[] = $sesi; }
+if ($status !== '') { $sql .= " AND p.status = ?"; $params[] = $status; }
 
 $sql .= " ORDER BY p.status DESC, s.nama_lengkap ASC";
 

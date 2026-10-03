@@ -32,8 +32,14 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
         <div id="content" class="w-100">
             <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm justify-content-between mb-4">
                 <div class="d-flex align-items-center gap-3">
-                    <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-desktop me-2 text-primary"></i> Monitoring Peserta</h5>
-                    <div class="d-inline-flex align-items-center gap-2 bg-success bg-opacity-10 text-success px-3 py-1 rounded-pill small fw-bold border border-success border-opacity-25">
+                    <button class="btn btn-light border rounded-3 shadow-sm" id="menu-toggle" title="Buka/Tutup Sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div>
+                        <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-desktop me-2 text-primary"></i> Monitoring Peserta Ujian</h5>
+                        <small class="text-muted">Pantau status pengerjaan siswa, durasi waktu, dan log aktivitas secara real-time</small>
+                    </div>
+                    <div class="d-inline-flex align-items-center gap-2 bg-success bg-opacity-10 text-success px-3 py-1 rounded-pill small fw-bold border border-success border-opacity-25 ms-2">
                         <span class="spinner-grow spinner-grow-sm text-success" style="width: 0.5rem; height: 0.5rem;"></span>
                         Auto Refresh: <span id="timer-text">30s</span>
                     </div>
@@ -46,7 +52,7 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
             <div class="container-fluid px-4">
                 <div class="card border-0 shadow-sm rounded-3 p-4 mb-4">
                     <form id="filterForm" class="row g-3">
-                        <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="col-12 col-sm-6 col-lg-2">
                             <label class="form-label text-muted text-uppercase small fw-bold" style="font-size: 0.7rem;">Tanggal Ujian</label>
                             <input type="date" name="tanggal" id="filter-tanggal" value="<?= esc(date('Y-m-d')) ?>" class="form-control form-control-sm rounded-2">
                         </div>
@@ -57,7 +63,7 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
                             </select>
                         </div>
                         <div class="col-12 col-sm-6 col-lg-3">
-                            <label class="form-label text-muted text-uppercase small fw-bold" style="font-size: 0.7rem;">Kelas</label>
+                            <label class="form-label text-muted text-uppercase small fw-bold" style="font-size: 0.7rem;">Kelas Target</label>
                             <select name="class_id" class="form-select form-select-sm rounded-2">
                                 <option value="">-- Semua Kelas --</option>
                                 <?php foreach($classes as $c): ?>
@@ -65,13 +71,23 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="col-12 col-sm-6 col-lg-2">
                             <label class="form-label text-muted text-uppercase small fw-bold" style="font-size: 0.7rem;">Sesi</label>
                             <select name="sesi" class="form-select form-select-sm rounded-2">
                                 <option value="">-- Semua Sesi --</option>
                                 <?php foreach ($listSesi as $s): ?>
                                     <option value="<?= esc($s['id']) ?>"><?= htmlspecialchars($s['nama_sesi']) ?></option>
                                 <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-2">
+                            <label class="form-label text-muted text-uppercase small fw-bold" style="font-size: 0.7rem;">Status Pengerjaan</label>
+                            <select name="status" class="form-select form-select-sm rounded-2">
+                                <option value="">-- Semua Status --</option>
+                                <option value="working">Sedang Mengerjakan</option>
+                                <option value="finished">Selesai</option>
+                                <option value="ready">Siap / Menunggu</option>
+                                <option value="blocked">Diblokir / Terkunci</option>
                             </select>
                         </div>
                     </form>
@@ -285,6 +301,7 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
         }
 
         $(document).ready(function() {
+            $("#menu-toggle").click(function(e) { e.preventDefault(); $("#wrapper").toggleClass("toggled"); });
             updateMapelDropdown();
             
             monitorInterval = setInterval(() => {
