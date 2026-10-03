@@ -52,6 +52,7 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
             <div class="container-fluid px-4">
                 <div class="card border-0 shadow-sm rounded-3 p-4 mb-4">
                     <form id="filterForm" class="row g-3">
+                        <input type="hidden" name="page" id="filter-page" value="1">
                         <div class="col-12 col-sm-6 col-lg-2">
                             <label class="form-label text-muted text-uppercase small fw-bold" style="font-size: 0.7rem;">Tanggal Ujian</label>
                             <input type="date" name="tanggal" id="filter-tanggal" value="<?= esc(date('Y-m-d')) ?>" class="form-control form-control-sm rounded-2">
@@ -62,7 +63,7 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
                                 <option value="">-- Pilih Tanggal Dulu --</option>
                             </select>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="col-12 col-sm-6 col-lg-2">
                             <label class="form-label text-muted text-uppercase small fw-bold" style="font-size: 0.7rem;">Kelas Target</label>
                             <select name="class_id" class="form-select form-select-sm rounded-2">
                                 <option value="">-- Semua Kelas --</option>
@@ -81,13 +82,23 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
                             </select>
                         </div>
                         <div class="col-12 col-sm-6 col-lg-2">
-                            <label class="form-label text-muted text-uppercase small fw-bold" style="font-size: 0.7rem;">Status Pengerjaan</label>
+                            <label class="form-label text-muted text-uppercase small fw-bold" style="font-size: 0.7rem;">Status</label>
                             <select name="status" class="form-select form-select-sm rounded-2">
                                 <option value="">-- Semua Status --</option>
                                 <option value="working">Sedang Mengerjakan</option>
                                 <option value="finished">Selesai</option>
                                 <option value="ready">Siap / Menunggu</option>
                                 <option value="blocked">Diblokir / Terkunci</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-1">
+                            <label class="form-label text-muted text-uppercase small fw-bold" style="font-size: 0.7rem;">Limit</label>
+                            <select name="limit" class="form-select form-select-sm rounded-2">
+                                <option value="50">50</option>
+                                <option value="100" selected>100</option>
+                                <option value="250">250</option>
+                                <option value="500">500</option>
+                                <option value="1000">1000</option>
                             </select>
                         </div>
                     </form>
@@ -149,6 +160,7 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
                             </tbody>
                         </table>
                     </div>
+                    <div id="monitoring-pagination"></div>
                 </div>
             </div>
         </div>
@@ -189,22 +201,35 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
                         $('#filter-mapel').val(firstVal);
                     }
                 }
-                loadMonitoring();
+                loadMonitoring(1);
             });
         }
 
-        function loadMonitoring() {
+        function goToPage(p) {
+            loadMonitoring(p);
+        }
+
+        function loadMonitoring(targetPage) {
+            if (typeof targetPage !== 'undefined' && targetPage > 0) {
+                $('#filter-page').val(targetPage);
+            }
             const formData = $('#filterForm').serialize();
             const checkedIds = $('.check-item:checked').map(function() { return $(this).val(); }).get();
             $.ajax({
                 url: 'fetch_data.php',
                 type: 'GET',
                 data: formData,
+                dataType: 'json',
                 beforeSend: function() { 
                     $('#loader').addClass('active').show(); 
                 },
-                success: function(html) {
-                    $('#monitoring-data').html(html);
+                success: function(res) {
+                    if (res && res.status === 'success') {
+                        $('#monitoring-data').html(res.html);
+                        $('#monitoring-pagination').html(res.pagination || '');
+                    } else if (typeof res === 'string') {
+                        $('#monitoring-data').html(res);
+                    }
                     if (checkedIds.length > 0) {
                         checkedIds.forEach(function(id) {
                             $('.check-item[value="' + id + '"]').prop('checked', true);
@@ -232,8 +257,13 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
                         });
                     }, 1000);
                 },
-                error: function() {
-                    $('#monitoring-data').html('<tr><td colspan="7" class="p-5 text-center text-danger fw-semibold"><i class="fas fa-exclamation-circle me-1"></i> Gagal memuat data monitoring. Silakan periksa jaringan.</td></tr>');
+                error: function(xhr) {
+                    if (xhr.responseText && xhr.responseText.indexOf('<tr') !== -1) {
+                        $('#monitoring-data').html(xhr.responseText);
+                    } else {
+                        $('#monitoring-data').html('<tr><td colspan="7" class="p-5 text-center text-danger fw-semibold"><i class="fas fa-exclamation-circle me-1"></i> Gagal memuat data monitoring. Silakan periksa jaringan.</td></tr>');
+                        $('#monitoring-pagination').empty();
+                    }
                 },
                 complete: function() {
                     $('#loader').removeClass('active').hide();
@@ -319,8 +349,14 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
                 if(countdown <= 0) loadMonitoring();
             }, 1000);
 
-            $('#filter-tanggal').on('change', updateMapelDropdown);
-            $('#filterForm select').on('change', loadMonitoring);
+            $('#filter-tanggal').on('change', function() {
+                $('#filter-page').val(1);
+                updateMapelDropdown();
+            });
+            $('#filterForm select').on('change', function() {
+                $('#filter-page').val(1);
+                loadMonitoring(1);
+            });
             
             $(document).on('change', '#checkAll', function() {
                 $('.check-item').prop('checked', $(this).prop('checked'));

@@ -15,8 +15,39 @@ $exam_id  = $_GET['exam_id'] ?? '';
 $class_id = $_GET['class_id'] ?? '';
 $sesi     = $_GET['sesi'] ?? '';
 $status   = $_GET['status'] ?? '';
+$page     = max(1, (int)($_GET['page'] ?? 1));
+$limit    = (int)($_GET['limit'] ?? 100);
+if ($limit <= 0 || $limit > 1000) {
+    $limit = 100;
+}
 
-$params = [];
+$where = " WHERE e.teacher_id = ?";
+$params = [$teacher_id];
+
+if ($tanggal) {
+    $where .= " AND e.mulai_pada BETWEEN ? AND ?";
+    $params[] = $tanggal . ' 00:00:00';
+    $params[] = $tanggal . ' 23:59:59';
+}
+if ($exam_id) { $where .= " AND e.id = ?"; $params[] = $exam_id; }
+if ($class_id) { $where .= " AND COALESCE(p.class_id, s.class_id) = ?"; $params[] = $class_id; }
+if ($sesi) { $where .= " AND s.sesi = ?"; $params[] = $sesi; }
+if ($status !== '') { $where .= " AND p.status = ?"; $params[] = $status; }
+
+// 1. Hitung total records untuk pagination
+$countSql = "SELECT COUNT(*) 
+             FROM cbt_exam_participants p
+             JOIN cbt_students s ON p.student_id = s.id
+             JOIN cbt_exams e ON p.exam_id = e.id
+             $where";
+$totalRows = (int)query($countSql, $params)->fetchColumn();
+$totalPages = $totalRows > 0 ? (int)ceil($totalRows / $limit) : 1;
+if ($page > $totalPages) {
+    $page = $totalPages;
+}
+$offset = ($page - 1) * $limit;
+
+// 2. Query data peserta aktif per halaman
 $sql = "SELECT p.id as p_id, s.id as s_id, s.nama_lengkap, s.username, s.sesi, c.nama_kelas,
         e.id as e_id, e.nama_mapel_ujian, e.durasi_menit, e.selesai_pada, p.status, p.tambahan_waktu, p.waktu_mulai,
         p.soal_ids, e.jumlah_soal_limit,
@@ -27,25 +58,23 @@ $sql = "SELECT p.id as p_id, s.id as s_id, s.nama_lengkap, s.username, s.sesi, c
         LEFT JOIN cbt_classes c ON COALESCE(p.class_id, s.class_id) = c.id
         JOIN cbt_exams e ON p.exam_id = e.id
         LEFT JOIN cbt_device_locks dl ON s.id = dl.student_id
-        WHERE e.teacher_id = ?";
-$params[] = $teacher_id;
-
-if ($tanggal) {
-    $sql .= " AND e.mulai_pada BETWEEN ? AND ?";
-    $params[] = $tanggal . ' 00:00:00';
-    $params[] = $tanggal . ' 23:59:59';
-}
-if ($exam_id) { $sql .= " AND e.id = ?"; $params[] = $exam_id; }
-if ($class_id) { $sql .= " AND COALESCE(p.class_id, s.class_id) = ?"; $params[] = $class_id; }
-if ($sesi) { $sql .= " AND s.sesi = ?"; $params[] = $sesi; }
-if ($status !== '') { $sql .= " AND p.status = ?"; $params[] = $status; }
-
-$sql .= " ORDER BY p.status DESC, s.nama_lengkap ASC LIMIT 1000";
+        $where
+        ORDER BY p.status DESC, s.nama_lengkap ASC 
+        LIMIT $offset, $limit";
 
 $data = query($sql, $params)->fetchAll();
 
 if (!$data) {
-    echo "<tr><td colspan='7' class='p-10 text-center text-muted'><i class='fas fa-info-circle me-1'></i> Tidak ada peserta ujian Anda pada filter ini.</td></tr>";
+    $emptyHtml = "<tr><td colspan='7' class='p-5 text-center text-muted'><i class='fas fa-info-circle me-1'></i> Tidak ada peserta ujian Anda pada filter ini.</td></tr>";
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'status'      => 'success',
+        'html'        => $emptyHtml,
+        'pagination'  => '',
+        'total'       => 0,
+        'page'        => 1,
+        'total_pages' => 1
+    ]);
     exit;
 }
 
@@ -101,17 +130,12 @@ if (!empty($e_ids)) {
     }
 }
 
-if (count($data) >= 1000) {
-    echo "<tr><td colspan='7' class='p-3 text-center bg-warning bg-opacity-10 text-warning-emphasis border-bottom small fw-semibold'><i class='fas fa-exclamation-triangle me-1 text-warning'></i> Menampilkan maksimal <strong>1.000 peserta</strong> untuk menjaga performa server. Silakan pilih <strong>Nama Ujian / Test</strong>, <strong>Kelas</strong>, atau <strong>Sesi</strong> untuk mempersempit daftar.</td></tr>";
-}
+$rowsHtml = "";
 
 foreach ($data as $row) {
     $row['jml_jawab'] = $ans_map[$row['p_id']] ?? 0;
     
-    // Logika penentuan total butir soal diujikan ke siswa:
-    // Prioritas 1: Daftar paket butir soal riil siswa (soal_ids)
-    // Prioritas 2: Batas jumlah soal pada jadwal (jumlah_soal_limit)
-    // Prioritas 3: Total butir soal pada bank soal jadwal (fallback)
+    // Logika penentuan total butir soal diujikan ke siswa
     $total_soal = 0;
     if (!empty($row['soal_ids'])) {
         $decoded_sids = json_decode($row['soal_ids'], true);
@@ -168,7 +192,7 @@ foreach ($data as $row) {
     ];
     $color = $status_color[$st] ?? 'bg-gray-100';
 
-    echo "<tr>
+    $rowsHtml .= "<tr>
         <td class='p-4 text-center'><input type='checkbox' class='check-item' value='{$row['p_id']}'></td>
         <td class='p-4'>
             <div class='font-bold text-gray-800 uppercase text-xs'>".htmlspecialchars($row['nama_lengkap'])."</div>
@@ -200,4 +224,61 @@ foreach ($data as $row) {
         </td>
     </tr>";
 }
-ob_end_flush();
+
+// 3. Render Pagination Bar
+$from = $totalRows > 0 ? ($offset + 1) : 0;
+$to   = min($offset + $limit, $totalRows);
+
+$paginationHtml = "<div class='card-footer bg-white py-3 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 border-top'>
+    <div class='small text-muted'>
+        Menampilkan <strong>" . number_format($from, 0, ',', '.') . "</strong> &ndash; <strong>" . number_format($to, 0, ',', '.') . "</strong> dari total <strong>" . number_format($totalRows, 0, ',', '.') . "</strong> peserta ujian
+    </div>";
+
+if ($totalPages > 1) {
+    $paginationHtml .= "<nav aria-label='Navigasi Halaman'>
+        <ul class='pagination pagination-sm mb-0'>
+            <li class='page-item " . ($page <= 1 ? 'disabled' : '') . "'>
+                <a class='page-link' href='javascript:void(0)' onclick='goToPage(1)' title='Halaman Pertama'><i class='fas fa-angle-double-left'></i></a>
+            </li>
+            <li class='page-item " . ($page <= 1 ? 'disabled' : '') . "'>
+                <a class='page-link' href='javascript:void(0)' onclick='goToPage(" . ($page - 1) . ")' title='Sebelumnya'><i class='fas fa-angle-left'></i></a>
+            </li>";
+
+    $startPage = max(1, $page - 2);
+    $endPage   = min($totalPages, $page + 2);
+    if ($startPage > 1) {
+        $paginationHtml .= "<li class='page-item disabled'><span class='page-link'>&hellip;</span></li>";
+    }
+    for ($p = $startPage; $p <= $endPage; $p++) {
+        $activeClass = ($page === $p) ? 'active' : '';
+        $paginationHtml .= "<li class='page-item {$activeClass}'>
+            <a class='page-link' href='javascript:void(0)' onclick='goToPage({$p})'>{$p}</a>
+        </li>";
+    }
+    if ($endPage < $totalPages) {
+        $paginationHtml .= "<li class='page-item disabled'><span class='page-link'>&hellip;</span></li>";
+    }
+
+    $paginationHtml .= "<li class='page-item " . ($page >= $totalPages ? 'disabled' : '') . "'>
+                <a class='page-link' href='javascript:void(0)' onclick='goToPage(" . ($page + 1) . ")' title='Berikutnya'><i class='fas fa-angle-right'></i></a>
+            </li>
+            <li class='page-item " . ($page >= $totalPages ? 'disabled' : '') . "'>
+                <a class='page-link' href='javascript:void(0)' onclick='goToPage({$totalPages})' title='Halaman Terakhir'><i class='fas fa-angle-double-right'></i></a>
+            </li>
+        </ul>
+    </nav>";
+}
+$paginationHtml .= "</div>";
+
+header('Content-Type: application/json; charset=utf-8');
+echo json_encode([
+    'status'      => 'success',
+    'html'        => $rowsHtml,
+    'pagination'  => $paginationHtml,
+    'total'       => $totalRows,
+    'page'        => $page,
+    'total_pages' => $totalPages,
+    'offset'      => $offset,
+    'limit'       => $limit
+]);
+exit;
