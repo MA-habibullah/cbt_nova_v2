@@ -249,7 +249,7 @@ if (isset($_POST['update'])) {
 </div>
 
 <div class="modal fade" id="modalEditTA" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <form action="" method="POST">
                 <div class="modal-header">
@@ -281,7 +281,7 @@ if (isset($_POST['update'])) {
 </div>
 
 <div class="modal fade" id="modalTambah" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <form action="" method="POST">
                 <div class="modal-header">

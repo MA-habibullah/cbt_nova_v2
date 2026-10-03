@@ -226,7 +226,7 @@ $listSesi = $pdo->query("
 </div>
 
 <div class="modal fade" id="modalTambah" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <form action="" method="POST" class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title fw-bold">Tambah Sesi</h5>
@@ -256,7 +256,7 @@ $listSesi = $pdo->query("
 </div>
 
 <div class="modal fade" id="modalEdit" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <form action="" method="POST" class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title fw-bold">Edit Sesi</h5>

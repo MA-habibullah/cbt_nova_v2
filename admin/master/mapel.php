@@ -260,7 +260,7 @@ if (isset($_GET['toggle_id']) && isset($_GET['current_status'])) {
 </div>
 
 <div class="modal fade" id="modalTambah" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <form action="" method="POST" class="modal-content border-0 shadow">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title">Tambah Mata Pelajaran</h5>
@@ -283,7 +283,7 @@ if (isset($_GET['toggle_id']) && isset($_GET['current_status'])) {
 </div>
 
 <div class="modal fade" id="modalEdit" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <form action="" method="POST" class="modal-content border-0 shadow">
             <div class="modal-header bg-warning">
                 <h5 class="modal-title">Edit Mata Pelajaran</h5>
