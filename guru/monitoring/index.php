@@ -171,8 +171,17 @@ $listSesi = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
 
     function updateMapelDropdown() {
         let tgl = $('#filter-tanggal').val();
+        let currentExam = $('#filter-mapel').val();
         $.get('fetch_mapel.php', { tanggal: tgl }, function(res) {
             $('#filter-mapel').html(res);
+            if (currentExam && $('#filter-mapel option[value="' + currentExam + '"]').length > 0) {
+                $('#filter-mapel').val(currentExam);
+            } else if ($('#filter-mapel option').length > 1) {
+                let firstVal = $('#filter-mapel option:eq(1)').val();
+                if (firstVal) {
+                    $('#filter-mapel').val(firstVal);
+                }
+            }
             loadMonitoring();
         });
     }

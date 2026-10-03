@@ -16,7 +16,7 @@ $sql = "SELECT e.id, e.nama_mapel_ujian, s.nama_mapel
         ORDER BY e.nama_mapel_ujian ASC";
 $mapels = query($sql, [$tanggal_start, $tanggal_end])->fetchAll();
 
-echo '<option value="">-- Semua Ujian / Test Aktif --</option>';
+echo '<option value="">-- Pilih Nama Ujian / Test --</option>';
 if ($mapels) {
     foreach ($mapels as $m) {
         $namaTest = trim($m['nama_mapel_ujian'] ?? '');

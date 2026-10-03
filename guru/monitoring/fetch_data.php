@@ -40,12 +40,12 @@ if ($class_id) { $sql .= " AND COALESCE(p.class_id, s.class_id) = ?"; $params[] 
 if ($sesi) { $sql .= " AND s.sesi = ?"; $params[] = $sesi; }
 if ($status !== '') { $sql .= " AND p.status = ?"; $params[] = $status; }
 
-$sql .= " ORDER BY p.status DESC, s.nama_lengkap ASC";
+$sql .= " ORDER BY p.status DESC, s.nama_lengkap ASC LIMIT 1000";
 
 $data = query($sql, $params)->fetchAll();
 
 if (!$data) {
-    echo "<tr><td colspan='7' class='p-10 text-center text-gray-400'>Tidak ada peserta ujian Anda pada filter ini.</td></tr>";
+    echo "<tr><td colspan='7' class='p-10 text-center text-muted'><i class='fas fa-info-circle me-1'></i> Tidak ada peserta ujian Anda pada filter ini.</td></tr>";
     exit;
 }
 
@@ -99,6 +99,10 @@ if (!empty($e_ids)) {
     foreach ($stmtCl->fetchAll() as $r) {
         $cl_map[$r['student_id'] . '_' . $r['exam_id']] = (int)$r['logs'];
     }
+}
+
+if (count($data) >= 1000) {
+    echo "<tr><td colspan='7' class='p-3 text-center bg-warning bg-opacity-10 text-warning-emphasis border-bottom small fw-semibold'><i class='fas fa-exclamation-triangle me-1 text-warning'></i> Menampilkan maksimal <strong>1.000 peserta</strong> untuk menjaga performa server. Silakan pilih <strong>Nama Ujian / Test</strong>, <strong>Kelas</strong>, atau <strong>Sesi</strong> untuk mempersempit daftar.</td></tr>";
 }
 
 foreach ($data as $row) {
