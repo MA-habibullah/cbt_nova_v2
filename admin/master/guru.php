@@ -226,26 +226,30 @@ $count_all    = $count_aktif + $count_nonaktif;
 
         <div class="container-fluid px-4 py-2">
 
-            <!-- Navigasi Tab Status Guru (Card Navigation) -->
-            <div class="card border-0 shadow-sm rounded-3 mb-4">
-                <div class="card-body p-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="container-fluid px-4 pt-3 pb-4">
+
+            <!-- Action & Filter Toolbar -->
+            <div class="card card-dashboard p-3 mb-4 shadow-sm border-0">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+                    <!-- Status Filter Tabs -->
                     <div class="d-flex flex-wrap gap-2">
-                        <a href="?f_status=1<?= !empty($search) ? '&search='.urlencode($search) : '' ?>" 
+                        <a href="?f_status=1<?= !empty($search) ? '&search='.urlencode($search) : '' ?>&limit=<?= esc($limit) ?>" 
                            class="btn btn-sm <?= $f_status === '1' ? 'btn-primary shadow-sm text-white fw-bold' : 'btn-light border text-secondary' ?> px-3 py-2 rounded-2">
                             <i class="fas fa-user-check me-1"></i> Guru Aktif
                             <span class="badge <?= $f_status === '1' ? 'bg-white text-primary' : 'bg-primary-subtle text-primary' ?> ms-2"><?= number_format($count_aktif, 0, ',', '.') ?></span>
                         </a>
-                        <a href="?f_status=0<?= !empty($search) ? '&search='.urlencode($search) : '' ?>" 
+                        <a href="?f_status=0<?= !empty($search) ? '&search='.urlencode($search) : '' ?>&limit=<?= esc($limit) ?>" 
                            class="btn btn-sm <?= $f_status === '0' ? 'btn-secondary shadow-sm text-white fw-bold' : 'btn-light border text-secondary' ?> px-3 py-2 rounded-2">
                             <i class="fas fa-user-slash me-1"></i> Guru Non-Aktif
                             <span class="badge <?= $f_status === '0' ? 'bg-white text-secondary' : 'bg-secondary-subtle text-secondary' ?> ms-2"><?= number_format($count_nonaktif, 0, ',', '.') ?></span>
                         </a>
-                        <a href="?f_status=all<?= !empty($search) ? '&search='.urlencode($search) : '' ?>" 
+                        <a href="?f_status=all<?= !empty($search) ? '&search='.urlencode($search) : '' ?>&limit=<?= esc($limit) ?>" 
                            class="btn btn-sm <?= $f_status === 'all' ? 'btn-dark shadow-sm text-white fw-bold' : 'btn-light border text-secondary' ?> px-3 py-2 rounded-2">
                             <i class="fas fa-users me-1"></i> Semua Guru
                             <span class="badge <?= $f_status === 'all' ? 'bg-white text-dark' : 'bg-light text-dark border' ?> ms-2"><?= number_format($count_all, 0, ',', '.') ?></span>
                         </a>
                     </div>
+                    <!-- Action Buttons -->
                     <div class="d-flex align-items-center gap-2">
                         <button class="btn btn-sm btn-primary shadow-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#modalTambah">
                             <i class="fas fa-plus me-1"></i> Tambah Guru
@@ -258,61 +262,58 @@ $count_all    = $count_aktif + $count_nonaktif;
                         </a>
                     </div>
                 </div>
-            </div>
 
-            <!-- Filter Bar Box -->
-            <div class="card border-0 shadow-sm rounded-3 mb-4">
-                <div class="card-body p-3">
-                    <form action="" method="GET" class="row g-2 align-items-end">
-                        <input type="hidden" name="f_status" value="<?= esc($f_status) ?>">
-                        <input type="hidden" name="limit" value="<?= esc($limit) ?>">
-
-                        <div class="col-lg-8 col-md-7">
-                            <label class="form-label small fw-bold text-muted mb-1"><i class="fas fa-search me-1"></i>Pencarian Guru</label>
+                <!-- Search & Limit Row -->
+                <form action="" method="GET" class="row g-2 align-items-center">
+                    <input type="hidden" name="f_status" value="<?= esc($f_status) ?>">
+                    <div class="col-lg-8 col-md-7">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
                             <input type="text" name="search" class="form-control form-control-sm" placeholder="Ketik Nama Guru, NIP, atau Username..." value="<?= esc($search) ?>">
                         </div>
-                        <div class="col-lg-4 col-md-5 d-flex gap-2">
-                            <button type="submit" class="btn btn-primary btn-sm flex-grow-1 fw-bold">
-                                <i class="fas fa-filter me-1"></i> Terapkan
-                            </button>
-                            <a href="guru.php?f_status=<?= urlencode($f_status) ?>" class="btn btn-light border btn-sm text-secondary" title="Reset Filter">
-                                <i class="fas fa-redo"></i>
-                            </a>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+                    <div class="col-lg-2 col-md-3">
+                        <select name="limit" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="25" <?= ($limit==25 ? 'selected' : '') ?>>25 per halaman</option>
+                            <option value="50" <?= ($limit==50 ? 'selected' : '') ?>>50 per halaman</option>
+                            <option value="100" <?= ($limit==100 ? 'selected' : '') ?>>100 per halaman</option>
+                            <option value="200" <?= ($limit==200 ? 'selected' : '') ?>>200 per halaman</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-2 col-md-2 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm flex-fill fw-bold shadow-sm">
+                            <i class="fas fa-filter me-1"></i> Cari
+                        </button>
+                        <a href="guru.php?f_status=<?= urlencode($f_status) ?>" class="btn btn-outline-secondary btn-sm" title="Reset Filter">
+                            <i class="fas fa-redo"></i>
+                        </a>
+                    </div>
+                </form>
             </div>
 
             <!-- Main Table Card -->
-            <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
-                <div class="card-header bg-white py-3 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom">
-                    <div class="d-flex align-items-center gap-2">
-                        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-list-ul text-primary me-2"></i>Daftar Guru Pengajar</h6>
-                        <span class="badge bg-light text-secondary border px-2 py-1"><?= number_format($totalData, 0, ',', '.') ?> guru ditemukan</span>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <label class="small text-muted mb-0 fw-medium">Tampilkan per halaman:</label>
-                        <select class="form-select form-select-sm shadow-none" style="width: 85px;" onchange="changeLimit(this.value)" id="limitSelect">
-                            <option value="25" <?= ($limit==25 ? 'selected' : '') ?>>25</option>
-                            <option value="50" <?= ($limit==50 ? 'selected' : '') ?>>50</option>
-                            <option value="100" <?= ($limit==100 ? 'selected' : '') ?>>100</option>
-                            <option value="200" <?= ($limit==200 ? 'selected' : '') ?>>200</option>
-                        </select>
-                    </div>
+            <div class="card card-dashboard p-0 shadow-sm border-0 overflow-hidden">
+                <div class="card-header bg-white py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom">
+                    <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                        <i class="fas fa-chalkboard-teacher text-primary"></i> Daftar Guru Pengajar
+                    </h6>
+                    <span class="badge bg-primary-subtle text-primary font-monospace rounded-pill px-3">
+                        Total: <?= number_format($totalData, 0, ',', '.') ?> Guru
+                    </span>
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-modern align-middle mb-0" style="min-width: 850px;">
+                    <table class="table table-hover align-middle mb-0" style="min-width: 850px;">
                         <thead class="table-light text-secondary small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">
                             <tr>
-                                <th class="text-center py-3" width="50">#</th>
+                                <th class="text-center py-3 ps-4" width="50">No</th>
                                 <th class="text-center py-3 d-none d-md-table-cell" width="60">Avatar</th>
-                                <th class="py-3">Nama Lengkap & NIP</th>
+                                <th class="py-3">Nama Lengkap &amp; NIP</th>
                                 <th class="py-3 d-none d-sm-table-cell">Username Login</th>
                                 <th class="py-3 text-center d-none d-lg-table-cell">Bank Soal</th>
                                 <th class="py-3 text-center d-none d-lg-table-cell">Jadwal Ujian</th>
                                 <th class="py-3 text-center" width="120">Status</th>
-                                <th class="text-center py-3" width="180">Aksi</th>
+                                <th class="text-end pe-4 py-3" width="180">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>

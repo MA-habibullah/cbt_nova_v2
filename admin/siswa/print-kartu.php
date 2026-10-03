@@ -1,5 +1,5 @@
 <?php
-require_once '../../config/database.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 // Proteksi Admin
 if (!isset($_SESSION['admin_id'])) {
@@ -158,15 +158,67 @@ $thn_ajaran = ($ta_aktif) ? $ta_aktif['tahun'] : "2025/2026";
         }
 
         @media print {
-            .no-print { display: none; }
+            .no-print { display: none !important; }
             body {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                background: #ffffff !important;
+            }
+            .card-box {
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
             }
         }
+
+        .print-toolbar {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+            padding: 8px 14px;
+            border-radius: 10px;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 13px;
+        }
+        .btn-print-action {
+            background: #2563eb;
+            color: #ffffff;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-print-action:hover { background: #1d4ed8; }
+        .btn-print-back {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            padding: 6px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .btn-print-back:hover { background: #e2e8f0; }
     </style>
 </head>
-<body onload="window.print()">
+<body>
+
+    <div class="print-toolbar no-print">
+        <span><strong><?= count($students) ?></strong> Kartu Siap Cetak</span>
+        <button class="btn-print-action" onclick="window.print()">
+            &#128438; Cetak / Print A4
+        </button>
+        <a href="cetak-kartu.php" class="btn-print-back">
+            &larr; Kembali
+        </a>
+    </div>
 
     <div class="wrapper">
         <?php foreach ($students as $s): ?>

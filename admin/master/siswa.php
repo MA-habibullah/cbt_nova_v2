@@ -435,27 +435,28 @@ if (isset($_POST['restore_siswa'])) {
         </div>
 
         <div class="container-fluid px-4 py-2">
-
-            <!-- Navigasi Tab Status Siswa (Card Navigation) -->
-            <div class="card border-0 shadow-sm rounded-3 mb-4">
-                <div class="card-body p-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <!-- Action & Filter Toolbar -->
+            <div class="card card-dashboard p-3 mb-4 shadow-sm border-0">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+                    <!-- Status Filter Tabs -->
                     <div class="d-flex flex-wrap gap-2">
-                        <a href="?f_status=1<?= !empty($search) ? '&search='.urlencode($search) : '' ?><?= !empty($f_kelas) ? '&f_kelas='.urlencode($f_kelas) : '' ?><?= !empty($f_jenjang) ? '&f_jenjang='.urlencode($f_jenjang) : '' ?>" 
+                        <a href="?f_status=1<?= !empty($search) ? '&search='.urlencode($search) : '' ?><?= !empty($f_kelas) ? '&f_kelas='.urlencode($f_kelas) : '' ?><?= !empty($f_jenjang) ? '&f_jenjang='.urlencode($f_jenjang) : '' ?>&limit=<?= esc($limit) ?>" 
                            class="btn btn-sm <?= $f_status === '1' ? 'btn-primary shadow-sm text-white fw-bold' : 'btn-light border text-secondary' ?> px-3 py-2 rounded-2">
                             <i class="fas fa-user-check me-1"></i> Siswa Aktif
                             <span class="badge <?= $f_status === '1' ? 'bg-white text-primary' : 'bg-primary-subtle text-primary' ?> ms-2"><?= number_format($count_aktif, 0, ',', '.') ?></span>
                         </a>
-                        <a href="?f_status=0<?= !empty($search) ? '&search='.urlencode($search) : '' ?><?= !empty($f_kelas) ? '&f_kelas='.urlencode($f_kelas) : '' ?><?= !empty($f_jenjang) ? '&f_jenjang='.urlencode($f_jenjang) : '' ?>" 
+                        <a href="?f_status=0<?= !empty($search) ? '&search='.urlencode($search) : '' ?><?= !empty($f_kelas) ? '&f_kelas='.urlencode($f_kelas) : '' ?><?= !empty($f_jenjang) ? '&f_jenjang='.urlencode($f_jenjang) : '' ?>&limit=<?= esc($limit) ?>" 
                            class="btn btn-sm <?= $f_status === '0' ? 'btn-secondary shadow-sm text-white fw-bold' : 'btn-light border text-secondary' ?> px-3 py-2 rounded-2">
-                            <i class="fas fa-user-slash me-1"></i> Siswa Non-Aktif & Alumni
+                            <i class="fas fa-user-slash me-1"></i> Siswa Non-Aktif &amp; Alumni
                             <span class="badge <?= $f_status === '0' ? 'bg-white text-secondary' : 'bg-secondary-subtle text-secondary' ?> ms-2"><?= number_format($count_nonaktif, 0, ',', '.') ?></span>
                         </a>
-                        <a href="?f_status=all<?= !empty($search) ? '&search='.urlencode($search) : '' ?><?= !empty($f_kelas) ? '&f_kelas='.urlencode($f_kelas) : '' ?><?= !empty($f_jenjang) ? '&f_jenjang='.urlencode($f_jenjang) : '' ?>" 
+                        <a href="?f_status=all<?= !empty($search) ? '&search='.urlencode($search) : '' ?><?= !empty($f_kelas) ? '&f_kelas='.urlencode($f_kelas) : '' ?><?= !empty($f_jenjang) ? '&f_jenjang='.urlencode($f_jenjang) : '' ?>&limit=<?= esc($limit) ?>" 
                            class="btn btn-sm <?= $f_status === 'all' ? 'btn-dark shadow-sm text-white fw-bold' : 'btn-light border text-secondary' ?> px-3 py-2 rounded-2">
                             <i class="fas fa-users me-1"></i> Semua Siswa
                             <span class="badge <?= $f_status === 'all' ? 'bg-white text-dark' : 'bg-light text-dark border' ?> ms-2"><?= number_format($count_all, 0, ',', '.') ?></span>
                         </a>
                     </div>
+                    <!-- Action Buttons -->
                     <div class="d-flex align-items-center gap-2">
                         <button class="btn btn-sm btn-primary shadow-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#modalTambah">
                             <i class="fas fa-plus me-1"></i> Tambah Siswa
@@ -466,90 +467,87 @@ if (isset($_POST['restore_siswa'])) {
                         <a href="<?= esc(BASE_URL) ?>admin/master-io/export_siswa.php" class="btn btn-sm btn-outline-primary shadow-sm fw-semibold">
                             <i class="fas fa-file-export me-1"></i> Export
                         </a>
+                        <a href="<?= esc(BASE_URL) ?>admin/siswa/cetak-kartu.php" class="btn btn-sm btn-outline-info shadow-sm fw-semibold">
+                            <i class="fas fa-id-card me-1"></i> Cetak Kartu
+                        </a>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Filter Bar Box -->
-            <div class="card border-0 shadow-sm rounded-3 mb-4">
-                <div class="card-body p-3">
-                    <form action="" method="GET" class="row g-2 align-items-end">
-                        <input type="hidden" name="f_status" value="<?= esc($f_status) ?>">
-                        <input type="hidden" name="limit" value="<?= esc($limit) ?>">
+                
+                <!-- Filter Controls Row -->
+                <form action="" method="GET" class="row g-2 align-items-end">
+                    <input type="hidden" name="f_status" value="<?= esc($f_status) ?>">
 
-                        <div class="col-lg-3 col-md-6">
-                            <label class="form-label small fw-bold text-muted mb-1"><i class="fas fa-search me-1"></i>Pencarian Siswa</label>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
                             <input type="text" name="search" class="form-control form-control-sm" placeholder="Ketik Nama, NISN, atau Username..." value="<?= esc($search) ?>">
                         </div>
-                        <div class="col-lg-2 col-md-3 col-6">
-                            <label class="form-label small fw-bold text-muted mb-1"><i class="fas fa-layer-group me-1"></i>Jenjang</label>
-                            <select name="f_jenjang" class="form-select form-select-sm" onchange="this.form.submit()">
-                                <option value="">Semua Jenjang</option>
-                                <?php foreach($allJenjang as $j): ?>
-                                    <option value="<?= esc($j) ?>" <?= ($f_jenjang == $j ? 'selected' : '') ?>><?= esc($j) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-lg-2 col-md-3 col-6">
-                            <label class="form-label small fw-bold text-muted mb-1"><i class="fas fa-school me-1"></i>Kelas</label>
-                            <select name="f_kelas" class="form-select form-select-sm" onchange="this.form.submit()">
-                                <option value="">Semua Kelas</option>
-                                <?php foreach($allKelas as $k): ?>
-                                    <option value="<?= esc($k['id']) ?>" <?= ($f_kelas == $k['id'] ? 'selected' : '') ?>><?= esc($k['jenjang']) ?> - <?= esc($k['nama_kelas']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-lg-2 col-md-3 col-6">
-                            <label class="form-label small fw-bold text-muted mb-1"><i class="fas fa-pray me-1"></i>Agama</label>
-                            <select name="f_agama" class="form-select form-select-sm" onchange="this.form.submit()">
-                                <option value="">Semua Agama</option>
-                                <?php foreach($listAgama as $a): ?>
-                                    <option value="<?= esc($a) ?>" <?= ($f_agama == $a ? 'selected' : '') ?>><?= esc($a) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-lg-1 col-md-3 col-6">
-                            <label class="form-label small fw-bold text-muted mb-1"><i class="fas fa-clock me-1"></i>Sesi</label>
-                            <select name="f_sesi" class="form-select form-select-sm" onchange="this.form.submit()">
-                                <option value="">Semua</option>
-                                <?php foreach($allSesi as $s): ?>
-                                    <option value="<?= esc($s['id']) ?>" <?= ($f_sesi == $s['id'] ? 'selected' : '') ?>><?= esc($s['nama_sesi']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-lg-2 col-md-6 d-flex gap-2">
-                            <button type="submit" class="btn btn-primary btn-sm flex-grow-1 fw-bold">
-                                <i class="fas fa-filter me-1"></i> Terapkan
-                            </button>
-                            <a href="siswa.php?f_status=<?= urlencode($f_status) ?>" class="btn btn-light border btn-sm text-secondary" title="Reset Filter">
-                                <i class="fas fa-redo"></i>
-                            </a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Main Table Card -->
-            <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
-                <div class="card-header bg-white py-3 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom">
-                    <div class="d-flex align-items-center gap-2">
-                        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-list-ul text-primary me-2"></i>Daftar Siswa Terdaftar</h6>
-                        <span class="badge bg-light text-secondary border px-2 py-1"><?= number_format($totalData, 0, ',', '.') ?> siswa ditemukan</span>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <label class="small text-muted mb-0 fw-medium">Tampilkan per halaman:</label>
-                        <select class="form-select form-select-sm shadow-none" style="width: 85px;" onchange="changeLimit(this.value)" id="limitSelect">
+                    <div class="col-lg-2 col-md-3 col-6">
+                        <select name="f_jenjang" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">Semua Jenjang</option>
+                            <?php foreach($allJenjang as $j): ?>
+                                <option value="<?= esc($j) ?>" <?= ($f_jenjang == $j ? 'selected' : '') ?>>Jenjang <?= esc($j) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-lg-2 col-md-3 col-6">
+                        <select name="f_kelas" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">Semua Kelas</option>
+                            <?php foreach($allKelas as $k): ?>
+                                <option value="<?= esc($k['id']) ?>" <?= ($f_kelas == $k['id'] ? 'selected' : '') ?>><?= esc($k['jenjang']) ?> - <?= esc($k['nama_kelas']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-lg-2 col-md-3 col-6">
+                        <select name="f_agama" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">Semua Agama</option>
+                            <?php foreach($listAgama as $a): ?>
+                                <option value="<?= esc($a) ?>" <?= ($f_agama == $a ? 'selected' : '') ?>><?= esc($a) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-lg-1 col-md-3 col-6">
+                        <select name="f_sesi" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">Sesi</option>
+                            <?php foreach($allSesi as $s): ?>
+                                <option value="<?= esc($s['id']) ?>" <?= ($f_sesi == $s['id'] ? 'selected' : '') ?>><?= esc($s['nama_sesi']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-lg-1 col-md-3 col-6">
+                        <select name="limit" class="form-select form-select-sm" onchange="this.form.submit()">
                             <option value="25" <?= ($limit==25 ? 'selected' : '') ?>>25</option>
                             <option value="50" <?= ($limit==50 ? 'selected' : '') ?>>50</option>
                             <option value="100" <?= ($limit==100 ? 'selected' : '') ?>>100</option>
                             <option value="200" <?= ($limit==200 ? 'selected' : '') ?>>200</option>
                         </select>
                     </div>
+                    <div class="col-lg-1 col-md-3 col-6 d-flex gap-1">
+                        <button type="submit" class="btn btn-primary btn-sm flex-fill fw-bold shadow-sm" title="Terapkan Filter">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                        <a href="siswa.php?f_status=<?= urlencode($f_status) ?>" class="btn btn-outline-secondary btn-sm" title="Reset Filter">
+                            <i class="fas fa-redo"></i>
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Main Table Card -->
+            <div class="card card-dashboard p-0 shadow-sm border-0 overflow-hidden">
+                <div class="card-header bg-white py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom">
+                    <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                        <i class="fas fa-user-graduate text-primary"></i> Daftar Siswa Terdaftar
+                    </h6>
+                    <span class="badge bg-primary-subtle text-primary font-monospace rounded-pill px-3">
+                        Total: <?= number_format($totalData, 0, ',', '.') ?> Siswa
+                    </span>
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-modern align-middle mb-0" style="min-width: 900px;">
-                        <thead class="table-light text-secondary small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">
+                    <table class="table table-hover align-middle mb-0" style="min-width: 1050px;">
+                        <thead class="table-light text-secondary small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">>
                             <tr>
                                 <th class="text-center py-3" width="50">#</th>
                                 <th class="text-center py-3 d-none d-md-table-cell" width="60">Foto</th>

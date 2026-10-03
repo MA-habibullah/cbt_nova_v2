@@ -122,82 +122,123 @@ $listAdmin = $stmtAdmin->fetchAll();
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
-        <div class="container-fluid px-4 pt-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambah">
-                    <i class="fas fa-user-plus me-2"></i> Tambah Admin
-                </button>
-                
-                <form action="" method="GET" class="d-flex align-items-center">
-                    <label class="me-2 small fw-bold text-muted">Baris:</label>
-                    <select name="limit" class="form-select form-select-sm" onchange="this.form.submit()" style="width: 70px;">
-                        <option value="5" <?= esc($limit == 5 ? 'selected' : '') ?>>5</option>
-                        <option value="10" <?= esc($limit == 10 ? 'selected' : '') ?>>10</option>
-                        <option value="25" <?= esc($limit == 25 ? 'selected' : '') ?>>25</option>
-                    </select>
-                </form>
+        <div class="container-fluid px-4 pt-4 pb-4">
+            <!-- Action & Filter Toolbar -->
+            <div class="card card-dashboard p-3 mb-4 shadow-sm border-0">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambah">
+                            <i class="fas fa-user-plus me-2"></i> Tambah Admin
+                        </button>
+                    </div>
+                    
+                    <form action="" method="GET" class="d-flex align-items-center gap-2">
+                        <label class="small text-muted mb-0 fw-medium">Tampilkan:</label>
+                        <select name="limit" class="form-select form-select-sm" onchange="this.form.submit()" style="width: 80px;">
+                            <option value="5" <?= esc($limit == 5 ? 'selected' : '') ?>>5</option>
+                            <option value="10" <?= esc($limit == 10 ? 'selected' : '') ?>>10</option>
+                            <option value="25" <?= esc($limit == 25 ? 'selected' : '') ?>>25</option>
+                            <option value="50" <?= esc($limit == 50 ? 'selected' : '') ?>>50</option>
+                        </select>
+                    </form>
+                </div>
             </div>
 
-            <div class="card card-dashboard p-4 shadow-sm border-0">
+            <!-- Data Table Container -->
+            <div class="card card-dashboard p-0 shadow-sm border-0 overflow-hidden">
+                <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
+                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="fas fa-user-shield text-primary"></i> Daftar Pengguna Administrator &amp; Proktor
+                    </h6>
+                    <span class="badge bg-primary-subtle text-primary font-monospace rounded-pill px-3">
+                        Total: <?= number_format($totalData) ?> Admin
+                    </span>
+                </div>
+
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="bg-light">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-secondary small text-uppercase fw-semibold">
                             <tr>
-                                <th width="60">No</th>
+                                <th width="60" class="ps-4 text-center">No</th>
                                 <th>Nama Lengkap</th>
                                 <th>Username</th>
                                 <th>Email</th>
-                                <th>Role</th>
-                                <th class="text-center">Aksi</th>
+                                <th class="text-center" width="140">Role Akses</th>
+                                <th class="text-end pe-4" width="120">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php $no = $offset + 1; foreach ($listAdmin as $row): ?>
-                            <tr>
-                                <td><?= $no++ ?></td>
-                                <td class="fw-bold text-dark"><?= $row['nama_lengkap'] ?></td>
-                                <td><span class="badge bg-light text-muted border"><?= $row['username'] ?></span></td>
-                                <td><?= $row['email'] ?></td>
-                                <td>
-                                    <?php 
-                                    $roleBadge = [
-                                        'superadmin' => 'bg-danger',
-                                        'admin' => 'bg-primary',
-                                        'proktor' => 'bg-success'
-                                    ];
-                                    ?>
-                                    <span class="badge <?= $roleBadge[$row['role']] ?> px-3"><?= ucfirst($row['role']) ?></span>
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group shadow-sm">
-                                        <button class="btn btn-sm btn-outline-primary btn-edit" 
-                                                data-bs-toggle="modal" data-bs-target="#modalEdit"
-                                                data-id="<?= esc($row['id']) ?>"
-                                                data-nama="<?= esc($row['nama_lengkap']) ?>"
-                                                data-email="<?= esc($row['email']) ?>"
-                                                data-role="<?= esc($row['role']) ?>">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <a href="?hapus=<?= esc($row['id']) ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Hapus pengguna ini?')">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
+                            <?php if (empty($listAdmin)): ?>
+                                <tr><td colspan="6" class="text-center py-4 text-muted">Data pengguna admin tidak ditemukan.</td></tr>
+                            <?php else: ?>
+                                <?php $no = $offset + 1; foreach ($listAdmin as $row): ?>
+                                <tr>
+                                    <td class="ps-4 text-center text-muted"><?= $no++ ?></td>
+                                    <td class="fw-bold text-dark"><?= htmlspecialchars($row['nama_lengkap']) ?></td>
+                                    <td><span class="badge bg-primary-subtle text-primary font-monospace px-3 py-2"><?= htmlspecialchars($row['username']) ?></span></td>
+                                    <td class="text-muted small"><?= htmlspecialchars($row['email'] ?: '-') ?></td>
+                                    <td class="text-center">
+                                        <?php 
+                                        $roleBadge = [
+                                            'superadmin' => 'bg-danger-subtle text-danger',
+                                            'admin'      => 'bg-primary-subtle text-primary',
+                                            'proktor'    => 'bg-success-subtle text-success'
+                                        ];
+                                        $cls = $roleBadge[$row['role']] ?? 'bg-secondary-subtle text-secondary';
+                                        ?>
+                                        <span class="badge <?= $cls ?> rounded-pill px-3 py-2"><?= ucfirst($row['role']) ?></span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="btn-group shadow-sm">
+                                            <button class="btn btn-sm btn-outline-primary btn-edit" 
+                                                    data-bs-toggle="modal" data-bs-target="#modalEdit"
+                                                    data-id="<?= esc($row['id']) ?>"
+                                                    data-nama="<?= esc($row['nama_lengkap']) ?>"
+                                                    data-email="<?= esc($row['email']) ?>"
+                                                    data-role="<?= esc($row['role']) ?>"
+                                                    title="Edit Admin">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <a href="?hapus=<?= esc($row['id']) ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Apakah Anda yakin ingin menghapus pengguna admin ini?')" title="Hapus">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
 
-                <nav class="mt-4">
-                    <ul class="pagination pagination-sm justify-content-end">
-                        <?php for ($i = 1; $i <= $pages; $i++): ?>
-                            <li class="page-item <?= ($page == $i) ? 'active' : '' ?>">
-                                <a class="page-link" href="?page=<?= esc($i) ?>&limit=<?= esc($limit) ?>"><?= esc($i) ?></a>
+                <?php if ($totalData > 0): ?>
+                <div class="card-footer bg-white py-3 px-4 d-flex flex-wrap justify-content-between align-items-center border-top">
+                    <div class="text-muted small">
+                        Menampilkan <strong><?= $offset + 1 ?></strong> - <strong><?= min($offset + $limit, $totalData) ?></strong> dari <strong><?= $totalData ?></strong> data
+                    </div>
+                    <?php if ($pages > 1): ?>
+                    <nav aria-label="Pagination">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="?page=<?= esc($page - 1) ?>&limit=<?= esc($limit) ?>">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
                             </li>
-                        <?php endfor; ?>
-                    </ul>
-                </nav>
+                            <?php for ($i = 1; $i <= $pages; $i++): ?>
+                                <li class="page-item <?= ($page == $i) ? 'active' : '' ?>">
+                                    <a class="page-link" href="?page=<?= esc($i) ?>&limit=<?= esc($limit) ?>"><?= esc($i) ?></a>
+                                </li>
+                            <?php endfor; ?>
+                            <li class="page-item <?= ($page >= $pages) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="?page=<?= esc($page + 1) ?>&limit=<?= esc($limit) ?>">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
