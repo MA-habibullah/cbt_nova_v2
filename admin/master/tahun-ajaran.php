@@ -145,107 +145,128 @@ if (isset($_POST['update'])) {
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
-<div class="container-fluid px-4 pt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambah">
-            <i class="fas fa-plus me-2"></i> Tambah Tahun Ajaran
-        </button>
-        
-        <form action="" method="GET" class="d-flex align-items-center">
-            <label class="me-2 small fw-bold text-muted">Tampilkan:</label>
-            <select name="limit" class="form-select form-select-sm shadow-sm" onchange="this.form.submit()" style="width: 80px;">
-                <option value="5" <?= esc($limit == 5 ? 'selected' : '') ?>>5</option>
-                <option value="10" <?= esc($limit == 10 ? 'selected' : '') ?>>10</option>
-                <option value="25" <?= esc($limit == 25 ? 'selected' : '') ?>>25</option>
-                <option value="50" <?= esc($limit == 50 ? 'selected' : '') ?>>50</option>
-            </select>
-        </form>
-    </div>
-
-        <div class="card card-dashboard p-4 shadow-sm border-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="bg-light">
-                        <tr>
-                            <th width="50">No</th>
-                            <th>Tahun Ajaran</th>
-                            <th>Semester</th>
-                            <th class="text-center">Status</th>
-                            <th class="text-center">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if(empty($listTahun)): ?>
-                            <tr><td colspan="5" class="text-center text-muted">Data tidak ditemukan.</td></tr>
-                        <?php else: ?>
-                            <?php $no = $start + 1; foreach ($listTahun as $row): ?>
-                            <tr>
-                                <td><?= $no++ ?></td>
-                                <td class="fw-bold text-dark"><?= $row['tahun'] ?></td>
-                                <td>
-                                    <span class="badge <?= $row['semester'] == 'genap' ? 'bg-info-subtle text-info border border-info-subtle' : 'bg-warning-subtle text-warning border border-warning-subtle' ?> px-3">
-                                        <?= ucfirst($row['semester']) ?>
-                                    </span>
-                                </td>
-                                <td class="text-center">
-                                    <?php if ($row['is_aktif'] == 1): ?>
-                                        <span class="badge bg-success shadow-sm px-3"><i class="fas fa-check-circle me-1"></i> Aktif</span>
-                                    <?php else: ?>
-                                        <span class="badge bg-light text-muted border px-3">Non-Aktif</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group shadow-sm">
-                                        <button class="btn btn-sm btn-white text-primary border btn-edit-ta" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#modalEditTA"
-                                                data-id="<?= esc($row['id']) ?>"
-                                                data-tahun="<?= esc($row['tahun']) ?>"
-                                                data-semester="<?= esc($row['semester']) ?>"
-                                                title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-
-                                        <?php if ($row['is_aktif'] == 0): ?>
-                                            <a href="?aktifkan=<?= esc($row['id']) ?>" class="btn btn-sm btn-white text-success border" title="Aktifkan">
-                                                <i class="fas fa-power-off"></i>
-                                            </a>
-                                        <?php endif; ?>
-                                        
-                                        <a href="?hapus=<?= esc($row['id']) ?>" class="btn btn-sm btn-white text-danger border" onclick="return confirm('Hapus data ini?')" title="Hapus">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="d-flex justify-content-between align-items-center mt-4">
-                <p class="small text-muted m-0">
-                    Menampilkan <?= $start + 1 ?> sampai <?= min($start + $limit, $totalData) ?> dari <?= $totalData ?> data
-                </p>
-                <nav>
-                    <ul class="pagination pagination-sm m-0">
-                        <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
-                            <a class="page-link shadow-sm" href="?page=<?= esc($page - 1) ?>&limit=<?= esc($limit) ?>">Previous</a>
-                        </li>
-                        <?php for ($i = 1; $i <= $pages; $i++): ?>
-                            <li class="page-item <?= ($page == $i) ? 'active' : '' ?>">
-                                <a class="page-link shadow-sm" href="?page=<?= esc($i) ?>&limit=<?= esc($limit) ?>"><?= esc($i) ?></a>
-                            </li>
-                        <?php endfor; ?>
-                        <li class="page-item <?= ($page >= $pages) ? 'disabled' : '' ?>">
-                            <a class="page-link shadow-sm" href="?page=<?= esc($page + 1) ?>&limit=<?= esc($limit) ?>">Next</a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
+<div class="container-fluid px-4 pt-4 pb-4">
+    <!-- Action & Filter Toolbar -->
+    <div class="card card-dashboard p-3 mb-4 shadow-sm border-0">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambah">
+                <i class="fas fa-plus me-2"></i> Tambah Tahun Ajaran
+            </button>
+            
+            <form action="" method="GET" class="d-flex align-items-center gap-2">
+                <label class="small text-muted mb-0 fw-medium">Tampilkan:</label>
+                <select name="limit" class="form-select form-select-sm" onchange="this.form.submit()" style="width: 80px;">
+                    <option value="5" <?= esc($limit == 5 ? 'selected' : '') ?>>5</option>
+                    <option value="10" <?= esc($limit == 10 ? 'selected' : '') ?>>10</option>
+                    <option value="25" <?= esc($limit == 25 ? 'selected' : '') ?>>25</option>
+                    <option value="50" <?= esc($limit == 50 ? 'selected' : '') ?>>50</option>
+                </select>
+            </form>
         </div>
     </div>
+
+    <!-- Data Table Container -->
+    <div class="card card-dashboard p-0 shadow-sm border-0 overflow-hidden">
+        <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
+            <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                <i class="fas fa-calendar-alt text-primary"></i> Daftar Tahun Ajaran
+            </h6>
+            <span class="badge bg-primary-subtle text-primary font-monospace rounded-pill px-3">
+                Total: <?= number_format($totalData) ?> Data
+            </span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-secondary small text-uppercase fw-semibold">
+                    <tr>
+                        <th width="60" class="ps-4 text-center">No</th>
+                        <th>Tahun Ajaran</th>
+                        <th>Semester</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-end pe-4">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if(empty($listTahun)): ?>
+                        <tr><td colspan="5" class="text-center text-muted py-4">Data tahun ajaran tidak ditemukan.</td></tr>
+                    <?php else: ?>
+                        <?php $no = $start + 1; foreach ($listTahun as $row): ?>
+                        <tr>
+                            <td class="ps-4 text-center text-muted"><?= $no++ ?></td>
+                            <td class="fw-bold text-dark"><?= htmlspecialchars($row['tahun']) ?></td>
+                            <td>
+                                <span class="badge <?= $row['semester'] == 'genap' ? 'bg-info-subtle text-info-emphasis' : 'bg-warning-subtle text-warning-emphasis' ?> rounded-pill px-3">
+                                    Semester <?= ucfirst($row['semester']) ?>
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <?php if ($row['is_aktif'] == 1): ?>
+                                    <span class="badge bg-success-subtle text-success rounded-pill px-3"><i class="fas fa-check-circle me-1"></i> Aktif</span>
+                                <?php else: ?>
+                                    <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3">Non-Aktif</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="btn-group shadow-sm">
+                                    <button class="btn btn-sm btn-outline-primary btn-edit-ta" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalEditTA"
+                                            data-id="<?= esc($row['id']) ?>"
+                                            data-tahun="<?= esc($row['tahun']) ?>"
+                                            data-semester="<?= esc($row['semester']) ?>"
+                                            title="Edit Tahun Ajaran">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+
+                                    <?php if ($row['is_aktif'] == 0): ?>
+                                        <a href="?aktifkan=<?= esc($row['id']) ?>" class="btn btn-sm btn-outline-success" title="Aktifkan Periode Ini">
+                                            <i class="fas fa-power-off"></i>
+                                        </a>
+                                    <?php endif; ?>
+                                    
+                                    <a href="?hapus=<?= esc($row['id']) ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Apakah Anda yakin ingin menghapus data tahun ajaran ini?')" title="Hapus">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <?php if ($totalData > 0): ?>
+        <div class="card-footer bg-white py-3 px-4 d-flex flex-wrap justify-content-between align-items-center border-top">
+            <div class="text-muted small">
+                Menampilkan <strong><?= $start + 1 ?></strong> - <strong><?= min($start + $limit, $totalData) ?></strong> dari <strong><?= $totalData ?></strong> data
+            </div>
+            <?php if ($pages > 1): ?>
+            <nav aria-label="Pagination">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
+                        <a class="page-link" href="?page=<?= esc($page - 1) ?>&limit=<?= esc($limit) ?>">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    <?php for ($i = 1; $i <= $pages; $i++): ?>
+                        <li class="page-item <?= ($page == $i) ? 'active' : '' ?>">
+                            <a class="page-link" href="?page=<?= esc($i) ?>&limit=<?= esc($limit) ?>"><?= esc($i) ?></a>
+                        </li>
+                    <?php endfor; ?>
+                    <li class="page-item <?= ($page >= $pages) ? 'disabled' : '' ?>">
+                        <a class="page-link" href="?page=<?= esc($page + 1) ?>&limit=<?= esc($limit) ?>">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+    </div>
+</div>
 </div>
 
 <div class="modal fade" id="modalEditTA" tabindex="-1">

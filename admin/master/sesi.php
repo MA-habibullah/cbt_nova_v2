@@ -136,90 +136,133 @@ $listSesi = $pdo->query("
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
-        <div class="container-fluid px-4 pt-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambah">
-                    <i class="fas fa-plus me-2"></i> Tambah Sesi
-                </button>
-                
-                <form action="" method="GET" class="d-flex align-items-center">
-                    <label class="me-2 small fw-bold text-muted">Baris:</label>
-                    <select name="limit" class="form-select form-select-sm" onchange="this.form.submit()" style="width: 70px;">
-                        <option value="5" <?= esc($limit == 5 ? 'selected' : '') ?>>5</option>
-                        <option value="10" <?= esc($limit == 10 ? 'selected' : '') ?>>10</option>
-                        <option value="25" <?= esc($limit == 25 ? 'selected' : '') ?>>25</option>
-                    </select>
-                </form>
+        <div class="container-fluid px-4 pt-4 pb-4">
+            <!-- Action & Filter Toolbar -->
+            <div class="card card-dashboard p-3 mb-4 shadow-sm border-0">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambah">
+                            <i class="fas fa-plus me-2"></i> Tambah Sesi
+                        </button>
+                        <a href="assign-sesi.php" class="btn btn-outline-info shadow-sm">
+                            <i class="fas fa-user-check me-2"></i> Atur Pembagian Sesi
+                        </a>
+                    </div>
+                    
+                    <form action="" method="GET" class="d-flex align-items-center gap-2">
+                        <label class="small text-muted mb-0 fw-medium">Tampilkan:</label>
+                        <select name="limit" class="form-select form-select-sm" onchange="this.form.submit()" style="width: 80px;">
+                            <option value="5" <?= esc($limit == 5 ? 'selected' : '') ?>>5</option>
+                            <option value="10" <?= esc($limit == 10 ? 'selected' : '') ?>>10</option>
+                            <option value="25" <?= esc($limit == 25 ? 'selected' : '') ?>>25</option>
+                            <option value="50" <?= esc($limit == 50 ? 'selected' : '') ?>>50</option>
+                        </select>
+                    </form>
+                </div>
             </div>
 
-            <div class="card card-dashboard p-4 shadow-sm border-0">
+            <!-- Data Table Container -->
+            <div class="card card-dashboard p-0 shadow-sm border-0 overflow-hidden">
+                <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
+                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="fas fa-clock text-primary"></i> Daftar Sesi Waktu Ujian
+                    </h6>
+                    <span class="badge bg-primary-subtle text-primary font-monospace rounded-pill px-3">
+                        Total: <?= number_format($totalData) ?> Sesi
+                    </span>
+                </div>
+
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="bg-light">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-secondary small text-uppercase fw-semibold">
                             <tr>
-                                <th width="60">No</th>
+                                <th width="60" class="ps-4 text-center">No</th>
                                 <th>Nama Sesi</th>
                                 <th>Waktu Mulai</th>
                                 <th>Waktu Selesai</th>
-                                <th class="text-center">Siswa</th>
+                                <th class="text-center">Peserta Terdaftar</th>
                                 <th class="text-center">Status</th>
-                                <th class="text-center">Aksi</th>
+                                <th class="text-end pe-4">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php $no = $offset + 1; foreach ($listSesi as $row): ?>
-                            <tr>
-                                <td><?= $no++ ?></td>
-                                <td class="fw-bold"><?= $row['nama_sesi'] ?></td>
-                                <td><span class="badge bg-light text-dark border"><?= date('H:i', strtotime($row['jam_mulai'])) ?></span></td>
-                                <td><span class="badge bg-light text-dark border"><?= date('H:i', strtotime($row['jam_selesai'])) ?></span></td>
-                                <td class="text-center">
-                                    <a href="assign-sesi.php" class="badge bg-info-subtle text-info border border-info-subtle text-decoration-none">
-                                        <?= $row['jumlah_siswa'] ?> siswa
-                                    </a>
-                                </td>
-                                <td class="text-center">
-                                    <a href="?toggle=<?= esc($row['id']) ?>&s=<?= esc($row['is_aktif']) ?>" class="text-decoration-none">
-                                        <?php if ($row['is_aktif'] == 1): ?>
-                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3">Aktif</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3">Non-Aktif</span>
-                                        <?php endif; ?>
-                                    </a>
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group shadow-sm">
-                                        <a href="assign-sesi.php" class="btn btn-sm btn-outline-info" title="Assign Siswa ke Sesi Ini">
-                                            <i class="fas fa-users"></i>
+                            <?php if (empty($listSesi)): ?>
+                                <tr><td colspan="7" class="text-center py-4 text-muted">Data sesi belum tersedia.</td></tr>
+                            <?php else: ?>
+                                <?php $no = $offset + 1; foreach ($listSesi as $row): ?>
+                                <tr>
+                                    <td class="ps-4 text-center text-muted"><?= $no++ ?></td>
+                                    <td class="fw-bold text-dark"><?= htmlspecialchars($row['nama_sesi']) ?></td>
+                                    <td><span class="badge bg-light text-dark font-monospace border px-3"><?= date('H:i', strtotime($row['jam_mulai'])) ?> WIB</span></td>
+                                    <td><span class="badge bg-light text-dark font-monospace border px-3"><?= date('H:i', strtotime($row['jam_selesai'])) ?> WIB</span></td>
+                                    <td class="text-center">
+                                        <a href="assign-sesi.php" class="badge bg-info-subtle text-info-emphasis rounded-pill px-3 py-2 text-decoration-none shadow-sm">
+                                            <i class="fas fa-users me-1"></i> <?= (int)$row['jumlah_siswa'] ?> Siswa
                                         </a>
-                                        <button class="btn btn-sm btn-outline-primary btn-edit" 
-                                                data-bs-toggle="modal" data-bs-target="#modalEdit"
-                                                data-id="<?= esc($row['id']) ?>"
-                                                data-nama="<?= esc($row['nama_sesi']) ?>"
-                                                data-mulai="<?= esc($row['jam_mulai']) ?>"
-                                                data-selesai="<?= esc($row['jam_selesai']) ?>">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <a href="?hapus=<?= esc($row['id']) ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Hapus sesi ini?')">
-                                            <i class="fas fa-trash"></i>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="?toggle=<?= esc($row['id']) ?>&s=<?= esc($row['is_aktif']) ?>" class="text-decoration-none" title="Klik untuk ubah status">
+                                            <?php if ($row['is_aktif'] == 1): ?>
+                                                <span class="badge bg-success-subtle text-success rounded-pill px-3"><i class="fas fa-check-circle me-1"></i> Aktif</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-danger-subtle text-danger rounded-pill px-3"><i class="fas fa-times-circle me-1"></i> Non-Aktif</span>
+                                            <?php endif; ?>
                                         </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="btn-group shadow-sm">
+                                            <a href="assign-sesi.php" class="btn btn-sm btn-outline-info" title="Assign Siswa ke Sesi Ini">
+                                                <i class="fas fa-users"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-primary btn-edit" 
+                                                    data-bs-toggle="modal" data-bs-target="#modalEdit"
+                                                    data-id="<?= esc($row['id']) ?>"
+                                                    data-nama="<?= esc($row['nama_sesi']) ?>"
+                                                    data-mulai="<?= esc($row['jam_mulai']) ?>"
+                                                    data-selesai="<?= esc($row['jam_selesai']) ?>"
+                                                    title="Edit Sesi">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <a href="?hapus=<?= esc($row['id']) ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Apakah Anda yakin ingin menghapus sesi ujian ini?')" title="Hapus">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
 
-                <nav class="mt-4">
-                    <ul class="pagination pagination-sm justify-content-end">
-                        <?php for ($i = 1; $i <= $pages; $i++): ?>
-                            <li class="page-item <?= ($page == $i) ? 'active' : '' ?>">
-                                <a class="page-link" href="?page=<?= esc($i) ?>&limit=<?= esc($limit) ?>"><?= esc($i) ?></a>
+                <?php if ($totalData > 0): ?>
+                <div class="card-footer bg-white py-3 px-4 d-flex flex-wrap justify-content-between align-items-center border-top">
+                    <div class="text-muted small">
+                        Menampilkan <strong><?= $offset + 1 ?></strong> - <strong><?= min($offset + $limit, $totalData) ?></strong> dari <strong><?= $totalData ?></strong> data
+                    </div>
+                    <?php if ($pages > 1): ?>
+                    <nav aria-label="Pagination">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="?page=<?= esc($page - 1) ?>&limit=<?= esc($limit) ?>">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
                             </li>
-                        <?php endfor; ?>
-                    </ul>
-                </nav>
+                            <?php for ($i = 1; $i <= $pages; $i++): ?>
+                                <li class="page-item <?= ($page == $i) ? 'active' : '' ?>">
+                                    <a class="page-link" href="?page=<?= esc($i) ?>&limit=<?= esc($limit) ?>"><?= esc($i) ?></a>
+                                </li>
+                            <?php endfor; ?>
+                            <li class="page-item <?= ($page >= $pages) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="?page=<?= esc($page + 1) ?>&limit=<?= esc($limit) ?>">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

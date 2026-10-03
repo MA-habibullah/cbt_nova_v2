@@ -148,112 +148,133 @@ if (isset($_GET['toggle_id']) && isset($_GET['current_status'])) {
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
-        <div class="container-fluid px-4 pt-4">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body">
-                    <form action="" method="GET" class="row g-3 align-items-end">
-                        <div class="col-md-3">
-                            <label class="small fw-bold">Filter Status</label>
-                            <select name="f_status" class="form-select bg-primary-subtle fw-bold">
-                                <option value="1" <?= esc($f_status == '1'?'selected':'') ?>>Mapel Aktif</option>
-                                <option value="0" <?= esc($f_status == '0'?'selected':'') ?>>Mapel Non-Aktif</option>
-                                <option value="" <?= esc($f_status == ''?'selected':'') ?>>Semua Mapel</option>
+        <div class="container-fluid px-4 pt-4 pb-4">
+            <!-- Action & Filter Toolbar -->
+            <div class="card card-dashboard p-3 mb-4 shadow-sm border-0">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambah">
+                            <i class="fas fa-plus me-2"></i> Tambah Mapel
+                        </button>
+                    </div>
+                    
+                    <form action="" method="GET" class="d-flex flex-wrap align-items-center gap-2">
+                        <select name="f_status" class="form-select form-select-sm" style="width: 170px;" onchange="this.form.submit()">
+                            <option value="" <?= esc($f_status === '' ? 'selected' : '') ?>>-- Semua Status --</option>
+                            <option value="1" <?= esc($f_status === '1' ? 'selected' : '') ?>>Mapel Aktif</option>
+                            <option value="0" <?= esc($f_status === '0' ? 'selected' : '') ?>>Mapel Non-Aktif</option>
+                        </select>
+                        <div class="d-flex align-items-center gap-1">
+                            <label class="small text-muted mb-0 fw-medium">Tampilkan:</label>
+                            <select name="limit" class="form-select form-select-sm" style="width: 80px;" onchange="this.form.submit()">
+                                <option value="10" <?= esc($limit == 10 ? 'selected' : '') ?>>10</option>
+                                <option value="25" <?= esc($limit == 25 ? 'selected' : '') ?>>25</option>
+                                <option value="50" <?= esc($limit == 50 ? 'selected' : '') ?>>50</option>
+                                <option value="100" <?= esc($limit == 100 ? 'selected' : '') ?>>100</option>
                             </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="small fw-bold">Limit</label>
-                            <select name="limit" class="form-select">
-                                <option value="10" <?= esc($limit==10?'selected':'') ?>>10</option>
-                                <option value="50" <?= esc($limit==50?'selected':'') ?>>50</option>
-                                <option value="100" <?= esc($limit==100?'selected':'') ?>>100</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary w-100">Terapkan</button>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <div class="mb-3">
-                <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambah">
-                    <i class="fas fa-plus-circle me-2"></i> Tambah Mapel
-                </button>
-            </div>
+            <!-- Data Table Container -->
+            <div class="card card-dashboard p-0 shadow-sm border-0 overflow-hidden">
+                <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
+                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="fas fa-book-open text-primary"></i> Daftar Mata Pelajaran
+                    </h6>
+                    <span class="badge bg-primary-subtle text-primary font-monospace rounded-pill px-3">
+                        Total: <?= number_format($totalData) ?> Mapel
+                    </span>
+                </div>
 
-            <div class="card border-0 shadow-sm">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
+                        <thead class="table-light text-secondary small text-uppercase fw-semibold">
                             <tr>
-                                <th width="60" class="ps-4">No</th>
-                                <th>Kode Mapel</th>
+                                <th width="60" class="ps-4 text-center">No</th>
+                                <th width="180">Kode Mapel</th>
                                 <th>Nama Mata Pelajaran</th>
-                                <th>Status</th>
-                                <th class="text-center">Aksi</th>
+                                <th class="text-center" width="140">Status</th>
+                                <th class="text-end pe-4" width="120">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php $no = $offset + 1; foreach($listMapel as $row): ?>
-                            <tr>
-                                <td class="ps-4"><?= $no++ ?></td>
-                                <td><span class="badge bg-dark px-3"><?= $row['kode_mapel'] ?></span></td>
-                                <td class="fw-bold"><?= $row['nama_mapel'] ?></td>
-                                <td>
-                                    <?php if($row['is_aktif']): ?>
-                                        <a href="?toggle_id=<?= esc($row['id']) ?>&current_status=1&f_status=<?= esc($f_status) ?>" 
-                                        class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 text-decoration-none"
-                                        onclick="return confirm('Non-aktifkan mata pelajaran ini?')">
-                                            <i class="fas fa-check-circle me-1"></i> Aktif
-                                        </a>
-                                    <?php else: ?>
-                                        <a href="?toggle_id=<?= esc($row['id']) ?>&current_status=0&f_status=<?= esc($f_status) ?>" 
-                                        class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 text-decoration-none"
-                                        onclick="return confirm('Aktifkan mata pelajaran ini?')">
-                                            <i class="fas fa-times-circle me-1"></i> Non-Aktif
-                                        </a>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group shadow-sm">
-                                        <button class="btn btn-sm btn-outline-warning btn-edit" 
-                                            data-bs-toggle="modal" data-bs-target="#modalEdit"
-                                            data-id="<?= esc($row['id']) ?>"
-                                            data-nama="<?= esc($row['nama_mapel']) ?>"
-                                            data-kode="<?= esc($row['kode_mapel']) ?>"
-                                            data-status="<?= esc($row['is_aktif']) ?>">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <a href="?hapus=<?= esc($row['id']) ?>" class="btn btn-sm btn-outline-danger" 
-                                        onclick="return confirm('Hapus mapel ini?')">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                            
-                            <?php if(empty($listMapel)): ?>
-                            <tr>
-                                <td colspan="5" class="text-center py-4 text-muted">Tidak ada data mata pelajaran.</td>
-                            </tr>
+                            <?php if (empty($listMapel)): ?>
+                                <tr><td colspan="5" class="text-center py-4 text-muted">Data mata pelajaran tidak ditemukan.</td></tr>
+                            <?php else: ?>
+                                <?php $no = $offset + 1; foreach($listMapel as $row): ?>
+                                <tr>
+                                    <td class="ps-4 text-center text-muted"><?= $no++ ?></td>
+                                    <td><span class="badge bg-primary-subtle text-primary font-monospace px-3 py-2"><?= htmlspecialchars($row['kode_mapel']) ?></span></td>
+                                    <td class="fw-bold text-dark"><?= htmlspecialchars($row['nama_mapel']) ?></td>
+                                    <td class="text-center">
+                                        <?php if($row['is_aktif']): ?>
+                                            <a href="?toggle_id=<?= esc($row['id']) ?>&current_status=1&f_status=<?= esc($f_status) ?>&limit=<?= esc($limit) ?>&page=<?= esc($page) ?>" 
+                                               class="badge bg-success-subtle text-success rounded-pill px-3 py-2 text-decoration-none"
+                                               onclick="return confirm('Non-aktifkan mata pelajaran ini?')">
+                                                <i class="fas fa-check-circle me-1"></i> Aktif
+                                            </a>
+                                        <?php else: ?>
+                                            <a href="?toggle_id=<?= esc($row['id']) ?>&current_status=0&f_status=<?= esc($f_status) ?>&limit=<?= esc($limit) ?>&page=<?= esc($page) ?>" 
+                                               class="badge bg-danger-subtle text-danger rounded-pill px-3 py-2 text-decoration-none"
+                                               onclick="return confirm('Aktifkan mata pelajaran ini?')">
+                                                <i class="fas fa-times-circle me-1"></i> Non-Aktif
+                                            </a>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="btn-group shadow-sm">
+                                            <button class="btn btn-sm btn-outline-primary btn-edit" 
+                                                data-bs-toggle="modal" data-bs-target="#modalEdit"
+                                                data-id="<?= esc($row['id']) ?>"
+                                                data-nama="<?= esc($row['nama_mapel']) ?>"
+                                                data-kode="<?= esc($row['kode_mapel']) ?>"
+                                                data-status="<?= esc($row['is_aktif']) ?>"
+                                                title="Edit Mapel">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <a href="?hapus=<?= esc($row['id']) ?>" class="btn btn-sm btn-outline-danger" 
+                                               onclick="return confirm('Apakah Anda yakin ingin menghapus mata pelajaran ini?')" title="Hapus">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
                             <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
 
-                <div class="p-4 d-flex justify-content-between align-items-center">
-                    <small class="text-muted">Menampilkan <?= count($listMapel) ?> dari <?= $totalData ?> mapel</small>
-                    <nav>
+                <?php if ($totalData > 0): ?>
+                <div class="card-footer bg-white py-3 px-4 d-flex flex-wrap justify-content-between align-items-center border-top">
+                    <div class="text-muted small">
+                        Menampilkan <strong><?= $offset + 1 ?></strong> - <strong><?= min($offset + $limit, $totalData) ?></strong> dari <strong><?= $totalData ?></strong> data
+                    </div>
+                    <?php if ($pages > 1): ?>
+                    <nav aria-label="Pagination">
                         <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="?page=<?= esc($page - 1) ?>&limit=<?= esc($limit) ?>&f_status=<?= esc($f_status) ?>">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
                             <?php for($i=1; $i<=$pages; $i++): ?>
-                                <li class="page-item <?= ($page == $i)?'active':'' ?>">
+                                <li class="page-item <?= ($page == $i) ? 'active' : '' ?>">
                                     <a class="page-link" href="?page=<?= esc($i) ?>&limit=<?= esc($limit) ?>&f_status=<?= esc($f_status) ?>"><?= esc($i) ?></a>
                                 </li>
                             <?php endfor; ?>
+                            <li class="page-item <?= ($page >= $pages) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="?page=<?= esc($page + 1) ?>&limit=<?= esc($limit) ?>&f_status=<?= esc($f_status) ?>">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
                         </ul>
                     </nav>
+                    <?php endif; ?>
                 </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
