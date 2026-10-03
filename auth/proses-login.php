@@ -85,15 +85,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $currentLock = $stmtLock->fetch();
 
             if ($currentLock) {
-                // Jika ada kunci, bandingkan sidik jarinya
-                // if ($currentLock['device_id'] !== $deviceFingerprint) {
-                //     // Perangkat berbeda -> Tolak akses
-                //     header("Location: " . BASE_URL . "index.php?pesan=device_locked");
-                //     exit;
-                // }
-                header("Location: " . BASE_URL . "index.php?pesan=device_locked");
-                exit;
-                // Jika perangkat sama, biarkan lewat (tidak perlu insert baru)
+                // Jika ada kunci aktif, bandingkan sidik jarinya
+                if ($currentLock['device_id'] !== $deviceFingerprint) {
+                    // Perangkat berbeda -> Tolak akses (Hubungi proktor untuk reset)
+                    header("Location: " . BASE_URL . "index.php?pesan=device_locked");
+                    exit;
+                }
+                // Jika perangkat sama, perbarui timestamp & IP terbaru
+                $pdo->prepare("UPDATE cbt_device_locks SET ip_address = ?, user_agent = ?, created_at = NOW() WHERE id = ?")
+                    ->execute([$ipAddress, $userAgent, $currentLock['id']]);
+                $newLockId = $currentLock['id'];
             } else {
                 // Jika tidak ada kunci (atau sudah lewat 24 jam), bersihkan yang lama & buat kunci baru
                 $pdo->prepare("DELETE FROM cbt_device_locks WHERE student_id = ?")->execute([$user['id']]);
