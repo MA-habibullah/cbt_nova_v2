@@ -475,7 +475,6 @@ $exam_package_json = json_encode([
     }
 
     var _securityViolationCount = 0;
-    var _hasReceivedSecurityWarning = false;
     var _isSecurityModalOpen = false;
     var _lastAwayTimestamp = null;
     var _lastAwayReason = null;
@@ -489,7 +488,7 @@ $exam_package_json = json_encode([
         if (_internalActionTimer) clearTimeout(_internalActionTimer);
         _internalActionTimer = setTimeout(function() {
             _isInternalAction = false;
-        }, durationMs || 1000);
+        }, durationMs || 300);
     }
 
     function isExamDrawerOpen() {
@@ -497,12 +496,14 @@ $exam_package_json = json_encode([
     }
 
     function activateBlankShield(reason) {
-        // Abaikan jika sedang melakukan aksi internal atau drawer daftar soal sedang terbuka
+        if (_finishCalled) return;
+        if (_isSecurityModalOpen) return;
+        // Abaikan jika sedang melakukan aksi internal (klik tombol soal di dalam aplikasi) atau drawer daftar soal sedang terbuka
         if (_isInternalAction || isExamDrawerOpen()) return;
 
         _shieldActive = true;
         _lastAwayTimestamp = Date.now();
-        _lastAwayReason = reason || 'Screenshot / App Inactive';
+        _lastAwayReason = reason || 'Pindah Aplikasi / Tangkapan Layar';
         $('#screenshot-shield, #privacy-screen').show();
         document.body.style.opacity = "0";
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -522,46 +523,17 @@ $exam_package_json = json_encode([
         if (_finishCalled) return;
         if (!_lastAwayTimestamp) return;
 
-        var durationAway = Date.now() - _lastAwayTimestamp;
         _lastAwayTimestamp = null;
 
-        // Abaikan jika sedang ada aksi internal atau drawer nomor soal aktif
-        if (_isInternalAction || isExamDrawerOpen()) return;
+        // Abaikan jika modal pelanggaran sudah terbuka atau sedang berada di drawer nomor soal
         if (_isSecurityModalOpen) return;
-
-        // Abaikan jika durasi hilang fokus terlalu singkat (< 600ms) untuk event blur biasa / tap glitch
-        if (durationAway < 600 && (!triggerType || triggerType.indexOf('Shortcut') === -1)) return;
-
-        // Jika dokumen sebenarnya masih fokus dan bukan shortcut screenshot nyata, abaikan
-        if (document.hasFocus && document.hasFocus() && (!triggerType || triggerType.indexOf('Shortcut') === -1)) return;
+        if (_isInternalAction || isExamDrawerOpen()) return;
 
         var violationType = _lastAwayReason || triggerType || 'Pindah Aplikasi / Tangkapan Layar';
 
-        // 🛡️ KEBIJAKAN "PERINGATAN DULU, JANGAN LANGSUNG PELANGGARAN" (WARNING FIRST)
-        if (!_hasReceivedSecurityWarning) {
-            _hasReceivedSecurityWarning = true;
-            _isSecurityModalOpen = true;
-
-            Swal.fire({
-                title: 'Peringatan Keamanan Ujian!',
-                html: '<div class="text-start small text-secondary">' +
-                      '<p class="mb-2">Terdeteksi upaya <b>tangkapan layar (screenshot)</b> atau aplikasi kehilangan fokus.</p>' +
-                      '<p class="mb-0">Harap tetap berada di halaman ujian dan <b>jangan mengambil tangkapan layar</b>. Percobaan berulang akan mengunci akun ujian Anda.</p>' +
-                      '</div>',
-                icon: 'warning',
-                confirmButtonColor: '#4e73df',
-                confirmButtonText: 'Saya Mengerti & Lanjutkan Ujian',
-                allowOutsideClick: false,
-                allowEscapeKey: false
-            }).then(function() {
-                _isSecurityModalOpen = false;
-                setInternalActionGuard(1200);
-            });
-        } else {
-            // Percobaan berikutnya setelah peringatan pertama → Catat pelanggaran ke server
-            _isSecurityModalOpen = true;
-            logSecurityViolation(violationType);
-        }
+        // 🚨 STRICT MODE: Langsung catat pelanggaran ke database server dan tampilkan peringatan
+        _isSecurityModalOpen = true;
+        logSecurityViolation(violationType);
     }
 
     function logSecurityViolation(type) {
@@ -569,9 +541,11 @@ $exam_package_json = json_encode([
             _isSecurityModalOpen = false;
             return;
         }
+        _isSecurityModalOpen = true;
         $.post('ajax_cheat_log.php', { 
             exam_id: examId, 
             type: type,
+            csrf_token: (window.CSRF_TOKEN || ''),
             waktu: new Date().toISOString()
         }, function(res) {
             if (res && res.status === 'blocked') {
@@ -582,15 +556,16 @@ $exam_package_json = json_encode([
                     title: 'Peringatan Pelanggaran!',
                     html: '<div class="text-start small text-secondary">' +
                           '<p class="mb-2">Tindakan mencurigakan (<b>' + type + '</b>) terdeteksi dan dicatat sistem!</p>' +
-                          '<p class="mb-0 text-danger fw-bold">Pelanggaran ke-' + strike + ' dari batas toleransi. Jika terus berulang, akun Anda akan otomatis terkunci.</p>' +
+                          '<p class="mb-0 text-danger fw-bold">Pelanggaran ke-' + strike + ' dari batas toleransi (maks. 3 kali). Jika terus berulang, akun Anda akan otomatis terkunci.</p>' +
                           '</div>',
                     icon: 'error',
                     confirmButtonColor: '#e74a3b',
-                    confirmButtonText: 'Lanjutkan Ujian',
+                    confirmButtonText: 'Saya Mengerti & Lanjutkan Ujian',
                     allowOutsideClick: false,
                     allowEscapeKey: false
                 }).then(function() {
                     _isSecurityModalOpen = false;
+                    setInternalActionGuard(400);
                 });
             }
         }, 'json').fail(function() {
@@ -1170,15 +1145,12 @@ $exam_package_json = json_encode([
         return false;
     });
 
-    // 4. Window Blur & Focus Handlers (Dengan Filter Smart Whitelist Aksi Internal)
+    // 4. Window Blur & Focus Handlers (Deteksi Ketat Instan Keluar Aplikasi / Screenshot)
     window._onBlurUjian = function(e) {
-        // 1. Abaikan jika sedang ada aksi navigasi internal atau drawer daftar soal sedang terbuka
+        // Abaikan hanya jika sedang ada aksi klik tombol internal atau drawer daftar soal sedang terbuka
         if (_isInternalAction || isExamDrawerOpen()) return;
 
-        // 2. Abaikan jika dokumen sebenarnya masih memegang fokus (false positive blur)
-        if (document.hasFocus && document.hasFocus()) return;
-
-        // 3. Abaikan jika dialog / modal sistem sedang aktif
+        // Abaikan jika dialog / modal sistem sedang aktif
         if (typeof Swal !== 'undefined' && Swal.isVisible && Swal.isVisible()) return;
 
         activateBlankShield('Pindah Aplikasi / Window Blur');
@@ -1190,8 +1162,13 @@ $exam_package_json = json_encode([
 
     window.removeEventListener('blur', window._onBlurUjian);
     window.removeEventListener('focus', window._onFocusUjian);
+    window.removeEventListener('pagehide', window._onBlurUjian);
+    window.removeEventListener('pageshow', window._onFocusUjian);
+
     window.addEventListener('blur', window._onBlurUjian);
     window.addEventListener('focus', window._onFocusUjian);
+    window.addEventListener('pagehide', window._onBlurUjian);
+    window.addEventListener('pageshow', window._onFocusUjian);
 
     // 5. Document Visibility Change (Pindah Tab / Minimize Browser)
     document.addEventListener('visibilitychange', function() {
