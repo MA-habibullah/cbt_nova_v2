@@ -86,8 +86,9 @@ foreach ($groups as $g) {
         </div>
         <div class='collapse' id='{$collapseId}'>
             <div class='card-body border-top pt-3'>
-                <table class='table table-sm table-borderless mb-0'>
-                    <tbody>";
+                <div class='table-responsive'>
+                    <table class='table table-sm table-borderless mb-0' style='min-width: 320px;'>
+                        <tbody>";
     foreach ($g['items'] as $item) {
         $waktu = date('d M Y H:i:s', strtotime($item['waktu_kejadian']));
         echo "<tr>
@@ -100,7 +101,8 @@ foreach ($groups as $g) {
         </tr>";
     }
     echo "        </tbody>
-                </table>
+                    </table>
+                </div>
             </div>
         </div>
     </div>";

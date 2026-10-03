@@ -95,7 +95,7 @@ log_activity('Akses halaman Pengaturan Layar Display Publik', null, null, null, 
 
 <!-- Edit Token Modal -->
 <div class="modal fade" id="modal-edit-token" tabindex="-1">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2 text-primary"></i>Edit Tayangan Publik</h5>
