@@ -1,30 +1,41 @@
 ---
-description: CBT Nova Unified UI/UX Design System and Frontend Component Standards
+description: CBT Nova Unified UI/UX Design System and Frontend Component Standards (WCAG 2.1 AAA Compliant)
 globs: admin/**/*.php, guru/**/*.php, siswa/**/*.php, public/**/*.php
 ---
 
-# CBT Nova — Unified UI/UX Design System & Frontend Component Standards
+# CBT Nova — Unified UI/UX Design System & Front-End Standards
+**Single Source of Truth (SSOT) — WCAG 2.1 AAA Compliant & Production Grade**
 
-Standar antarmuka pengguna (UI) dan pengalaman pengguna (UX) terpadu untuk seluruh modul di aplikasi **CBT Nova** (Admin, Guru, Siswa, dan Public Display), diadaptasi dan distandarisasi dari implementasi terbaik di `admin/bank-soal/index.php`.
-
----
-
-## 🎨 1. PRINSIP DASAR DESAIN (CORE DESIGN PRINCIPLES)
-
-1. **Scannable & Hierarkis**: Informasi utama (nama item, kode, jumlah butir, status) harus langsung terbaca dalam 2 detik pertama tanpa membebani mata pengguna.
-2. **Ergonomis & Bebas Friksi**: Tombol aksi primer diletakkan paling mudah dijangkau, sedangkan aksi sekunder/destruktif dirapikan dalam dropdown menu untuk menghemat ruang horizontal tabel.
-3. **Responsif & Bebas Overflow Horizontal**: Seluruh grid, filter toolbar, dan kartu metrik wajib beradaptasi dengan sempurna pada resolusi desktop standar (1366×768), tablet, maupun layar lebar.
-4. **Proteksi Human-Error**: Setiap aksi berbahaya (hapus data, nonaktifkan, kunci akses) wajib diverifikasi melalui SweetAlert2 interaktif dengan pesan peringatan relasi data.
+Standar antarmuka pengguna (UI), pengalaman pengguna (UX), responsivitas mobile, dan aksesibilitas terpadu untuk seluruh modul di aplikasi **CBT Nova** (Admin, Guru, Siswa, dan Public Display).
 
 ---
 
-## 📊 2. ANATOMI HALAMAN STANDAR (PAGE ANATOMY)
+## 🎨 1. PRINSIP DASAR DESAIN, TIPOGRAFI & AKSESIBILITAS (WCAG 2.1 AAA)
 
-Setiap halaman modul utama di CBT Nova harus mengikuti urutan layout berikut:
+1. **Rasio Kontras Warna Teks & Latar (WCAG AAA)**:
+   - Rasio kontras teks normal minimal **7:1** (dan minimal **4.5:1** untuk teks tebal/besar).
+   - **Larangan Keras**: Dilarang menggunakan teks abu-abu pudar seperti `#94a3b8` atau `#cbd5e1` di atas latar terang (`#ffffff` / `#f8fafc`).
+   - **Palet Warna Teks Terstandarisasi**:
+     - `Teks Primer / Judul / Header`: `#0f172a` atau `#1e293b` (Slate 900/800).
+     - `Teks Sekunder / Body / Label Input`: `#334155` atau `#475569` (Slate 700/600).
+     - `Teks Keterangan Redup (Muted Subtext)`: `#64748b` (Slate 500 - tetap memenuhi batas 4.5:1).
+     - `Sidebar Heading / Nav Category`: `#475569` (Wajib terlihat jelas pada latar putih).
+2. **Hirarki Tipografi & Truncation**:
+   - Seluruh judul navbar menggunakan utilitas `.navbar-title-truncate` agar judul halaman tidak terpotong atau tumpang-tindih pada layar ponsel (360px–414px).
+   - Font family utama: `Inter`, `-apple-system`, `BlinkMacSystemFont`, `"Segoe UI"`, `Roboto`, `sans-serif`.
+3. **Scannable & Bebas Friksi**:
+   - Informasi utama (nama item, kode, jumlah butir, status) harus langsung terbaca dalam 2 detik pertama tanpa membebani mata pengguna.
+   - Tombol aksi primer diletakkan paling mudah dijangkau, sedangkan aksi sekunder/destruktif dirapikan dalam dropdown menu untuk menghemat ruang horizontal tabel.
 
-```
+---
+
+## 📐 2. ANATOMI HALAMAN STANDAR (PAGE ANATOMY)
+
+Setiap halaman modul utama di CBT Nova mengikuti urutan layout terstruktur:
+
+```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│ TOP NAVBAR: Title, Subtitle, Toggle Sidebar, User Profile              │
+│ TOP NAVBAR: Title (.navbar-title-truncate), Subtitle, Toggle, Profile  │
 ├────────────────────────────────────────────────────────────────────────┤
 │ BREADCRUMBS: Dashboard / [Modul Induk] / [Halaman Aktif]               │
 ├────────────────────────────────────────────────────────────────────────┤
@@ -38,15 +49,28 @@ Setiap halaman modul utama di CBT Nova harus mengikuti urutan layout berikut:
 ├────────────────────────────────────────────────────────────────────────┤
 │ DATA TABLE CONTAINER: Card Wrapper + Table-Responsive + Table-Hover    │
 ├────────────────────────────────────────────────────────────────────────┤
-│ PAGINATION & FOOTER: Info Baris "X-Y dari Z" + Pagination Bullets       │
+│ PAGINATION & FOOTER: Info Baris "X-Y dari Z" + Pagination Links        │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 💎 3. KATALOG KOMPONEN & KELAS BOOTSTRAP RESMI
+## 📱 3. STANDAR SHELL LAYOUT & NAVIGASI SIDEBAR
 
-### A. Kartu Metrik Ringkas (Top Overview Metric Cards)
+1. **Sticky Sidebar Desktop**:
+   - `position: sticky; top: 0; height: 100vh; overflow-y: auto;`
+   - Sidebar tidak boleh ikut tergeser saat konten utama atau tabel di-scroll.
+2. **Mobile Drawer Off-Canvas**:
+   - Menggunakan transisi CSS transform yang halus.
+   - Dilengkapi tombol tutup silang `<button type="button" class="btn-close d-lg-none" ...>` di bagian header sidebar agar pengguna mobile dapat menutup navigasi dengan 1 sentuhan.
+3. **Container Viewport Safety**:
+   - `#content { min-width: 0; max-width: 100%; overflow-x: hidden; }`
+   - `#wrapper, body { overflow-x: hidden; }`
+
+---
+
+## 📊 4. KARTU METRIK RINGKAS (TOP OVERVIEW METRIC CARDS)
+
 Gunakan grid `row g-3 mb-4` dengan 4 kartu metrik berpenampilan modern:
 ```html
 <div class="row g-3 mb-4">
@@ -76,127 +100,83 @@ Gunakan grid `row g-3 mb-4` dengan 4 kartu metrik berpenampilan modern:
 
 ---
 
-### B. Action Bar & Unified Filter Toolbar
-Satukan area kontrol ke dalam card yang rapi dan seragam:
-```html
-<!-- Action Bar -->
-<div class="card border-0 shadow-sm rounded-3 mb-4">
-    <div class="card-body p-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
-        <div class="d-flex align-items-center gap-2">
-            <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-boxes text-primary me-2"></i>Daftar Item</h6>
-            <span class="badge bg-light text-secondary border px-2 py-1"><?= $total ?> item ditemukan</span>
-        </div>
-        <div class="d-flex flex-wrap align-items-center gap-2">
-            <button class="btn btn-sm btn-outline-primary shadow-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#modalSecondary">
-                <i class="fas fa-file-export me-1"></i> Export / Backup
-            </button>
-            <button class="btn btn-sm btn-primary shadow-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#modalTambah">
-                <i class="fas fa-plus-circle me-1"></i> Tambah Data Baru
-            </button>
-        </div>
-    </div>
-</div>
+## 🔍 5. STANDAR ACTION BAR, FILTER TOOLBAR & TOUCH TARGETS
 
-<!-- Unified Filter Form -->
-<div class="card border-0 shadow-sm rounded-3 mb-4">
-    <div class="card-body p-3">
-        <form method="GET" action="" class="row g-2 align-items-end">
-            <!-- Search Input -->
-            <div class="col-lg-3 col-md-6">
-                <label class="form-label small fw-bold text-muted mb-1"><i class="fas fa-search me-1"></i>Pencarian</label>
-                <input type="text" name="q" class="form-control form-control-sm" placeholder="Ketik kata kunci..." value="<?= esc($search) ?>">
-            </div>
-            <!-- Dropdown Filters (Col-lg-2) -->
-            <!-- Limit Baris Dropdown (10, 25, 50, 100, default: 50) -->
-            <!-- Tombol Terapkan & Reset (Col-lg-2) -->
-        </form>
-    </div>
-</div>
-```
+1. **Responsive Flex / Grid Layout**:
+   - Toolbar filter wajib menggunakan Grid Bootstrap responsif: `col-12 col-sm-6 col-lg-...` atau `flex-wrap gap-2`.
+   - Pada layar smartphone (< 768px), elemen filter otomatis tersusun vertikal (*stacked*) rapi tanpa overflow horizontal.
+2. **Touch Target Ergonomis (Mobile-First)**:
+   - Tinggi elemen form kontrol (`input`, `select`, `button`) minimal **38px - 44px** pada tampilan mobile.
+   - Tombol ikon aksi `.btn-action-icon` diatur minimal **38x38px** agar mudah ditekan jari (*fat-finger friendly*).
+3. **Standarisasi Pelabelan & Dropdown**:
+   - Format Dropdown Kelas: `[Jenjang] - [Nama Kelas]` (contoh: `10 - X IPA 1`).
+   - Format Filter Jadwal/Ujian: Menggunakan label baku `Nama Ujian / Test`.
 
 ---
 
-### C. Standard Table Layout & Badge System
-Tabel menggunakan thead abu-abu terang dengan teks semi-bold uppercase, dibungkus kontainer `.table-responsive` berlebar minimal agar scroll horizontal terisolasi sempurna di dalam tabel (tidak membuat halaman web bergeser):
-```html
-<div class="card border-0 shadow-sm rounded-3 overflow-hidden">
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" style="min-width: 1050px;">
-            <thead class="table-light text-secondary small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">
-                <tr>
-                    <th class="text-center py-3" width="50">#</th>
-                    <th class="py-3">Identitas Utama</th>
-                    <th class="py-3">Kategori / Relasi</th>
-                    <th class="py-3 text-center">Komposisi / Data</th>
-                    <th class="py-3 text-center">Status</th>
-                    <th class="py-3">Waktu</th>
-                    <th class="text-center py-3" width="180">Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Data Rows -->
-            </tbody>
-        </table>
-    </div>
-    <!-- Footer Pagination -->
-</div>
-```
+## 📑 6. STANDAR TABEL DATA & ISOLASI SCROLL HORIZONTAL
 
-**Aturan Isolasi Scroll Horizontal:**
-1. **Dilarang keras** membuat `body` atau `#wrapper` bergeser ke samping. Pastikan `#content` terkunci dengan `min-width: 0; max-width: 100%; overflow-x: hidden;`.
-2. Scroll horizontal **hanya aktif di dalam `.table-responsive`** ketika lebar layar kurang dari batas minimal tabel.
-3. Pasang custom scrollbar 7px yang ramping di `.table-responsive`.
-
-**Standard Badge Styles:**
-- **Kode Unik / NISN / NIP / Username**: `.badge.bg-primary-subtle.text-primary.border.border-primary-subtle.font-monospace`
-- **Tingkat Kelas / Jenjang**: `.badge.bg-info-subtle.text-info-emphasis.border.border-info-subtle.px-2.py-1.rounded-2`
-- **Status Aktif / Terbuka**: `.badge.bg-success-subtle.text-success.border.border-success-subtle.px-2.py-1.rounded-pill`
-- **Status Non-Aktif / Terkunci**: `.badge.bg-danger-subtle.text-danger.border.border-danger-subtle.px-2.py-1.rounded-pill`
-- **Avatar Inisial Guru / Pengguna**:
-  ```html
-  <div class="avatar-placeholder rounded-circle d-inline-flex align-items-center justify-content-center bg-secondary-subtle text-secondary fw-bold" style="width:28px;height:28px;font-size:12px;">
-      <?= strtoupper(mb_substr($nama, 0, 1)) ?>
-  </div>
-  ```
+1. **Wajib Pembungkus `.table-responsive`**:
+   - Seluruh tabel data wajib berada di dalam container `.table-responsive` dengan scroll horizontal terisolasi.
+   - **Isolasi Scroll:** Dilarang membuat halaman atau `#wrapper` / `body` bergeser ke samping. Scroll horizontal hanya boleh terjadi di dalam kontainer tabel.
+2. **Styling Header `<thead>`**:
+   - Menggunakan kelas `.table-light.text-secondary.small.text-uppercase.fw-semibold` dengan latar `#f8fafc` / `#f1f5f9` dan `letter-spacing: 0.5px`.
+3. **Lebar Minimum Tabel Berkolom Padat**:
+   - Tabel dengan kolom $\ge 6$, aksi multi-tombol, atau tanggal wajib memiliki `style="min-width: 1000px;"` s/d `style="min-width: 1150px;"` agar isi kolom tidak tertekan (*squeezed*) atau patah baris berantakan.
+4. **Scrollbar Ramping & Elegan**:
+   ```css
+   .table-responsive::-webkit-scrollbar { height: 7px; }
+   .table-responsive::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+   .table-responsive::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+   .table-responsive::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+   ```
 
 ---
 
-### D. Action Buttons & Dropdown Menu
-Kelompokkan aksi agar tidak melebar:
-```html
-<div class="d-flex align-items-center justify-content-center gap-1">
-    <!-- Tombol Primer (Paling Sering Digunakan) -->
-    <a href="detail.php?id=<?= $id ?>" class="btn btn-sm btn-primary fw-semibold px-2">
-        <i class="fas fa-list-check me-1"></i> Kelola
-    </a>
-    
-    <!-- Menu Dropdown Aksi Sekunder -->
-    <div class="dropdown">
-        <button class="btn btn-sm btn-light border dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown">
-            <i class="fas fa-ellipsis-v"></i>
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-            <li><button class="dropdown-item btn-edit" data-id="<?= $id ?>"><i class="fas fa-edit text-primary me-2"></i> Edit</button></li>
-            <li><button class="dropdown-item btn-toggle"><i class="fas fa-lock text-warning me-2"></i> Kunci/Buka</button></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a href="javascript:void(0)" class="dropdown-item text-danger btn-hapus" data-id="<?= $id ?>"><i class="fas fa-trash-alt me-2"></i> Hapus</a></li>
-        </ul>
-    </div>
-</div>
-```
+## 🪟 7. STANDAR POP-UP & MODAL DIALOG
+
+1. **Centered & Scrollability Wajib**:
+   - Seluruh modal form (tambah, edit, salin, import, formula, konfigurasi) **WAJIB** menyertakan class:
+     ```html
+     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable ...">
+     ```
+   - Hal ini memastikan header dan footer modal tetap terlihat di viewport, dan bagian body modal dapat di-scroll dengan mulus di perangkat layar kecil (< 576px).
+2. **Tombol Close & Pencegahan Ghost Overlay**:
+   - Modal wajib memiliki `<button type="button" class="btn-close" data-bs-dismiss="modal"></button>`.
+   - Hindari manipulasi backdrop manual yang dapat menyebabkan `modal-backdrop` tertinggal atau memblokir interaksi klik setelah modal ditutup.
+3. **Form Double-Submit Protection**:
+   - Seluruh form modal wajib menonaktifkan tombol submit (`disabled`) dan menampilkan indikator loading saat proses penyimpanan berlangsung:
+     ```javascript
+     $('#formTambah').on('submit', function() {
+         $('#btnSubmit').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Menyimpan...');
+     });
+     ```
 
 ---
 
-## ⚡ 4. MICRO-INTERACTIONS & JAVASCRIPT STANDARDS
+## 🏷️ 8. STANDAR BADGE, PILLS, PROGRESS BAR & AVATAR
+
+1. **Formula Warna Badge Soft Pastel Berkontras Tinggi**:
+   - **Sukses / Aktif / Selesai**: `.badge.bg-success-subtle.text-success.rounded-pill` (Latar `#dcfce7`, teks `#15803d`).
+   - **Info / Jenjang / Tipe**: `.badge.bg-info-subtle.text-info-emphasis` (Latar `#e0f2fe`, teks `#0369a1`).
+   - **Primary / NISN / Kode**: `.badge.bg-primary-subtle.text-primary.font-monospace` (Latar `#dbeafe`, teks `#1d4ed8`).
+   - **Warning / Ragu / Pending**: `.badge.bg-warning-subtle.text-warning-emphasis` (Latar `#fef3c7`, teks `#b45309`).
+   - **Danger / Nonaktif / Terkunci**: `.badge.bg-danger-subtle.text-danger.rounded-pill` (Latar `#fee2e2`, teks `#b91c1c`).
+   - **Secondary / Draft**: `.badge.bg-secondary-subtle.text-secondary` (Latar `#f1f5f9`, teks `#475569`).
+2. **Avatar Inisial Pengguna**:
+   ```html
+   <div class="avatar-placeholder rounded-circle d-inline-flex align-items-center justify-content-center bg-secondary-subtle text-secondary fw-bold" style="width:28px;height:28px;font-size:12px;">
+       <?= strtoupper(mb_substr($nama, 0, 1)) ?>
+   </div>
+   ```
+3. **Sinkronisasi Progress Bar**:
+   - Pembilang dan penyebut progress bar pengerjaan/soal wajib sinkron dengan kuota riil soal (`soal_ids` limit).
+
+---
+
+## ⚡ 9. MICRO-INTERACTIONS & JAVASCRIPT STANDARDS
 
 1. **SweetAlert2 Confirmation**:
-   - Seluruh aksi hapus dan nonaktifkan data wajib memicu SweetAlert2 dengan informasi detail nama item dan deteksi keterkaitan relasi (misal relasi jadwal ujian/jawaban siswa).
-2. **Double-Submit Protection on Forms**:
-   - Pada form submit modal, tombol wajib otomatis disabled dan menampilkan spinner:
-   ```javascript
-   $('#formTambah').on('submit', function() {
-       $('#btnSubmit').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Menyimpan...');
-   });
-   ```
-3. **Empty State Component**:
-   - Jika `empty($listData)`, tampilkan placeholder informatif dengan icon `fa-3x opacity-25` dan tombol CTA pembuatan data baru.
+   - Seluruh aksi hapus dan nonaktifkan data wajib memicu SweetAlert2 dengan informasi detail nama item dan deteksi keterkaitan relasi data aktif.
+2. **Empty State Component**:
+   - Jika data kosong (`empty($listData)`), tampilkan placeholder informatif dengan icon `fa-3x opacity-25` dan tombol CTA pembuatan data baru.

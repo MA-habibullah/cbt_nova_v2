@@ -8,8 +8,14 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 // Ambil data filter
-$classes = query("SELECT id, nama_kelas FROM cbt_classes WHERE is_aktif = 1 ORDER BY jenjang, nama_kelas")->fetchAll();
+$classes = query("SELECT id, nama_kelas, jenjang FROM cbt_classes WHERE is_aktif = 1 ORDER BY jenjang, nama_kelas")->fetchAll();
 $sessions = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER BY nama_sesi")->fetchAll();
+
+// Metrik Ringkasan
+$metric_total_lock = (int)query("SELECT COUNT(*) FROM cbt_device_locks")->fetchColumn();
+$metric_today_lock = (int)query("SELECT COUNT(*) FROM cbt_device_locks WHERE DATE(created_at) = CURDATE()")->fetchColumn();
+$metric_total_siswa = (int)query("SELECT COUNT(*) FROM cbt_students WHERE is_aktif = 1")->fetchColumn();
+$metric_total_kelas = (int)query("SELECT COUNT(*) FROM cbt_classes WHERE is_aktif = 1")->fetchColumn();
 ?>
 
 <!DOCTYPE html>
@@ -17,9 +23,28 @@ $sessions = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
 <head>
     <?php include dirname(__DIR__, 2) . '/includes/header.php'; ?>
     <style>
-        .form-label-sm { font-size: 0.7rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; display: block; }
-        #deviceContent { min-height: 400px; position: relative; }
+        #deviceContent { min-height: 350px; position: relative; }
         .loading-overlay { display: none; position: absolute; inset: 0; background: rgba(255,255,255,0.7); z-index: 50; }
+        .table-responsive {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
+        .table-responsive::-webkit-scrollbar {
+            height: 7px;
+        }
+        .table-responsive::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
     </style>
 </head>
 
@@ -28,58 +53,164 @@ $sessions = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
     <?php include dirname(__DIR__, 2) . '/includes/sidebar.php'; ?>
     
     <div id="content" class="w-100">
-        <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm justify-content-between">
-            <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-laptop-code me-2 text-primary"></i> Manajemen Device Lock</h5>
-            <div class="text-muted small italic">Mengunci akun siswa pada satu perangkat tertentu</div>
+        <!-- Top Navbar -->
+        <nav class="navbar navbar-expand bg-white px-4 py-3 sticky-top shadow-sm border-bottom">
+            <button class="btn btn-light border shadow-sm" id="menu-toggle"><i class="fas fa-bars"></i></button>
+            <div class="ms-3 d-flex align-items-center">
+                <i class="fas fa-laptop-code text-primary fs-5 me-2"></i>
+                <div>
+                    <h5 class="mb-0 fw-bold">Manajemen Device Lock</h5>
+                    <small class="text-muted">Proteksi integritas ujian dengan membatasi satu perangkat aktif per akun siswa</small>
+                </div>
+            </div>
         </nav>
 
-        <div class="container-fluid px-4 pt-4">
-            <div class="card border-0 shadow-sm mb-4 rounded-3">
-                <div class="card-body p-3">
-                    <form id="filterDevice" class="row g-2">
-                        <div class="col-12 col-sm-6 col-lg-2">
-                            <label class="form-label-sm">Tanggal Lock</label>
-                            <input type="date" name="tanggal" id="tanggal" class="form-control form-control-sm onChangeLoad" value="<?= esc(date('Y-m-d')) ?>">
-                        </div>
-                        <div class="col-12 col-sm-6 col-lg-3">
-                            <label class="form-label-sm">Cari Nama / Username</label>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
-                                <input type="text" name="search" class="form-control border-start-0 onChangeLoad" placeholder="Ketik nama siswa...">
+        <div class="container-fluid px-4 py-3">
+            <!-- Breadcrumbs -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb mb-0 small">
+                    <li class="breadcrumb-item"><a href="<?= esc(BASE_URL) ?>admin/dashboard/index.php" class="text-decoration-none text-muted"><i class="fas fa-home me-1"></i>Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="<?= esc(BASE_URL) ?>admin/monitoring/index.php" class="text-decoration-none text-muted"><i class="fas fa-desktop me-1"></i>Monitoring</a></li>
+                    <li class="breadcrumb-item active fw-semibold text-primary" aria-current="page">Device Lock</li>
+                </ol>
+            </nav>
+
+            <!-- Top Metric Cards (Overview Statistik Device Lock) -->
+            <div class="row g-3 mb-4">
+                <div class="col-xl-3 col-md-6">
+                    <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:0.5px;">TOTAL TERKUNCI</span>
+                                <h3 class="fw-bold mb-0 mt-1 text-danger"><?= number_format($metric_total_lock, 0, ',', '.') ?></h3>
+                                <small class="text-muted"><i class="fas fa-lock me-1 text-danger"></i>Semua sesi tersimpan</small>
+                            </div>
+                            <div class="rounded-3 p-3 bg-danger-subtle text-danger">
+                                <i class="fas fa-laptop-code fa-2x"></i>
                             </div>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-2">
-                            <label class="form-label-sm">Kelas</label>
-                            <select name="class_id" class="form-select form-select-sm onChangeLoad">
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+                    <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:0.5px;">TERKUNCI HARI INI</span>
+                                <h3 class="fw-bold mb-0 mt-1 text-warning"><?= number_format($metric_today_lock, 0, ',', '.') ?></h3>
+                                <small class="text-muted"><i class="fas fa-calendar-day me-1 text-warning"></i>Login device tanggal <?= date('d/m/Y') ?></small>
+                            </div>
+                            <div class="rounded-3 p-3 bg-warning-subtle text-warning">
+                                <i class="fas fa-user-lock fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+                    <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:0.5px;">TOTAL SISWA AKTIF</span>
+                                <h3 class="fw-bold mb-0 mt-1 text-primary"><?= number_format($metric_total_siswa, 0, ',', '.') ?></h3>
+                                <small class="text-muted"><i class="fas fa-user-graduate me-1 text-primary"></i>Akun siswa terdaftar</small>
+                            </div>
+                            <div class="rounded-3 p-3 bg-primary-subtle text-primary">
+                                <i class="fas fa-users fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+                    <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:0.5px;">TOTAL KELAS</span>
+                                <h3 class="fw-bold mb-0 mt-1 text-success"><?= number_format($metric_total_kelas, 0, ',', '.') ?></h3>
+                                <small class="text-muted"><i class="fas fa-school me-1 text-success"></i>Rombel aktif</small>
+                            </div>
+                            <div class="rounded-3 p-3 bg-success-subtle text-success">
+                                <i class="fas fa-layer-group fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Toolbar Card -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-body p-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-shield-alt text-primary me-2"></i>Daftar Kunci Perangkat Aktif</h6>
+                        <span id="lockCounterBadge" class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">Memuat data...</span>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <a href="<?= esc(BASE_URL) ?>admin/monitoring/index.php" class="btn btn-sm btn-outline-primary shadow-sm fw-semibold">
+                            <i class="fas fa-desktop me-1"></i> Monitoring Proktor
+                        </a>
+                        <a href="<?= esc(BASE_URL) ?>admin/monitoring/log-pelanggaran.php" class="btn btn-sm btn-outline-warning shadow-sm fw-semibold text-dark">
+                            <i class="fas fa-exclamation-triangle me-1"></i> Log Pelanggaran
+                        </a>
+                        <button type="button" onclick="bulkResetDevice()" class="btn btn-sm btn-danger shadow-sm fw-bold px-3">
+                            <i class="fas fa-unlock-alt me-1"></i> Buka Kunci Masal
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Unified Filter Bar -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-body p-3">
+                    <form id="filterDevice" class="row g-2 align-items-end">
+                        <div class="col-lg-3 col-md-4 col-sm-6">
+                            <label class="form-label small fw-bold text-muted mb-1"><i class="fas fa-calendar-day me-1"></i>Tanggal Lock</label>
+                            <input type="date" name="tanggal" id="filter_tanggal" class="form-control form-control-sm onChangeLoad" value="<?= esc(date('Y-m-d')) ?>">
+                        </div>
+
+                        <div class="col-lg-3 col-md-4 col-sm-6">
+                            <label class="form-label small fw-bold text-muted mb-1"><i class="fas fa-search me-1"></i>Cari Siswa / Username</label>
+                            <input type="text" name="search" id="filter_search" class="form-control form-control-sm onChangeLoad" placeholder="Ketik nama siswa atau username...">
+                        </div>
+
+                        <div class="col-lg-2 col-md-4 col-sm-6">
+                            <label class="form-label small fw-bold text-muted mb-1"><i class="fas fa-school me-1"></i>Kelas</label>
+                            <select name="class_id" id="filter_class" class="form-select form-select-sm onChangeLoad">
                                 <option value="">Semua Kelas</option>
                                 <?php foreach($classes as $c): ?>
-                                    <option value="<?= esc($c['id']) ?>"><?= esc($c['nama_kelas']) ?></option>
+                                    <option value="<?= esc($c['id']) ?>">Kelas <?= esc($c['jenjang']) ?> - <?= esc($c['nama_kelas']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-2">
-                            <label class="form-label-sm">Sesi</label>
-                            <select name="sesi" class="form-select form-select-sm onChangeLoad">
+
+                        <div class="col-lg-2 col-md-6 col-sm-6">
+                            <label class="form-label small fw-bold text-muted mb-1"><i class="fas fa-clock me-1"></i>Sesi Ujian</label>
+                            <select name="sesi" id="filter_sesi" class="form-select form-select-sm onChangeLoad">
                                 <option value="">Semua Sesi</option>
                                 <?php foreach($sessions as $s): ?>
                                     <option value="<?= esc($s['id']) ?>"><?= esc($s['nama_sesi']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-12 col-sm-12 col-lg-3 d-flex align-items-end gap-2">
-                            <button type="button" onclick="bulkResetDevice()" class="btn btn-danger btn-sm w-100 fw-bold py-2 shadow-sm">
-                                <i class="fas fa-unlock-alt me-1"></i> BUKA KUNCI MASAL
+
+                        <div class="col-lg-2 col-md-6 col-12 d-flex gap-2">
+                            <button type="button" onclick="loadDeviceData()" class="btn btn-primary btn-sm flex-grow-1 fw-bold">
+                                <i class="fas fa-sync-alt me-1"></i> Refresh
+                            </button>
+                            <button type="button" onclick="resetFilter()" class="btn btn-light border btn-sm text-secondary px-3" title="Reset Semua Filter">
+                                <i class="fas fa-redo"></i>
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm rounded-3 overflow-hidden border">
+            <!-- Table Card -->
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
                 <div id="deviceContent">
                     <div class="text-center p-5">
                         <div class="spinner-border text-primary" role="status"></div>
-                        <p class="mt-2 text-muted small">Sinkronisasi data perangkat...</p>
+                        <p class="mt-2 text-muted small fw-semibold">Sinkronisasi data perangkat...</p>
                     </div>
                 </div>
             </div>
@@ -108,11 +239,26 @@ $sessions = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
             },
             success: function(data) {
                 $('#deviceContent').html(data);
+                // Update badge counter dari atribut data jika tersedia
+                let count = $('#deviceContent').find('tbody tr').not('.no-data').length;
+                if ($('#deviceContent').find('.no-data').length > 0) {
+                    count = 0;
+                }
+                $('#lockCounterBadge').text(count + ' perangkat ditemukan');
             },
             error: function() {
                 $('#deviceContent').html('<div class="p-4 text-danger text-center fw-semibold"><i class="fas fa-exclamation-circle me-1"></i> Gagal memuat data perangkat. Periksa koneksi server.</div>');
+                $('#lockCounterBadge').text('Gagal memuat');
             }
         });
+    }
+
+    function resetFilter() {
+        $('#filter_tanggal').val('<?= date('Y-m-d') ?>');
+        $('#filter_search').val('');
+        $('#filter_class').val('');
+        $('#filter_sesi').val('');
+        loadDeviceData();
     }
 
     // id diisi saat reset satu baris, null saat bulk dari checkbox
@@ -125,17 +271,23 @@ $sessions = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
         }
 
         if (selected.length === 0) {
-            Swal.fire('Peringatan', 'Pilih minimal satu siswa untuk dibuka kuncinya!', 'warning');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Peringatan',
+                text: 'Pilih minimal satu siswa untuk dibuka kuncinya!',
+                confirmButtonColor: '#0d6efd'
+            });
             return;
         }
 
         Swal.fire({
             title: 'Buka Kunci Perangkat?',
-            text: selected.length + " siswa akan diizinkan login dari perangkat manapun.",
-            icon: 'question',
+            text: selected.length + " siswa akan diizinkan login kembali dari perangkat lain.",
+            icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'Ya, Buka Kunci!',
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-unlock-alt me-1"></i> Ya, Buka Kunci!',
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
@@ -146,10 +298,16 @@ $sessions = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
                     dataType: 'json',
                     success: function(data) {
                         if (data.status === 'success') {
-                            Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Kunci perangkat telah dihapus.', timer: 1500, showConfirmButton: false });
+                            Swal.fire({ 
+                                icon: 'success', 
+                                title: 'Berhasil', 
+                                text: 'Kunci perangkat berhasil dibuka.', 
+                                timer: 1500, 
+                                showConfirmButton: false 
+                            });
                             loadDeviceData();
                         } else {
-                            Swal.fire('Gagal', data.message, 'error');
+                            Swal.fire('Gagal', data.message || 'Terjadi kesalahan sistem.', 'error');
                         }
                     },
                     error: function() {
@@ -162,11 +320,33 @@ $sessions = query("SELECT id, nama_sesi FROM cbt_sesi WHERE is_aktif = 1 ORDER B
 
     $(document).ready(function() {
         loadDeviceData();
-        $('.onChangeLoad').on('keyup change', function() {
+        
+        // Debounce input search
+        let searchTimeout;
+        $('#filter_search').on('keyup', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() {
+                loadDeviceData();
+            }, 300);
+        });
+
+        // Event change dropdown & date
+        $('#filter_tanggal, #filter_class, #filter_sesi').on('change', function() {
             loadDeviceData();
         });
+
+        // Check/Uncheck All Checkboxes
         $(document).on('change', '#checkAll', function() {
             $('.checkItem').prop('checked', $(this).prop('checked'));
+        });
+
+        $(document).on('change', '.checkItem', function() {
+            if (!$(this).prop('checked')) {
+                $('#checkAll').prop('checked', false);
+            } else {
+                let allChecked = $('.checkItem:checked').length === $('.checkItem').length;
+                $('#checkAll').prop('checked', allChecked);
+            }
         });
     });
 </script>
