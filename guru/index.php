@@ -61,7 +61,7 @@ $upcoming_stmt = $pdo->prepare("
     SELECT e.*, s.nama_mapel,
         (SELECT COUNT(*) FROM cbt_exam_participants WHERE exam_id = e.id) as total_peserta,
         (SELECT COUNT(*) FROM cbt_exam_participants WHERE exam_id = e.id AND status = 'working') as peserta_aktif,
-        (SELECT COUNT(*) FROM cbt_exam_participants WHERE exam_id = e.id AND status = 'submitted') as peserta_selesai
+        (SELECT COUNT(*) FROM cbt_exam_participants WHERE exam_id = e.id AND status = 'finished') as peserta_selesai
     FROM cbt_exams e 
     JOIN cbt_subjects s ON e.subject_id = s.id
     WHERE e.teacher_id = ? 
@@ -81,11 +81,12 @@ $results_stmt = $pdo->prepare("
     FROM cbt_exams e
     JOIN cbt_subjects s ON e.subject_id = s.id
     JOIN cbt_exam_participants p ON e.id = p.exam_id
-    WHERE e.teacher_id = ? AND p.status = 'submitted'
+    WHERE e.teacher_id = ? AND p.status = 'finished'
     GROUP BY e.id, e.nama_mapel_ujian, s.nama_mapel
     ORDER BY e.id DESC
     LIMIT 4
 ");
+
 $results_stmt->execute([$teacher_id]);
 $recent_results = $results_stmt->fetchAll();
 

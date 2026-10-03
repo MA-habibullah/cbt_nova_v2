@@ -84,7 +84,7 @@ $stmtTodayExams = $pdo->prepare("
     SELECT e.id, e.nama_mapel_ujian, e.mulai_pada, e.selesai_pada, e.status, e.durasi_menit,
            COALESCE(t.nama_lengkap, 'Admin') AS nama_guru,
            (SELECT COUNT(*) FROM cbt_exam_participants WHERE exam_id = e.id) AS total_peserta,
-           (SELECT COUNT(*) FROM cbt_exam_participants WHERE exam_id = e.id AND status = 'submitted') AS peserta_selesai,
+           (SELECT COUNT(*) FROM cbt_exam_participants WHERE exam_id = e.id AND status = 'finished') AS peserta_selesai,
            (SELECT COUNT(*) FROM cbt_exam_participants WHERE exam_id = e.id AND status = 'working') AS peserta_aktif
     FROM cbt_exams e
     LEFT JOIN cbt_teachers t ON e.teacher_id = t.id
