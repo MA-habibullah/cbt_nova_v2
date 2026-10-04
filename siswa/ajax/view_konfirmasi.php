@@ -90,6 +90,7 @@ if (!empty($participant['soal_ids'])) {
                             <h6 class="fw-bold mb-1">Peringatan Penting!</h6>
                             <ul class="small mb-0 ps-3">
                                 <li>Waktu akan berjalan setelah Anda menekan tombol <strong>Mulai Ujian</strong>.</li>
+                                <li><strong>Pengguna HP/Smartphone</strong>: Cukup geser layar ke kiri atau ke kanan untuk berpindah nomor soal dengan mudah.</li>
                                 <li>Sistem akan otomatis mengunci (Device Lock) akun Anda pada perangkat ini.</li>
                                 <li>Jangan mencoba menutup browser atau berpindah tab agar tidak terblokir.</li>
                             </ul>

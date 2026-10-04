@@ -368,6 +368,12 @@ $exam_package_json = json_encode([
                         <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
+
+                <div class="d-lg-none text-center mt-3 pt-2">
+                    <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill" style="font-size:0.75rem; font-weight:500;">
+                        <i class="fas fa-arrows-alt-h me-1 text-primary"></i> Geser (Swipe) layar kiri / kanan untuk pindah soal
+                    </span>
+                </div>
             </div>
         </div>
 

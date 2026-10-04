@@ -98,6 +98,7 @@ $msg = $_GET['msg'] ?? '';
                 <ul class="small text-muted ps-3 mb-0">
                     <li class="mb-1">Pastikan koneksi internet stabil.</li>
                     <li class="mb-1 text-danger fw-bold">Dilarang keluar dari halaman ujian (Auto-Block).</li>
+                    <li class="mb-1 text-primary fw-semibold"><i class="fas fa-hand-point-right me-1"></i> Di HP: Cukup geser layar ke kiri/kanan untuk pindah soal.</li>
                     <li class="mb-1">Gunakan NISN dan Password yang valid.</li>
                     <li>Selesaikan ujian tepat waktu sesuai durasi.</li>
                 </ul>
